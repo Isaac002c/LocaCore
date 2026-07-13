@@ -1,0 +1,23 @@
+.vercel
+
+# Variáveis de ambiente — NUNCA commitar
+.env
+.env.local
+.env.production
+.env.*.local
+.env.pooler
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Dependências
+node_modules/
+backend/node_modules/
+
+# Build Next.js
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
