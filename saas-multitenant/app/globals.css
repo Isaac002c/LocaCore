@@ -1,15 +1,17 @@
 /* ============================================
-   TEMA CR RECURSOS — Variáveis Globais
+   TEMA BASE (NEXOS) — Variáveis Globais
+   Paleta padrão do produto Nexos (azul). A identidade por tenant
+   (logo/cor) é aplicada dinamicamente a partir dos dados do tenant.
    ============================================ */
 :root {
-  --cr-wine:        #751518;
-  --cr-wine-hover:  #5e1012;
-  --cr-wine-light:  rgba(117, 21, 24, 0.10);
-  --cr-wine-mid:    rgba(117, 21, 24, 0.16);
-  --cr-wine-text:   #d4888a;   /* texto legível sobre fundo escuro */
-  --cr-beige:       #d3cfc3;
-  --cr-gray:        #a7a5a7;
-  --cr-dark:        #050708;
+  --nx-primary:        #2563eb;
+  --nx-primary-hover:  #1d4ed8;
+  --nx-primary-light:  rgba(37, 99, 235, 0.10);
+  --nx-primary-mid:    rgba(37, 99, 235, 0.16);
+  --nx-primary-text:   #93b4f5;   /* texto legível sobre fundo escuro */
+  --nx-beige:       #d3cfc3;
+  --nx-gray:        #a7a5a7;
+  --nx-dark:        #050708;
 }
 
 * {
@@ -135,7 +137,7 @@ a {
 
 .dropdown-trigger:hover {
   background: #e2e8f0;
-  border-color: #751518;
+  border-color: #2563eb;
   color: #1e293b;
 }
 
@@ -198,8 +200,8 @@ a {
 }
 
 .dropdown-item.active {
-  background: rgba(117, 21, 24, 0.1);
-  color: #751518;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
 }
 
 /* User Info */
@@ -214,11 +216,11 @@ a {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: rgba(117, 21, 24, 0.07);
-  border: 1px solid rgba(117, 21, 24, 0.2);
+  background: rgba(37, 99, 235, 0.07);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   border-radius: 20px;
   font-size: 13px;
-  color: #751518;
+  color: #2563eb;
   font-weight: 500;
 }
 
@@ -312,9 +314,9 @@ a {
 }
 
 .module-tab.active {
-  color: #751518;
-  border-bottom-color: #751518;
-  background: rgba(117, 21, 24, 0.05);
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .tab-icon {
@@ -345,7 +347,7 @@ a {
   width: 48px;
   height: 48px;
   border: 3px solid #1a0506;
-  border-top-color: #751518;
+  border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -417,7 +419,7 @@ a {
   left: 0;
   width: 4px;
   height: 100%;
-  background: #751518;
+  background: #2563eb;
 }
 
 .kpi-card:hover {
@@ -744,14 +746,14 @@ h3 {
 }
 
 .period-btn:hover {
-  border-color: #751518;
-  color: #751518;
+  border-color: #2563eb;
+  color: #2563eb;
   background: #f8fafc;
 }
 
 .period-btn.active {
-  background: #751518;
-  border-color: #751518;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #fff;
 }
 
@@ -1001,8 +1003,8 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #751518;
-  box-shadow: 0 0 0 3px rgba(117, 21, 24, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 input::placeholder, textarea::placeholder {
@@ -1020,7 +1022,7 @@ select {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #751518, #5e1012);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1032,9 +1034,9 @@ select {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #5e1012, #4a0c0d);
+  background: linear-gradient(135deg, #1d4ed8, #4a0c0d);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(117, 21, 24, 0.4);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 
 .btn-primary:disabled {
@@ -4047,18 +4049,18 @@ tr:last-child td {
 }
 
 /* ============================================
-   BOTÕES GLOBAIS — Tema CR Recursos
+   BOTÕES GLOBAIS — Tema base (Nexos)
    ============================================ */
 
 .btn-primary {
-  background: var(--cr-wine) !important;
-  border-color: var(--cr-wine) !important;
+  background: var(--nx-primary) !important;
+  border-color: var(--nx-primary) !important;
   color: #fff !important;
 }
 
 .btn-primary:hover {
-  background: var(--cr-wine-hover) !important;
-  border-color: var(--cr-wine-hover) !important;
+  background: var(--nx-primary-hover) !important;
+  border-color: var(--nx-primary-hover) !important;
 }
 
 /* ============================================
@@ -4083,7 +4085,7 @@ html, body {
 .sidebar {
   width: 256px;
   min-width: 256px;
-  background: #050708; /* CR Recursos dark */
+  background: #050708; /* Nexos dark shell */
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -4168,7 +4170,7 @@ html, body {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: var(--cr-wine);
+  background: var(--nx-primary);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
@@ -4212,8 +4214,8 @@ html, body {
 }
 
 .sidebar-module-btn.active {
-  background: var(--cr-wine-mid);
-  color: var(--cr-wine-text);
+  background: var(--nx-primary-mid);
+  color: var(--nx-primary-text);
 }
 
 /* Divider */
@@ -4272,17 +4274,17 @@ html, body {
 }
 
 .sidebar-item:hover {
-  background: rgba(117,21,24,0.12);
-  color: #d4888a;
+  background: rgba(37, 99, 235,0.12);
+  color: #93b4f5;
 }
 
 .sidebar-item.active {
-  background: var(--cr-wine-mid);
-  color: var(--cr-wine-text);
+  background: var(--nx-primary-mid);
+  color: var(--nx-primary-text);
 }
 
 .sidebar-item.active .sidebar-item-icon {
-  color: var(--cr-wine-text);
+  color: var(--nx-primary-text);
 }
 
 .sidebar-item-icon {
@@ -4335,7 +4337,7 @@ html, body {
 
 .sidebar-footer-email {
   font-size: 11.5px;
-  color: var(--cr-wine-text);
+  color: var(--nx-primary-text);
   text-decoration: none;
   word-break: break-all;
   line-height: 1.4;
@@ -4352,7 +4354,7 @@ html, body {
   justify-content: center;
   width: 100%;
   padding: 8px;
-  border: 1px solid rgba(117,21,24,0.2);
+  border: 1px solid rgba(37, 99, 235,0.2);
   border-radius: 8px;
   background: transparent;
   color: #4a2e2e;
@@ -4361,8 +4363,8 @@ html, body {
 }
 
 .sidebar-collapse-btn:hover {
-  background: rgba(117,21,24,0.12);
-  color: var(--cr-wine-text);
+  background: rgba(37, 99, 235,0.12);
+  color: var(--nx-primary-text);
 }
 
 /* CR Recursos client brand dentro da sidebar */
@@ -4371,16 +4373,16 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border-top: 1px solid rgba(117,21,24,0.2);
-  border-bottom: 1px solid rgba(117,21,24,0.2);
-  background: rgba(117,21,24,0.08);
+  border-top: 1px solid rgba(37, 99, 235,0.2);
+  border-bottom: 1px solid rgba(37, 99, 235,0.2);
+  background: rgba(37, 99, 235,0.08);
   flex-shrink: 0;
 }
 
 .cr-logo-icon {
   width: 40px;
   height: 40px;
-  background: var(--cr-wine);
+  background: var(--nx-primary);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -4390,7 +4392,7 @@ html, body {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  box-shadow: 0 2px 8px rgba(117,21,24,0.4);
+  box-shadow: 0 2px 8px rgba(37, 99, 235,0.4);
 }
 
 .cr-brand-text {
@@ -4525,7 +4527,7 @@ html, body {
 
 .clients-summary-card.all  { border-top-color: #94a3b8; }
 .clients-summary-card.nego { border-top-color: #3b82f6; }
-.clients-summary-card.fechado { border-top-color: var(--cr-wine); }
+.clients-summary-card.fechado { border-top-color: var(--nx-primary); }
 
 .summary-number {
   font-size: 28px;
@@ -4622,8 +4624,8 @@ html, body {
 }
 
 .client-status-badge.fechado {
-  background: rgba(117,21,24,0.1);
-  color: var(--cr-wine);
+  background: rgba(37, 99, 235,0.1);
+  color: var(--nx-primary);
 }
 
 /* Status badges de serviço/andamento */
@@ -5007,12 +5009,12 @@ html, body {
 }
 
 .md-action-primary {
-  background: var(--cr-wine);
+  background: var(--nx-primary);
   color: #ffffff;
 }
 
 .md-action-primary:hover {
-  background: var(--cr-wine-hover);
+  background: var(--nx-primary-hover);
 }
 
 .md-action-secondary {
@@ -5071,8 +5073,8 @@ html, body {
 
 /* Protocolo inline */
 .cd-protocol-panel {
-  background: rgba(117,21,24,0.03);
-  border-top: 1px solid rgba(117,21,24,0.12);
+  background: rgba(37, 99, 235,0.03);
+  border-top: 1px solid rgba(37, 99, 235,0.12);
   padding: 14px 20px;
 }
 
@@ -5086,12 +5088,12 @@ html, body {
 .cd-protocol-title {
   font-size: 13px;
   font-weight: 700;
-  color: #751518;
+  color: #2563eb;
 }
 
 .cd-protocol-badge {
-  background: rgba(117,21,24,0.1);
-  color: #751518;
+  background: rgba(37, 99, 235,0.1);
+  color: #2563eb;
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
@@ -5141,7 +5143,7 @@ html, body {
 .cd-protocol-form input:focus,
 .cd-protocol-form select:focus,
 .cd-protocol-form textarea:focus {
-  border-color: #751518;
+  border-color: #2563eb;
 }
 
 .cd-protocol-upload-hint {
@@ -5184,8 +5186,8 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(117,21,24,0.08);
-  color: #751518;
+  background: rgba(37, 99, 235,0.08);
+  color: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5256,7 +5258,7 @@ html, body {
 
 .md-metric-click-hint {
   font-size: 11px;
-  color: var(--accent, #751518);
+  color: var(--accent, #2563eb);
   margin-top: 10px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -5269,7 +5271,7 @@ html, body {
 .ag-head-title { font-size:20px; font-weight:700; color:#1e293b; letter-spacing:-0.2px; }
 .ag-head-sub { font-size:13px; color:#64748b; margin-top:4px; }
 .ag-refresh { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
-.ag-refresh:hover:not(:disabled) { background:var(--cr-wine-light); border-color:var(--cr-wine); color:var(--cr-wine); }
+.ag-refresh:hover:not(:disabled) { background:var(--nx-primary-light); border-color:var(--nx-primary); color:var(--nx-primary); }
 .ag-refresh:disabled { opacity:.55; cursor:default; }
 .ag-refresh svg { transition:transform .4s; }
 .ag-refresh:hover:not(:disabled) svg { transform:rotate(90deg); }
@@ -5318,14 +5320,14 @@ html, body {
 .cal-iconbtn:hover { background:#f8fafc; border-color:#cbd5e1; }
 .cal-toggle { display:flex; gap:0; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
 .cal-toggle button { padding:7px 14px; font-size:13px; font-weight:600; background:#fff; color:#64748b; border:none; cursor:pointer; }
-.cal-toggle button.active { background:var(--cr-wine, #751518); color:#fff; }
+.cal-toggle button.active { background:var(--nx-primary, #2563eb); color:#fff; }
 
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
 .cal-weekday { text-align:center; font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; padding:4px 0; }
 .cal-cell { min-height:104px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; padding:6px 7px; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:background .14s, box-shadow .14s; overflow:hidden; }
 .cal-cell:hover { background:#f8fafc; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
 .cal-cell--out { background:#f8fafc; opacity:.5; }
-.cal-cell--today .cal-daynum span:first-child { background:var(--cr-wine,#751518); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
+.cal-cell--today .cal-daynum span:first-child { background:var(--nx-primary,#2563eb); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
 .cal-cell--closed { background:repeating-linear-gradient(45deg,#fef2f2,#fef2f2 7px,#fff 7px,#fff 14px); border-color:#fecaca; }
 .cal-daynum { display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; }
 .cal-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -5646,8 +5648,8 @@ html, body {
 }
 
 .kanban-col.drag-over {
-  border-color: var(--cr-wine);
-  background: rgba(117,21,24,0.03);
+  border-color: var(--nx-primary);
+  background: rgba(37, 99, 235,0.03);
 }
 
 .kanban-col-header {
@@ -5709,9 +5711,9 @@ html, body {
 }
 
 .kanban-add-btn:hover {
-  border-color: var(--cr-wine);
-  color: var(--cr-wine);
-  background: rgba(117,21,24,0.04);
+  border-color: var(--nx-primary);
+  color: var(--nx-primary);
+  background: rgba(37, 99, 235,0.04);
 }
 
 .kanban-cards {
@@ -5965,7 +5967,7 @@ html, body {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: #751518;
+  color: #2563eb;
   font-weight: 500;
   background: none;
   border: none;
@@ -5999,9 +6001,9 @@ html, body {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: var(--cr-wine-light);
-  border: 2px solid rgba(117,21,24,0.15);
-  color: var(--cr-wine);
+  background: var(--nx-primary-light);
+  border: 2px solid rgba(37, 99, 235,0.15);
+  color: var(--nx-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6070,8 +6072,8 @@ html, body {
 }
 
 .cd-edit-btn:hover {
-  border-color: var(--cr-wine);
-  color: var(--cr-wine);
+  border-color: var(--nx-primary);
+  color: var(--nx-primary);
 }
 
 /* Services section */
@@ -6158,7 +6160,7 @@ html, body {
 }
 
 .cd-service-type-badge {
-  background: var(--cr-wine);
+  background: var(--nx-primary);
   color: #fff;
   padding: 4px 12px;
   border-radius: 6px;
@@ -6231,7 +6233,7 @@ html, body {
 .user-home-title {
   font-size: 28px;
   font-weight: 800;
-  color: var(--cr-wine);
+  color: var(--nx-primary);
   letter-spacing: -0.5px;
   line-height: 1.1;
 }
@@ -6282,25 +6284,25 @@ html, body {
 }
 
 .user-home-card:hover {
-  border-color: var(--cr-wine);
-  box-shadow: 0 2px 12px rgba(117,21,24,0.08);
+  border-color: var(--nx-primary);
+  box-shadow: 0 2px 12px rgba(37, 99, 235,0.08);
 }
 
 .user-home-card.primary {
-  background: var(--cr-wine);
-  border-color: var(--cr-wine);
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
 }
 
 .user-home-card.primary:hover {
-  background: var(--cr-wine-hover);
+  background: var(--nx-primary-hover);
 }
 
 .user-home-card-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--cr-wine-light);
-  color: var(--cr-wine);
+  background: var(--nx-primary-light);
+  color: var(--nx-primary);
   display: flex;
   align-items: center;
   justify-content: center;

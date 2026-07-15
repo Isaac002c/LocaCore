@@ -78,7 +78,7 @@ export default function PageHeader({ currentTab, user, tenant, onLogout, onMobil
 
   const getRoleBadge = () => {
     if (role === 'admin') {
-      return { label: 'ADMIN', color: '#751518', bg: 'rgba(117,21,24,0.08)', border: 'rgba(117,21,24,0.2)' };
+      return { label: 'ADMIN', color: '#2563eb', bg: 'rgba(37, 99, 235,0.08)', border: 'rgba(37, 99, 235,0.2)' };
     }
     return { label: 'CONSULTOR', color: '#475569', bg: 'rgba(71,85,105,0.08)', border: 'rgba(71,85,105,0.2)' };
   };

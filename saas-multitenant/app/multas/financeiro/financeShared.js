@@ -2,7 +2,7 @@
 
 // Helpers compartilhados das telas financeiras (padrão visual/formatos pt-BR).
 
-export const BRAND = '#751518';
+export const BRAND = '#2563eb';
 
 // R$ 1.234,56 — aceita number|string (o backend devolve NUMERIC como string).
 export function formatBRL(value) {

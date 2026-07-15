@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+backend
+deploy
+.vercel
+npm-debug.log*
+*.log
+.DS_Store

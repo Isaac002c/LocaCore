@@ -65,7 +65,7 @@ export default function Header({ user, tenant, onLogout }) {
             justifyContent: 'center',
             width: '36px',
             height: '36px',
-            background: '#751518',
+            background: '#2563eb',
             borderRadius: '10px',
             flexShrink: 0
           }}>
@@ -82,10 +82,10 @@ export default function Header({ user, tenant, onLogout }) {
           </div>
           <div style={{ marginLeft: '10px' }}>
             <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', lineHeight: 1.2 }}>
-              CR Recursos
+              Nexos
             </div>
             <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.2 }}>
-              Assessoria de Trânsito
+              Plataforma de Gestão
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function Header({ user, tenant, onLogout }) {
             className="dropdown-trigger"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#751518' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#2563eb' }}>
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
               <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
             </svg>
@@ -155,7 +155,7 @@ export default function Header({ user, tenant, onLogout }) {
         </div>
 
         <div className="header-user-info">
-          <div className="user-avatar" style={{ background: 'linear-gradient(135deg, #751518, #9b2b2e)' }}>
+          <div className="user-avatar" style={{ background: 'linear-gradient(135deg, #2563eb, #16324f)' }}>
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <button onClick={onLogout} className="logout-btn-header">

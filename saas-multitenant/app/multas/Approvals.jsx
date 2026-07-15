@@ -116,7 +116,7 @@ export default function Approvals() {
 
       {loading ? (
         <div style={{ display:'flex', justifyContent:'center', padding:'40px 0' }}>
-          <div className="loading-spinner" style={{ width:28, height:28, border:'3px solid #e2e8f0', borderTopColor:'#751518' }} />
+          <div className="loading-spinner" style={{ width:28, height:28, border:'3px solid #e2e8f0', borderTopColor:'#2563eb' }} />
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 0', color:'#94a3b8' }}>

@@ -148,7 +148,7 @@ export default function CompanyDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#751518' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando empresa...</p>
     </div>
   );
@@ -167,7 +167,7 @@ export default function CompanyDetail() {
           ← Empresas
         </button>
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(117,21,24,0.1)', color: '#751518', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, flexShrink: 0 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(37, 99, 235,0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, flexShrink: 0 }}>
             {company.razao_social?.charAt(0).toUpperCase()}
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
@@ -219,7 +219,7 @@ export default function CompanyDetail() {
                 <tr key={v.id} style={v.status === 'inativo' ? { opacity: 0.55 } : undefined}>
                   <td>
                     <button onClick={() => goToVehicle(v.id)} title="Abrir veículo"
-                      style={{ fontFamily: 'monospace', fontWeight: 700, color: '#751518', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14, textDecoration: 'underline' }}>
+                      style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14, textDecoration: 'underline' }}>
                       {v.plate || '—'}
                     </button>
                   </td>

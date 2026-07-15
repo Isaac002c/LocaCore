@@ -1,7 +1,7 @@
 import { apiRequest } from './api.js';
 
 // ============================================
-// FINANCIAL API — módulo financeiro (NEXO Despachantes CRM)
+// FINANCIAL API — módulo financeiro (Nexos)
 // Todas as chamadas passam pelo proxy /api → backend (tenant via token).
 // ============================================
 

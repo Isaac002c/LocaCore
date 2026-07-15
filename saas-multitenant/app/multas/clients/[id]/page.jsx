@@ -553,7 +553,7 @@ export default function ClientDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#751518' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando cliente...</p>
     </div>
   );
@@ -764,7 +764,7 @@ export default function ClientDetail() {
                                   onClick={() => setExpandedProtocol(prev => prev === contract.id ? null : contract.id)}
                                   className="btn-icon"
                                   title="Protocolo"
-                                  style={{ color: contract.protocol_number ? '#751518' : undefined }}
+                                  style={{ color: contract.protocol_number ? '#2563eb' : undefined }}
                                 >
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -800,7 +800,7 @@ export default function ClientDetail() {
                           {/* Painel de Protocolo inline */}
                           {expandedProtocol === contract.id && (
                             <tr>
-                              <td colSpan="99" style={{ padding: 0, background: 'rgba(117,21,24,0.03)' }}>
+                              <td colSpan="99" style={{ padding: 0, background: 'rgba(37, 99, 235,0.03)' }}>
                                 <ProtocolPanel
                                   contract={contract}
                                   onSave={(data) => handleSaveProtocol(contract.id, data)}
@@ -861,7 +861,7 @@ export default function ClientDetail() {
                 </div>
                 <div className="cd-doc-info">
                   {doc.file_url
-                    ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="cd-doc-name" style={{ color: '#751518', textDecoration: 'none' }}>{doc.file_name || doc.name || 'Documento'}</a>
+                    ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="cd-doc-name" style={{ color: '#2563eb', textDecoration: 'none' }}>{doc.file_name || doc.name || 'Documento'}</a>
                     : <span className="cd-doc-name">{doc.file_name || doc.name || 'Documento'}</span>
                   }
                   <span className="cd-doc-meta">
@@ -1338,7 +1338,7 @@ function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploa
       {uploadError && <p style={{ color:'#ef4444', fontSize:11, margin:'4px 0' }}>{uploadError}</p>}
       <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
         {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#fff', border:'1px solid #e2e8f0', color:'#475569', cursor:'pointer' }}>Cancelar</button>}
-        <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#751518', border:'none', color:'#fff', cursor:'pointer' }}>
+        <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#2563eb', border:'none', color:'#fff', cursor:'pointer' }}>
           {submitting?'Salvando...':'Salvar'}
         </button>
       </div>
@@ -1432,7 +1432,7 @@ function ProtocolPanel({ contract, onSave, onClose }) {
     <div className="cd-protocol-panel">
       <div className="cd-protocol-header">
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#751518" strokeWidth="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
@@ -1443,7 +1443,7 @@ function ProtocolPanel({ contract, onSave, onClose }) {
           </span>
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          <button type="button" onClick={()=>setShowAddForm(v=>!v)} style={{ padding:'4px 10px', borderRadius:6, fontSize:11, background:'#751518', border:'none', color:'#fff', cursor:'pointer' }}>
+          <button type="button" onClick={()=>setShowAddForm(v=>!v)} style={{ padding:'4px 10px', borderRadius:6, fontSize:11, background:'#2563eb', border:'none', color:'#fff', cursor:'pointer' }}>
             + Adicionar
           </button>
           <button className="cd-protocol-close" onClick={onClose}>✕</button>
@@ -1523,7 +1523,7 @@ function ProtocolPanel({ contract, onSave, onClose }) {
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                       <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#f1f5f9', border:'none', color:'#475569', cursor:'pointer' }}>Editar</button>
                       {proto.protocol_file_url && (
-                        <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#751518', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
+                        <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#2563eb', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
                           {emailingId===proto.id ? 'Enviando...' : 'Enviar por e-mail'}
                         </button>
                       )}

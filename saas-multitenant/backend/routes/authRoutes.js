@@ -127,7 +127,7 @@ router.post('/login',
 
       // Bloqueia login se a empresa (tenant) estiver inativa — super_admin sempre pode entrar.
       if (user.role !== 'super_admin' && user.tenant_status && user.tenant_status !== 'ativo') {
-        return sendJson(res, 403, { success: false, message: 'Empresa inativa. Contate o suporte da Chronostek.' });
+        return sendJson(res, 403, { success: false, message: 'Empresa inativa. Contate o suporte do Nexos.' });
       }
 
       // Aviso operacional: mesmo e-mail em múltiplos tenants
@@ -176,7 +176,7 @@ router.post('/login',
           logo_url: user.tenant_logo_url || null,
           brand_color: user.tenant_brand_color || '#751518',
           brand_color_dark: user.tenant_brand_color_dark || '#050708',
-          tagline: user.tenant_tagline || 'Assessoria de Trânsito'
+          tagline: user.tenant_tagline || 'Plataforma de Gestão'
         }
       });
     } catch (err) {

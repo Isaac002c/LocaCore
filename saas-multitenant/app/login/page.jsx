@@ -73,7 +73,7 @@ export default function Login() {
         width: '100%',
         maxWidth: '420px'
       }}>
-        {/* Logo ChronosTek */}
+        {/* Marca Nexos */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
             display: 'inline-flex',
@@ -82,13 +82,14 @@ export default function Login() {
             width: '80px',
             height: '80px',
             marginBottom: '16px',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, #1d4ed8 0%, #16324f 100%)',
+            boxShadow: '0 0 24px rgba(29,78,216,0.45)',
+            fontSize: '38px',
+            fontWeight: 800,
+            color: '#fff',
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logoChronosTech.png"
-              alt="ChronosTek"
-              style={{ width: '80px', height: '80px', objectFit: 'contain', filter: 'drop-shadow(0 0 12px rgba(59,130,246,0.5))' }}
-            />
+            N
           </div>
           <h1 style={{
             fontSize: '26px',
@@ -97,10 +98,10 @@ export default function Login() {
             marginBottom: '4px',
             letterSpacing: '-0.5px'
           }}>
-            ChronosTek
+            Nexos
           </h1>
           <p style={{ color: '#64748b', fontSize: '13px' }}>
-            Sistema de Gestão
+            Um produto Chronostek
           </p>
         </div>
 
@@ -212,7 +213,7 @@ export default function Login() {
           fontSize: '11px',
           letterSpacing: '0.5px'
         }}>
-          © ChronosTek · Todos os direitos reservados
+          © 2026 Chronostek. Todos os direitos reservados.
         </p>
       </div>
     </div>

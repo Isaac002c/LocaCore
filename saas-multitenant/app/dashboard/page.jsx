@@ -209,7 +209,7 @@ function DashboardContent() {
     return (
       <div className="loading-screen">
         <div className="loading-spinner" />
-        <p>Carregando ChronosTek...</p>
+        <p>Carregando Nexos...</p>
       </div>
     );
   }

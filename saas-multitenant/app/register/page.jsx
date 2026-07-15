@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiRequest } from '../lib/api.js';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -33,24 +34,17 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/auth/register', {
+      // Usa o mesmo proxy relativo do restante do app (next.config rewrites → BACKEND_URL).
+      // Assim funciona na Vercel (HTTPS, mesma origem) sem URL fixa/insegura.
+      await apiRequest('/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        body: {
           tenantName: formData.tenantName,
           name: formData.name,
           email: formData.email,
-          password: formData.password
-        }),
+          password: formData.password,
+        },
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Erro ao criar conta');
-      }
 
       // Redirecionar para login com mensagem de sucesso
       alert('Conta criada com sucesso! Faça login para continuar.');
@@ -88,7 +82,7 @@ export default function Register() {
             color: '#3b82f6',
             marginBottom: '8px'
           }}>
-            ChronosTek
+            Nexos
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '14px' }}>
             Criação de contas temporariamente desativada

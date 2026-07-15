@@ -164,7 +164,7 @@ const Icons = {
 // =============================================================================
 const sidebarConfig = {
   multas: {
-    label: 'Despachantes',
+    label: 'Processos',
     items: [
       { key: 'dashboard',  label: 'Dashboard',  Icon: Icons.Dashboard,  tab: 'dashboard',  roles: ['admin'] },
       { key: 'clients',    label: 'Clientes',   Icon: Icons.Clients,    tab: 'clients' },
@@ -193,15 +193,15 @@ const sidebarConfig = {
 };
 
 const modules = [
-  { key: 'multas', label: 'Despachantes' },
+  { key: 'multas', label: 'Processos' },
   { key: 'financeiro', label: 'Financeiro', roles: ['admin'] },
 ];
 
-// Mapa de fallback para sessões antigas (sem slug/logo_url no localStorage)
-const TENANT_DEFAULTS = {
-  'carioca-multas': { brand_color: '#4B2882', logo_url: '/logos/carioca-multas.svg', tagline: 'Assessoria de Trânsito' },
-  'cr-recursos':    { brand_color: '#751518', logo_url: '/logos/cr-recursos.png',    tagline: 'Assessoria de Trânsito' },
-};
+// Sem branding fixo de clientes: a identidade vem dos dados do tenant (logo_url,
+// brand_color, tagline). Quando ausente, usa o padrão Nexos.
+const TENANT_DEFAULTS = {};
+const NEXOS_BRAND = '#16324f';
+const NEXOS_TAGLINE = 'Plataforma de Gestão';
 
 function deriveSlug(name) {
   return (name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
@@ -212,8 +212,8 @@ function TenantLogo({ collapsed, tenant }) {
   const slug    = tenant?.slug || deriveSlug(name);
   const defaults = TENANT_DEFAULTS[slug] || {};
   const logoUrl = tenant?.logo_url || defaults.logo_url || null;
-  const tagline = tenant?.tagline  || defaults.tagline  || 'Sistema de Gestão';
-  const brandColor = tenant?.brand_color || defaults.brand_color || '#751518';
+  const tagline = tenant?.tagline  || defaults.tagline || NEXOS_TAGLINE;
+  const brandColor = tenant?.brand_color || defaults.brand_color || NEXOS_BRAND;
   const initial = name.charAt(0).toUpperCase();
 
   // CR Recursos: a logo é um lockup completo (símbolo + nome "CR RECURSOS /
@@ -363,8 +363,8 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
             <span className="sidebar-footer-label">
               <Icons.Mail /> Suporte
             </span>
-            <a href="mailto:contato@chronostek.com.br" className="sidebar-footer-email">
-              contato@chronostek.com.br
+            <a href="mailto:suporte@nexos.app" className="sidebar-footer-email">
+              suporte@nexos.app
             </a>
           </div>
         )}

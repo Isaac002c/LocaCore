@@ -4,8 +4,12 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'ChronosTek - CRM',
-  description: 'CRM Multitenant para gestao de leads e vendas',
+  title: 'Nexos | Gestão inteligente para despachantes',
+  description: 'Plataforma de gestão para despachantes desenvolvida pela Chronostek.',
+  applicationName: 'Nexos',
+  authors: [{ name: 'Chronostek' }],
+  creator: 'Chronostek',
+  publisher: 'Chronostek',
   icons: {
     icon: '/icon.png',
     shortcut: '/icon.png',

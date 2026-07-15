@@ -215,7 +215,7 @@ export default function MultasClients() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#751518' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando clientes...</p>
     </div>
   );
@@ -319,7 +319,7 @@ export default function MultasClients() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(117,21,24,0.1)', color: '#751518',
+                      background: 'rgba(37, 99, 235,0.1)', color: '#2563eb',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 13, fontWeight: 700, flexShrink: 0,
                     }}>

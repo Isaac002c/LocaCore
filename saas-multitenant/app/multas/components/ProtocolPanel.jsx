@@ -90,7 +90,7 @@ function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploa
       {uploadError && <p style={{ color:'#ef4444', fontSize:11, margin:'4px 0' }}>{uploadError}</p>}
       <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
         {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#fff', border:'1px solid #e2e8f0', color:'#475569', cursor:'pointer' }}>Cancelar</button>}
-        <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#751518', border:'none', color:'#fff', cursor:'pointer' }}>
+        <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#2563eb', border:'none', color:'#fff', cursor:'pointer' }}>
           {submitting?'Salvando...':'Salvar'}
         </button>
       </div>
@@ -169,7 +169,7 @@ export default function ProtocolPanel({ contract, onClose }) {
     <div className="cd-protocol-panel">
       <div className="cd-protocol-header">
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#751518" strokeWidth="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
@@ -180,7 +180,7 @@ export default function ProtocolPanel({ contract, onClose }) {
           </span>
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          <button type="button" onClick={()=>setShowAddForm(v=>!v)} style={{ padding:'4px 10px', borderRadius:6, fontSize:11, background:'#751518', border:'none', color:'#fff', cursor:'pointer' }}>
+          <button type="button" onClick={()=>setShowAddForm(v=>!v)} style={{ padding:'4px 10px', borderRadius:6, fontSize:11, background:'#2563eb', border:'none', color:'#fff', cursor:'pointer' }}>
             + Adicionar
           </button>
           {onClose && <button className="cd-protocol-close" onClick={onClose}>✕</button>}
@@ -255,7 +255,7 @@ export default function ProtocolPanel({ contract, onClose }) {
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                       <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#f1f5f9', border:'none', color:'#475569', cursor:'pointer' }}>Editar</button>
                       {proto.protocol_file_url && (
-                        <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#751518', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
+                        <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#2563eb', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
                           {emailingId===proto.id ? 'Enviando...' : 'Enviar por e-mail'}
                         </button>
                       )}

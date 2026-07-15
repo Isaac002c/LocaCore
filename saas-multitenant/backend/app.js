@@ -48,11 +48,15 @@ app.set('trust proxy', 1);
 // Em produção, defina FRONTEND_URL no .env com o domínio real
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
+// Origens liberadas no CORS. Em produção, defina FRONTEND_URL com o domínio do
+// frontend do Nexos (Vercel). Sem branding/domínios de sistemas anteriores.
+const EXTRA_ORIGINS = (process.env.EXTRA_CORS_ORIGINS || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://despachantes-new-crm.vercel.app', // fallback Vercel
   ...(FRONTEND_URL ? [FRONTEND_URL.trim()] : []),
+  ...EXTRA_ORIGINS,
 ];
 
 const corsOptions = {
@@ -228,6 +232,6 @@ process.on('unhandledRejection', (reason) => {
   }
 
   app.listen(PORT, () => {
-    console.log(` CR Recursos CRM rodando na porta ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    console.log(`Nexos API rodando na porta ${PORT} (${process.env.NODE_ENV || 'development'})`);
   });
 })();

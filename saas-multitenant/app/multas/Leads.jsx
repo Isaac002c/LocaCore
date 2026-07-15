@@ -40,8 +40,8 @@ const COLUMNS = [
   {
     key:   'fechado',
     label: 'Fechado',
-    color: '#751518',
-    bg:    'rgba(117,21,24,0.06)',
+    color: '#2563eb',
+    bg:    'rgba(37, 99, 235,0.06)',
     desc:  'Contrato assinado',
   },
 ];
@@ -234,7 +234,7 @@ export default function MultasLeads() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#751518' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando leads...</p>
     </div>
   );

@@ -46,19 +46,20 @@ export default function UserHome({ user }) {
   const firstName = user?.name?.split(' ')[0] || 'bem-vindo';
   const greeting  = isAdmin ? `Olá, ${firstName}!` : `Olá, Consultor ${firstName}!`;
   const actions   = quickActionsConsultor;
+  // Nome do tenant (data-driven) — sem branding fixo de cliente.
+  let tenantName = 'Nexos';
+  if (typeof window !== 'undefined') {
+    try { tenantName = JSON.parse(localStorage.getItem('tenant') || '{}').name || 'Nexos'; } catch { /* noop */ }
+  }
 
   return (
     <div className="user-home">
       {/* Hero */}
       <div className="user-home-hero">
-        <div className="user-home-logos">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logos/cr-consultor-logo.png" alt="CR Recursos" className="user-home-logo-img" />
-        </div>
         <div className="user-home-welcome">
           <p className="user-home-greeting">{greeting}</p>
-          <h1 className="user-home-title">CR Recursos</h1>
-          <p className="user-home-subtitle">Assessoria de Trânsito</p>
+          <h1 className="user-home-title">{tenantName}</h1>
+          <p className="user-home-subtitle">Plataforma de Gestão</p>
           <p className="user-home-desc">
             Selecione uma ação abaixo para começar ou use o menu lateral para navegar.
           </p>
@@ -90,9 +91,7 @@ export default function UserHome({ user }) {
 
       {/* Footer */}
       <div className="user-home-footer">
-        <span>Powered by</span>
-        <img src="/logoChronosTech.png" alt="ChronosTek" style={{ height: 20, opacity: 0.5 }} />
-        <span>ChronosTek</span>
+        <span>Nexos · um produto Chronostek</span>
       </div>
     </div>
   );

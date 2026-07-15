@@ -49,9 +49,9 @@ const DEFAULT_CATEGORIES = [
 
 // Identidade padrão do produto (usada quando o tenant não tem branding próprio).
 const DEFAULT_BRANDING = {
-  name: 'Nexo Despachantes CRM',
-  signature: 'by ChronosTek',
-  receipt_prefix: 'NEXO',
+  name: 'Nexos',
+  signature: 'by Nexos',
+  receipt_prefix: 'NEXOS',
 };
 
 module.exports = {

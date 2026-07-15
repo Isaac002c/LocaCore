@@ -41,13 +41,13 @@ test('middleware e rotas financeiras carregam', () => {
 
 test('branding: usa identidade do tenant quando existe; senão Nexo', () => {
   const { resolveBranding } = require('../services/finance/branding');
-  const own = resolveBranding({ tenant: { name: 'CR Recursos', logo_url: '/logos/cr.png' } });
-  assert.equal(own.name, 'CR Recursos');
+  const own = resolveBranding({ tenant: { name: 'Empresa Exemplo', logo_url: '/logos/x.png' } });
+  assert.equal(own.name, 'Empresa Exemplo');
   assert.equal(own.is_default, false);
-  assert.equal(own.signature, null); // não força "by ChronosTek" sobre marca própria
+  assert.equal(own.signature, null); // não força assinatura padrão sobre marca própria do tenant
 
   const def = resolveBranding({ tenant: null, settings: null });
-  assert.equal(def.name, 'Nexo Despachantes CRM');
+  assert.equal(def.name, 'Nexos');
   assert.equal(def.is_default, true);
-  assert.equal(def.signature, 'by ChronosTek');
+  assert.equal(def.signature, 'by Nexos');
 });

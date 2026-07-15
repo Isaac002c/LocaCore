@@ -309,7 +309,7 @@ export default function MultasDashboard() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#751518' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando...</p>
     </div>
   );
@@ -345,7 +345,7 @@ export default function MultasDashboard() {
             title="CLIENTES FECHADOS"
             value={fechados}
             subtitle={`de ${clients.length} no total`}
-            color="#751518"
+            color="#2563eb"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
             onClick={() => router.push('/dashboard?module=multas&tab=clients')}
           />
@@ -476,7 +476,7 @@ export default function MultasDashboard() {
                   style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
                   onClick={() => router.push('/dashboard?module=multas&tab=eventos')}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#751518', marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', marginTop: 6, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>
