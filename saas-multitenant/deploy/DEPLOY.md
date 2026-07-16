@@ -1,7 +1,31 @@
-# Deploy do zero — NEXO Despachantes CRM (VPS + Vercel)
+# Deploy — Nexos (VPS + Vercel)
+
+> **Nexos** é uma plataforma desenvolvida e mantida pela **Chronostek**.
 
 Deploy **novo e independente** (não toca no ambiente/dados atuais). Backend e
 **PostgreSQL dentro do VPS**; frontend na **Vercel**.
+
+---
+
+## Estado atual de produção (2026-07)
+
+| Camada | Detalhe |
+| --- | --- |
+| **Frontend** | Vercel, projeto `nexos` → `https://nexos-ochre.vercel.app` (HTTPS). Auto-deploy da branch `main` (repo `github.com/Isaac002c/Nexos`, Root Directory `saas-multitenant`). Domínio custom `nexos.chronostek.com.br` fica para etapa posterior. |
+| **API** | Backend Express na VPS (`nexos-backend:5000`), exposto por **Cloudflare Tunnel nomeado** em `https://api-nexos.chronostek.com.br`. Env do frontend: `BACKEND_URL` → esse host (proxy `/api` e `/auth` via `next.config.js`). |
+| **Banco** | PostgreSQL `nexos` só na rede interna `nexos-network` (sem porta no host). Volume `nexos-postgres-data`. |
+| **CORS** | Backend libera `FRONTEND_URL` (Vercel) + `EXTRA_CORS_ORIGINS` (domínio custom futuro). Sem `*`. |
+| **Backup** | `scripts/backup-db.sh` (pg_dump -Fc, sem senha no script) via cron 03:30 → `/opt/nexos/backups/database` (600), retenção 14, log em `backups/backup.log`. |
+| **Túnel (token)** | `deploy/tunnel.env` (`TUNNEL_TOKEN=...`, chmod 600, fora do git). Serviço `tunnel` no compose (`restart: unless-stopped`). |
+
+Subir/atualizar backend + túnel na VPS:
+```bash
+cd /opt/nexos
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build backend
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d tunnel
+```
+
+---
 
 > ⚠️ **Pré-requisito importante:** o schema base do banco (tabelas `tenants`,
 > `users`, `clients`, `fines`, `service_types`, `sellers`, ...) **não está no
