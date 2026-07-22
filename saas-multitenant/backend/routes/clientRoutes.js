@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const clientModel = require('../models/clientModels');
+const activityLog = require('../services/activityLogService');
 
 // GET /api/clients - Listar todos os clientes
 router.get('/', async (req, res) => {
@@ -98,6 +99,11 @@ router.post('/', async (req, res) => {
       status: status || 'negociacao',
     });
 
+    // Histórico (§11) — registrado pelo backend; não bloqueia a operação.
+    activityLog.logCreate(tenantId, req.userId, 'client', client.id,
+      `Cliente cadastrado: ${client.name}`,
+      { name: client.name, cpf: client.cpf, status: client.status }).catch(() => {});
+
     res.status(201).json({ success: true, data: client });
   } catch (err) {
     console.error('Erro ao criar cliente:', err);
@@ -145,6 +151,10 @@ router.put('/:id', async (req, res) => {
       status: status || existingClient.status || 'negociacao',
     }, tenantId);
 
+    // Histórico (§11) — registra o que mudou (old → new). Não bloqueia a operação.
+    activityLog.logUpdate(tenantId, req.userId, 'client', id,
+      `Cliente atualizado: ${client.name}`, existingClient, client).catch(() => {});
+
     res.json({ success: true, data: client });
   } catch (err) {
     console.error('Erro ao atualizar cliente:', err);
@@ -159,11 +169,15 @@ router.delete('/:id', async (req, res) => {
     const tenantId = req.tenantId;
     
     const client = await clientModel.deleteClient(id, tenantId);
-    
+
     if (!client) {
       return res.status(404).json({ success: false, error: 'Cliente não encontrado' });
     }
-    
+
+    // Histórico (§11) — registra a remoção com snapshot do dado. Não bloqueia a operação.
+    activityLog.logDelete(tenantId, req.userId, 'client', id,
+      `Cliente removido: ${client.name}`, client).catch(() => {});
+
     res.json({ success: true, data: client, message: 'Cliente deletado com sucesso' });
   } catch (err) {
     console.error('Erro ao deletar cliente:', err);

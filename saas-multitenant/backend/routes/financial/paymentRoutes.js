@@ -6,6 +6,7 @@ const { requireFinanceRead, requireFinanceManage } = require('../../middlewares/
 const { PAYMENT_METHODS } = require('../../services/finance/constants');
 const { toCents, ValidationError } = require('../../services/finance/calc');
 const paymentService = require('../../services/finance/paymentService');
+const activityLog = require('../../services/activityLogService');
 
 const parsePage = (q) => {
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 20, 1), 100);
@@ -80,6 +81,14 @@ router.post('/', requireFinanceManage, async (req, res) => {
       created_by: req.userId,
     });
 
+    // Histórico (§11) — recebimento registrado pelo backend; não bloqueia.
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'create',
+      entity_type: 'payment', entity_id: result.payment?.id || null,
+      description: `Recebimento R$ ${result.payment?.amount ?? b.amount}`,
+      metadata: { billing_id: b.billing_id || null, client_id: b.client_id || null, fine_id: b.fine_id || null, method: b.payment_method || null },
+    }).catch(() => {});
+
     res.status(201).json({ success: true, data: result });
   } catch (err) {
     const status = err.statusCode || (err instanceof ValidationError ? 400 : 500);
@@ -94,6 +103,12 @@ router.post('/:id/cancel', requireFinanceManage, async (req, res) => {
     const result = await paymentService.cancelPayment(req.params.id, {
       tenant_id: req.tenantId, reason: req.body.reason,
     });
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'cancel',
+      entity_type: 'payment', entity_id: req.params.id,
+      description: `Pagamento cancelado${req.body.reason ? ': ' + req.body.reason : ''}`,
+      metadata: { reason: req.body.reason || null },
+    }).catch(() => {});
     res.json({ success: true, data: result, message: 'Pagamento cancelado' });
   } catch (err) {
     const status = err.statusCode || (err instanceof ValidationError ? 400 : 500);

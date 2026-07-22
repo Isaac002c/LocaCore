@@ -7,6 +7,7 @@ const {
   TRANSACTION_TYPES, TRANSACTION_STATUSES, PAYMENT_METHODS,
 } = require('../../services/finance/constants');
 const { toCents } = require('../../services/finance/calc');
+const activityLog = require('../../services/activityLogService');
 
 const parsePage = (q) => {
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 20, 1), 200);
@@ -66,6 +67,10 @@ router.post('/', requireFinanceManage, async (req, res) => {
       client_id: b.client_id, fine_id: b.fine_id, notes: b.notes,
       origin: 'manual', created_by: req.userId,
     });
+    // Histórico (§11) — não bloqueia a operação.
+    activityLog.logCreate(req.tenantId, req.userId, 'transaction', data.id,
+      `Lançamento (${data.type}) R$ ${data.amount}${data.description ? ' — ' + data.description : ''}`,
+      { type: data.type, amount: data.amount, category_id: data.category_id, client_id: data.client_id, fine_id: data.fine_id }).catch(() => {});
     res.status(201).json({ success: true, data });
   } catch (e) {
     console.error('[finance] criar lançamento:', e.message);
@@ -87,6 +92,8 @@ router.put('/:id', requireFinanceManage, async (req, res) => {
     const err = await validateBody(req);
     if (err) return res.status(400).json({ success: false, error: err });
     const data = await model.updateTransaction(req.params.id, req.body, req.tenantId);
+    activityLog.logUpdate(req.tenantId, req.userId, 'transaction', req.params.id,
+      `Lançamento editado (${data.type}) R$ ${data.amount}`, existing, data).catch(() => {});
     res.json({ success: true, data });
   } catch (e) {
     console.error('[finance] editar lançamento:', e.message);
@@ -103,6 +110,12 @@ router.post('/:id/cancel', requireFinanceManage, async (req, res) => {
       return res.status(409).json({ success: false, error: 'Cancele o pagamento correspondente para estornar este lançamento' });
     }
     const data = await model.cancelTransaction(req.params.id, req.tenantId);
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'cancel',
+      entity_type: 'transaction', entity_id: req.params.id,
+      description: `Lançamento cancelado (${existing.type}) R$ ${existing.amount}`,
+      metadata: { type: existing.type, amount: existing.amount },
+    }).catch(() => {});
     res.json({ success: true, data, message: 'Lançamento cancelado' });
   } catch (e) {
     console.error('[finance] cancelar lançamento:', e.message);

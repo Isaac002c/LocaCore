@@ -12,6 +12,7 @@ const receiptService = require('../../services/finance/receiptService');
 const { resolveBranding } = require('../../services/finance/branding');
 const { buildReceiptPdf } = require('../../services/finance/pdfService');
 const { ValidationError } = require('../../services/finance/calc');
+const activityLog = require('../../services/activityLogService');
 
 const parsePage = (q) => {
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || 20, 1), 100);
@@ -129,6 +130,12 @@ router.post('/', requireFinanceManage, async (req, res) => {
     if (!req.body.payment_id) return res.status(400).json({ success: false, error: 'Pagamento é obrigatório' });
     const input = await buildIssueInput(req, req.body);
     const receipt = await receiptService.issueReceipt(input);
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'create',
+      entity_type: 'receipt', entity_id: receipt.id,
+      description: `Recibo emitido ${receipt.full_number} — R$ ${receipt.amount}`,
+      metadata: { client_id: receipt.client_id || null, fine_id: receipt.fine_id || null, payment_id: input.payment_id },
+    }).catch(() => {});
     res.status(201).json({ success: true, data: receipt });
   } catch (err) {
     const status = err.statusCode || (err instanceof ValidationError ? 400 : 500);
@@ -143,6 +150,12 @@ router.post('/:id/cancel', requireFinanceManage, async (req, res) => {
     const data = await receiptService.cancelReceipt(req.params.id, {
       tenant_id: req.tenantId, reason: req.body.reason,
     });
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'cancel',
+      entity_type: 'receipt', entity_id: req.params.id,
+      description: `Recibo cancelado${data && data.full_number ? ' ' + data.full_number : ''}${req.body.reason ? ' — ' + req.body.reason : ''}`,
+      metadata: { reason: req.body.reason || null },
+    }).catch(() => {});
     res.json({ success: true, data, message: 'Recibo cancelado' });
   } catch (err) {
     const status = err.statusCode || (err instanceof ValidationError ? 400 : 500);
@@ -168,6 +181,12 @@ router.post('/:id/reissue', requireFinanceManage, async (req, res) => {
       notes: old.notes,
     });
     const receipt = await receiptService.reissueReceipt(req.params.id, { ...input, reason: req.body.reason });
+    activityLog.logActivity({
+      tenant_id: req.tenantId, user_id: req.userId, action: 'reissue',
+      entity_type: 'receipt', entity_id: receipt.id,
+      description: `Recibo reemitido ${receipt.full_number} (substitui recibo anterior)`,
+      metadata: { replaces: req.params.id, client_id: receipt.client_id || null },
+    }).catch(() => {});
     res.status(201).json({ success: true, data: receipt });
   } catch (err) {
     const status = err.statusCode || (err instanceof ValidationError ? 400 : 500);
