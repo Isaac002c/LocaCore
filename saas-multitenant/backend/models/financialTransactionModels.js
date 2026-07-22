@@ -10,7 +10,9 @@ const SELECT_BASE = `
          cat.name AS category_name,
          cat.type AS category_type,
          c.name   AS client_name,
+         c.phone  AS client_phone,
          f.fine_number AS fine_number,
+         f.plate  AS fine_plate,
          u.name   AS created_by_name
     FROM financial_transactions t
     LEFT JOIN financial_categories cat ON t.category_id = cat.id
@@ -113,20 +115,21 @@ const createTransaction = async (data) => {
   const {
     tenant_id, type, category_id, description, amount, transaction_date,
     due_date, payment_method, status, client_id, fine_id, billing_id,
-    payment_id, origin, created_by, notes,
+    payment_id, origin, created_by, notes, plate,
   } = data;
   const { rows } = await pool.query(
     `INSERT INTO financial_transactions (
        tenant_id, type, category_id, description, amount, transaction_date,
        due_date, payment_method, status, client_id, fine_id, billing_id,
-       payment_id, origin, created_by, notes
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       payment_id, origin, created_by, notes, plate
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING *`,
     [
       tenant_id, type, category_id || null, description || null, amount,
       transaction_date || null, due_date || null, payment_method || null,
       status || 'pago', client_id || null, fine_id || null, billing_id || null,
       payment_id || null, origin || 'manual', created_by || null, notes || null,
+      plate || null,
     ]
   );
   return rows[0];
@@ -136,7 +139,7 @@ const createTransaction = async (data) => {
 const updateTransaction = async (id, data, tenant_id) => {
   const {
     type, category_id, description, amount, transaction_date, due_date,
-    payment_method, status, client_id, fine_id, notes,
+    payment_method, status, client_id, fine_id, notes, plate,
   } = data;
   const { rows } = await pool.query(
     `UPDATE financial_transactions SET
@@ -151,13 +154,15 @@ const updateTransaction = async (id, data, tenant_id) => {
         client_id = $9,
         fine_id = $10,
         notes = $11,
+        plate = $12,
         updated_at = NOW()
-     WHERE id = $12 AND tenant_id = $13 AND origin = 'manual' AND status <> 'cancelado'
+     WHERE id = $13 AND tenant_id = $14 AND origin = 'manual' AND status <> 'cancelado'
      RETURNING *`,
     [
       type || null, category_id || null, description ?? null, amount ?? null,
       transaction_date || null, due_date || null, payment_method || null,
-      status || null, client_id || null, fine_id || null, notes ?? null, id, tenant_id,
+      status || null, client_id || null, fine_id || null, notes ?? null,
+      plate ?? null, id, tenant_id,
     ]
   );
   return rows[0];

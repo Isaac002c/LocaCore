@@ -15,6 +15,9 @@ const parsePage = (q) => {
   return { limit, offset: (page - 1) * limit, page };
 };
 
+// Placa do veículo (despachante): normaliza p/ maiúsculas, só alfanumérico (Mercosul e antiga).
+const normPlate = (p) => (p ? String(p).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) || null : null);
+
 // GET /api/financial/transactions — lista filtrada e paginada
 router.get('/', requireFinanceRead, async (req, res) => {
   try {
@@ -65,6 +68,7 @@ router.post('/', requireFinanceManage, async (req, res) => {
       amount: b.amount, transaction_date: b.transaction_date, due_date: b.due_date,
       payment_method: b.payment_method, status: b.status || 'pago',
       client_id: b.client_id, fine_id: b.fine_id, notes: b.notes,
+      plate: normPlate(b.plate),
       origin: 'manual', created_by: req.userId,
     });
     // Histórico (§11) — não bloqueia a operação.
@@ -91,6 +95,7 @@ router.put('/:id', requireFinanceManage, async (req, res) => {
     }
     const err = await validateBody(req);
     if (err) return res.status(400).json({ success: false, error: err });
+    if (req.body.plate !== undefined) req.body.plate = normPlate(req.body.plate);
     const data = await model.updateTransaction(req.params.id, req.body, req.tenantId);
     activityLog.logUpdate(req.tenantId, req.userId, 'transaction', req.params.id,
       `Lançamento editado (${data.type}) R$ ${data.amount}`, existing, data).catch(() => {});

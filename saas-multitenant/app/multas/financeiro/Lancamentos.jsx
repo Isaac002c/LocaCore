@@ -12,9 +12,10 @@ import {
 import {
   PageHead, ConfirmDialog, Pagination, SkeletonRows, EmptyState, FormSection,
 } from '../../components/ui';
+import { getClients } from '../../lib/clientsAPI';
 
 const EMPTY = {
-  type: 'entrada', category_id: '', description: '', amount: '',
+  type: 'entrada', category_id: '', client_id: '', description: '', plate: '', amount: '',
   transaction_date: new Date().toISOString().substring(0, 10), due_date: '',
   payment_method: '', status: 'pago', notes: '',
 };
@@ -23,6 +24,7 @@ export default function Lancamentos() {
   const [rows, setRows] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [categories, setCategories] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -49,6 +51,7 @@ export default function Lancamentos() {
   useEffect(() => {
     if (!isAdmin()) { setLoading(false); return; }
     getCategories({ active: true }).then(setCategories).catch(() => {});
+    getClients().then((list) => setClients(Array.isArray(list) ? list : [])).catch(() => {});
   }, []);
   useEffect(() => { if (isAdmin()) load(); }, [load]);
 
@@ -69,7 +72,8 @@ export default function Lancamentos() {
   const openEdit = (t) => {
     setEditing(t);
     setForm({
-      type: t.type, category_id: t.category_id || '', description: t.description || '',
+      type: t.type, category_id: t.category_id || '', client_id: t.client_id || '',
+      description: t.description || '', plate: t.plate || '',
       amount: numberToMask(t.amount), transaction_date: toInputDate(t.transaction_date),
       due_date: toInputDate(t.due_date), payment_method: t.payment_method || '',
       status: t.status, notes: t.notes || '',
@@ -156,6 +160,7 @@ export default function Lancamentos() {
               <thead>
                 <tr>
                   <th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th>
+                  <th>Cliente</th><th>Placa</th>
                   <th>Forma</th><th>Status</th><th>Origem</th>
                   <th style={{ textAlign: 'right' }}>Valor</th><th style={{ width: 80 }}>Ações</th>
                 </tr>
@@ -167,6 +172,11 @@ export default function Lancamentos() {
                     <td><span style={{ color: t.type === 'entrada' ? '#15803d' : '#b91c1c', fontWeight: 700 }}>{t.type === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
                     <td style={{ color: '#475569' }}>{t.category_name || '—'}</td>
                     <td style={{ color: '#475569' }}>{t.description || '—'}</td>
+                    <td style={{ color: '#334155' }}>
+                      {t.client_name || '—'}
+                      {t.client_phone && <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.client_phone}</div>}
+                    </td>
+                    <td style={{ color: '#334155', fontFamily: 'monospace', fontWeight: 600 }}>{t.plate || t.fine_plate || '—'}</td>
                     <td style={{ color: '#475569' }}>{PAYMENT_METHOD_LABELS[t.payment_method] || '—'}</td>
                     <td><StatusBadge status={t.status} label={TRANSACTION_STATUS_LABELS[t.status]} /></td>
                     <td><span style={{ fontSize: 11, color: '#94a3b8' }}>{t.origin === 'pagamento' ? 'Automático' : 'Manual'}</span></td>
@@ -231,8 +241,24 @@ export default function Lancamentos() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Descrição</label>
-                  <input type="text" value={form.description} onChange={set('description')} placeholder="Ex.: Aluguel do escritório" />
+                  <label>Descrição / serviço</label>
+                  <input type="text" value={form.description} onChange={set('description')} placeholder="Ex.: Transferência com troca de placa" />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Cliente</label>
+                    <select value={form.client_id} onChange={set('client_id')}>
+                      <option value="">— Selecione o cliente —</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>
+                      ))}
+                    </select>
+                    <div className="nx-help">Vincula o lançamento ao cliente cadastrado.</div>
+                  </div>
+                  <div className="form-group">
+                    <label>Placa do veículo</label>
+                    <input type="text" value={form.plate} onChange={set('plate')} placeholder="ABC1D23" maxLength={8} style={{ textTransform: 'uppercase' }} />
+                  </div>
                 </div>
               </FormSection>
 
