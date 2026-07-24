@@ -23,12 +23,13 @@ arquitetura existente. Nada de dados mockados no lugar de funcionalidade real.
 | 8 | **Rebranding TELUN** (produto = LocaCore/TELUN; slug produtivo preservado) | ✅ | ✅ | ✅ |
 | 9 | **Dashboard/Painel** (overview consolidado com KPIs reais numa chamada) | ✅ | ✅ | ✅ |
 | 10 | **Relatórios** (faturamento, locações, frota + exportação CSV com BOM) | ✅ | ✅ | ✅ |
+| 11 | **Importação CSV** (clientes/veículos: parser, validação, preview, dedup, tenant do token) | ✅ | ✅ | ✅ |
 
 ## 2. Verificação (homologação interna)
 
-- **Suíte de testes:** `node --test` → **173/173 aprovados, 0 falhas**
-  (novos: `calendar-contract`, `users-access`, `storage`, `reports`; regressão
-  de todos os ciclos anteriores mantida verde).
+- **Suíte de testes:** `node --test` → **177/177 aprovados, 0 falhas**
+  (novos: `calendar-contract`, `users-access`, `storage`, `reports`, `import`;
+  regressão de todos os ciclos anteriores mantida verde).
 - **Build de produção:** `next build` → **Compilado com sucesso**, 10 páginas
   geradas, `/dashboard` (que importa todos os módulos novos) sem erros de tipo/lint.
 - **Smoke E2E ao vivo** (demo-server + HTTP real, passando por `tenantContext`,
@@ -83,11 +84,14 @@ do código: **não há** banco PostgreSQL real acessível, credenciais de proved
 - Emissão fiscal segue **`pending_configuration`** (sem provedor/credenciais/contador).
 - A renomeação `chronostek → telun` do host master é um **runbook manual**, não executado.
 
-**Itens do escopo do Ciclo 5 ainda não implementados (transparência):**
+**Itens do escopo do Ciclo 5 parcialmente cobertos (transparência):**
 
-- **Importação CSV** (clientes/veículos/locações/estoque) com validação/preview — **não iniciada**.
-- **Padronização de filtros/paginação** — aplicada aos módulos novos (multas, estoque
-  têm `limit/offset`), mas não uniformizada em 100% das telas antigas.
+- **Importação CSV:** implementada para **clientes e veículos** (parser, validação,
+  preview, erros por linha, dedup idempotente, tenant do token). **Locações abertas
+  e estoque inicial** ainda não têm importador dedicado.
+- **Padronização de filtros/paginação:** aplicada aos módulos novos (multas, estoque
+  com `limit/offset`; relatórios com período), mas **não** uniformizada em 100% das
+  telas antigas.
 
 > **Veredito:** o Ciclo 5 entrega a operação funcionalmente fechada e homologada
 > internamente (suíte verde, build ok, smoke E2E ok). **Não** se declara “pronto
