@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../lib/api.js';
+import { PRODUCT_NAME, PRODUCT_SIGNATURE, COPYRIGHT } from '../lib/brand';
 
-// A tela de login é institucional Chronostek e não deve usar branding de tenant.
-// Logo, nome, cores e identidade visual são fixos da Chronostek. O tenant
-// (ex.: CR Recursos) só aparece DEPOIS do login, na área autenticada (sidebar/header).
+// A tela de login é institucional do produto (LocaCore) e não deve usar branding
+// de tenant. Logo, nome, cores e identidade visual são do produto. O tenant (a
+// locadora) só aparece DEPOIS do login, na área autenticada (sidebar/header).
 // Não puxar logo_url / brand_color / nome do tenant aqui.
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -45,7 +46,7 @@ export default function Login() {
       
       localStorage.setItem('tenantId', data.tenant?.id || '');
 
-      // Master Chronostek vai para o painel /master; demais usuários para o tenant.
+      // super_admin (operador da plataforma) vai para o painel /master; demais para o tenant.
       router.push(userData.role === 'super_admin' ? '/master' : '/dashboard');
     } catch (err) {
       setError(err.message);
@@ -73,7 +74,7 @@ export default function Login() {
         width: '100%',
         maxWidth: '420px'
       }}>
-        {/* Marca Nexos */}
+        {/* Marca do produto */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{
             display: 'inline-flex',
@@ -89,7 +90,7 @@ export default function Login() {
             fontWeight: 800,
             color: '#fff',
           }}>
-            N
+            {PRODUCT_NAME.charAt(0)}
           </div>
           <h1 style={{
             fontSize: '26px',
@@ -98,10 +99,10 @@ export default function Login() {
             marginBottom: '4px',
             letterSpacing: '-0.5px'
           }}>
-            Nexos
+            {PRODUCT_NAME}
           </h1>
           <p style={{ color: '#64748b', fontSize: '13px' }}>
-            Um produto Chronostek
+            {PRODUCT_SIGNATURE}
           </p>
         </div>
 
@@ -213,7 +214,7 @@ export default function Login() {
           fontSize: '11px',
           letterSpacing: '0.5px'
         }}>
-          © 2026 Chronostek. Todos os direitos reservados.
+          {COPYRIGHT}
         </p>
       </div>
     </div>

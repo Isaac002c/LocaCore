@@ -37,6 +37,12 @@ export const apiRequest = async (endpoint, options = {}) => {
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
+  // raw: devolve a Response (ex.: download de CSV/arquivo autenticado via .blob()).
+  if (options.raw) {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res;
+  }
+
   const text = await res.text();
 
   if (!res.ok) {

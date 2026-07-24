@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { PRODUCT_NAME, PRODUCT_TAGLINE } from '../lib/brand';
 
 const modules = [
   { key: 'leads', label: 'Leads' },
@@ -82,10 +83,10 @@ export default function Header({ user, tenant, onLogout }) {
           </div>
           <div style={{ marginLeft: '10px' }}>
             <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', lineHeight: 1.2 }}>
-              Nexos
+              {PRODUCT_NAME}
             </div>
             <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.2 }}>
-              Plataforma de Gestão
+              {PRODUCT_TAGLINE}
             </div>
           </div>
         </div>

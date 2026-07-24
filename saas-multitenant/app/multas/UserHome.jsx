@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { PRODUCT_NAME, PRODUCT_TAGLINE, PRODUCT_SIGNATURE } from '../lib/brand';
 
 const quickActionsConsultor = [
   {
@@ -46,10 +47,10 @@ export default function UserHome({ user }) {
   const firstName = user?.name?.split(' ')[0] || 'bem-vindo';
   const greeting  = isAdmin ? `Olá, ${firstName}!` : `Olá, Consultor ${firstName}!`;
   const actions   = quickActionsConsultor;
-  // Nome do tenant (data-driven) — sem branding fixo de cliente.
-  let tenantName = 'Nexos';
+  // Nome do tenant (data-driven) — sem branding fixo de cliente; fallback = produto.
+  let tenantName = PRODUCT_NAME;
   if (typeof window !== 'undefined') {
-    try { tenantName = JSON.parse(localStorage.getItem('tenant') || '{}').name || 'Nexos'; } catch { /* noop */ }
+    try { tenantName = JSON.parse(localStorage.getItem('tenant') || '{}').name || PRODUCT_NAME; } catch { /* noop */ }
   }
 
   return (
@@ -59,7 +60,7 @@ export default function UserHome({ user }) {
         <div className="user-home-welcome">
           <p className="user-home-greeting">{greeting}</p>
           <h1 className="user-home-title">{tenantName}</h1>
-          <p className="user-home-subtitle">Plataforma de Gestão</p>
+          <p className="user-home-subtitle">{PRODUCT_TAGLINE}</p>
           <p className="user-home-desc">
             Selecione uma ação abaixo para começar ou use o menu lateral para navegar.
           </p>
@@ -91,7 +92,7 @@ export default function UserHome({ user }) {
 
       {/* Footer */}
       <div className="user-home-footer">
-        <span>Nexos · um produto Chronostek</span>
+        <span>{PRODUCT_NAME} · {PRODUCT_SIGNATURE}</span>
       </div>
     </div>
   );

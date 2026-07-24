@@ -61,7 +61,7 @@ before(async () => {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       tenant_id TEXT NOT NULL, number INT NOT NULL, prefix TEXT NOT NULL, full_number TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'emitido', issue_date DATE,
-      client_id TEXT, payment_id UUID, billing_id UUID, fine_id TEXT,
+      client_id TEXT, payment_id UUID, billing_id UUID, fine_id TEXT, rental_id UUID,
       client_name TEXT, client_document TEXT, service_description TEXT,
       amount NUMERIC(15,2) DEFAULT 0, payment_method TEXT,
       issuer_name TEXT, issuer_document TEXT, issuer_address TEXT,

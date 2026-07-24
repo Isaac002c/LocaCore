@@ -10,7 +10,37 @@ const getJWTSecret = () => {
   return secret;
 };
 
-module.exports = function tenantContext(req, res, next) {
+// Cache curto do estado de acesso do usuário (§9/§10). Evita consultar o banco a
+// cada requisição, mas mantém a desativação/reset de sessão efetivos em ~TTL.
+const AUTH_TTL_MS = 15000;
+const authCache = new Map(); // userId → { at, is_active, sessions_valid_after }
+
+// Verifica se o usuário ainda pode acessar: ativo e com token emitido após o
+// último reset de sessão. Retorna string de motivo p/ bloquear, ou null p/ permitir.
+async function accessDenialReason(userId, tenantId, iatSeconds) {
+  let state = authCache.get(userId);
+  if (!state || Date.now() - state.at > AUTH_TTL_MS) {
+    try {
+      // require tardio: evita ciclo e mantém o middleware carregável sem o modelo.
+      const permissionModel = require('../models/permissionModels');
+      const row = await permissionModel.getUserAuthState(userId, tenantId);
+      if (!row) return 'Usuário não encontrado.'; // deletado → sem acesso
+      state = { at: Date.now(), is_active: row.is_active !== false, sessions_valid_after: row.sessions_valid_after || null };
+      authCache.set(userId, state);
+    } catch (err) {
+      // Fail-open (preserva disponibilidade; o login já bloqueia novas sessões).
+      log('[tenantContext] enforcement indisponível:', err.message);
+      return null;
+    }
+  }
+  if (!state.is_active) return 'Usuário desativado.';
+  if (state.sessions_valid_after && iatSeconds) {
+    if (iatSeconds * 1000 < new Date(state.sessions_valid_after).getTime()) return 'Sessão expirada. Faça login novamente.';
+  }
+  return null;
+}
+
+module.exports = async function tenantContext(req, res, next) {
   try {
     let token = null;
 
@@ -58,6 +88,11 @@ module.exports = function tenantContext(req, res, next) {
     req.userRole  = decoded.role     || 'seller';
     req.sellerId  = decoded.sellerId || null;
 
+    // 6️⃣ Enforcement de acesso (desativação/reset de sessão), exceto super_admin.
+    if (req.userId && req.userRole !== 'super_admin') {
+      const reason = await accessDenialReason(req.userId, req.tenantId, decoded.iat);
+      if (reason) return res.status(401).json({ error: reason });
+    }
 
     log('[tenantContext] Autenticado:', {
       userId:   req.userId,

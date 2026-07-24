@@ -10,6 +10,21 @@ const rolePermissions = {
     'contracts:create', 'contracts:read', 'contracts:update', 'contracts:delete',
     'documents:create', 'documents:read', 'documents:update', 'documents:delete',
     'fines:create', 'fines:read', 'fines:update', 'fines:delete',
+    // LocaCore — Frota (vehicles) e Locações (rentals)
+    'fleet:create', 'fleet:read', 'fleet:update', 'fleet:delete',
+    'rentals:create', 'rentals:read', 'rentals:update', 'rentals:delete',
+    'rentals:cancel', 'rentals:return', 'rentals:bill', 'rentals:receipt',
+    'rentals:documents', 'rentals:extras',
+    // LocaCore — Automação (Ciclo 3)
+    'automations:read', 'automations:manage',
+    'whatsapp:read', 'whatsapp:send', 'whatsapp:retry', 'whatsapp:configure',
+    'fiscal:read', 'fiscal:issue', 'fiscal:retry', 'fiscal:cancel', 'fiscal:configure',
+    'external_costs:read',
+    // LocaCore — Ciclo 5 (multas da locadora, estoque, calendário, contratos)
+    'rental_fines:read', 'rental_fines:manage',
+    'inventory:read', 'inventory:manage',
+    'calendar:read', 'calendar:manage',
+    'contracts:read', 'contracts:generate',
     'reports:read', 'reports:export',
     'settings:read', 'settings:update',
     'billing:read', 'billing:update',
@@ -18,11 +33,20 @@ const rolePermissions = {
     'finance:read', 'finance:manage'
   ],
   manager: [
+    'users:read', 'users:update',
     'clients:create', 'clients:read', 'clients:update',
     'companies:create', 'companies:read', 'companies:update',
     'contracts:create', 'contracts:read', 'contracts:update',
     'documents:create', 'documents:read', 'documents:update',
     'fines:create', 'fines:read', 'fines:update', 'fines:delete',
+    'fleet:create', 'fleet:read', 'fleet:update', 'fleet:delete',
+    'rentals:create', 'rentals:read', 'rentals:update', 'rentals:delete',
+    'rentals:cancel', 'rentals:return', 'rentals:bill', 'rentals:receipt',
+    'rentals:documents', 'rentals:extras',
+    'automations:read', 'whatsapp:read', 'whatsapp:send', 'whatsapp:retry',
+    'fiscal:read', 'fiscal:issue', 'fiscal:retry', 'external_costs:read',
+    'rental_fines:read', 'rental_fines:manage', 'inventory:read', 'inventory:manage',
+    'calendar:read', 'calendar:manage', 'contracts:read', 'contracts:generate',
     'reports:read', 'reports:export'
   ],
   operator: [
@@ -30,14 +54,22 @@ const rolePermissions = {
     'companies:create', 'companies:read', 'companies:update',
     'contracts:create', 'contracts:read', 'contracts:update',
     'documents:create', 'documents:read',
-    'fines:create', 'fines:read', 'fines:update'
+    'fines:create', 'fines:read', 'fines:update',
+    'fleet:create', 'fleet:read', 'fleet:update',
+    'rentals:create', 'rentals:read', 'rentals:update',
+    'rentals:return', 'rentals:bill', 'rentals:documents', 'rentals:extras',
+    'rental_fines:read', 'rental_fines:manage', 'inventory:read', 'inventory:manage',
+    'calendar:read', 'calendar:manage', 'contracts:read', 'contracts:generate'
   ],
   seller: [
     'clients:create', 'clients:read', 'clients:update',
     'companies:create', 'companies:read', 'companies:update',
     'contracts:create', 'contracts:read', 'contracts:update',
     'documents:create', 'documents:read',
-    'fines:create', 'fines:read', 'fines:update'
+    'fines:create', 'fines:read', 'fines:update',
+    'fleet:create', 'fleet:read', 'fleet:update',
+    'rentals:create', 'rentals:read', 'rentals:update',
+    'rentals:return', 'rentals:bill', 'rentals:documents', 'rentals:extras'
   ],
   viewer: [
     'clients:read',
@@ -45,6 +77,9 @@ const rolePermissions = {
     'contracts:read',
     'documents:read',
     'fines:read',
+    'fleet:read',
+    'rentals:read',
+    'rental_fines:read', 'inventory:read', 'calendar:read', 'contracts:read',
     'reports:read'
   ]
 };

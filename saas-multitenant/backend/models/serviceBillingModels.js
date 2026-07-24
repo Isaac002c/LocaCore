@@ -18,22 +18,22 @@ const SELECT_BASE = `
     LEFT JOIN service_types st ON b.service_type_id = st.id
 `;
 
-const createBilling = async (data) => {
+const createBilling = async (data, db = pool) => {
   const {
-    tenant_id, client_id, company_id, fine_id, service_type_id, description,
+    tenant_id, client_id, company_id, fine_id, rental_id, service_type_id, description,
     original_amount, discount, surcharge, final_amount, paid_amount,
     installments, due_date, payment_method, financial_status, notes, created_by,
   } = data;
 
-  const { rows } = await pool.query(
+  const { rows } = await db.query(
     `INSERT INTO service_billings (
-       tenant_id, client_id, company_id, fine_id, service_type_id, description,
+       tenant_id, client_id, company_id, fine_id, rental_id, service_type_id, description,
        original_amount, discount, surcharge, final_amount, paid_amount,
        installments, due_date, payment_method, financial_status, notes, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
      RETURNING *`,
     [
-      tenant_id, client_id || null, company_id || null, fine_id || null,
+      tenant_id, client_id || null, company_id || null, fine_id || null, rental_id || null,
       service_type_id || null, description || null,
       original_amount, discount, surcharge, final_amount, paid_amount || 0,
       installments || 1, due_date || null, payment_method || null,
@@ -188,6 +188,17 @@ const getBillingsByFine = async (fine_id, tenant_id) => {
   return rows;
 };
 
+// Faturamentos de uma locação (LocaCore) — usado na aba Financeiro da locação.
+const getBillingsByRental = async (rental_id, tenant_id) => {
+  const { rows } = await pool.query(
+    `${SELECT_BASE} WHERE b.rental_id = $1 AND b.tenant_id = $2 ORDER BY b.created_at DESC`,
+    [rental_id, tenant_id]
+  );
+  return rows;
+};
+
+const getRentalSummary = (rental_id, tenant_id) => _summary('rental_id', rental_id, tenant_id);
+
 // Resumo financeiro agregado — reutilizável para cliente e processo.
 // CASE WHEN (e não FILTER) por portabilidade — mesmo padrão do código legado.
 const _summary = async (column, id, tenant_id) => {
@@ -238,7 +249,9 @@ module.exports = {
   cancelBilling,
   getBillingsByClient,
   getBillingsByFine,
+  getBillingsByRental,
   getClientSummary,
   getFineSummary,
+  getRentalSummary,
   getBillingDashboard,
 };

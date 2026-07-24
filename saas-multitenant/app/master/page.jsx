@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getOverview, getTenants, getTenantUsers, createTenant, setTenantStatus, updateTenant, deleteTenant, createTenantUser, resetUserPassword, updateTenantUser, deleteTenantUser } from '../lib/masterAPI';
+import { PRODUCT_NAME } from '../lib/brand';
 
 const fmtDate = (v) => { if (!v) return '—'; const [y, m, d] = String(v).substring(0, 10).split('-'); return (y && m && d) ? `${d}/${m}/${y}` : '—'; };
 const fmtDateTime = (v) => { if (!v) return 'nunca'; const dt = new Date(v); return isNaN(dt) ? '—' : dt.toLocaleString('pt-BR'); };
@@ -166,12 +167,12 @@ export default function MasterPanel() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Topo institucional Chronostek (master) */}
+      {/* Topo institucional do produto (painel master da plataforma) */}
       <header style={{ background: 'linear-gradient(160deg,#0a0f1e,#0d1428)', color: '#fff', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: WINE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>N</div>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: WINE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{PRODUCT_NAME.charAt(0)}</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>Nexos · Painel Master</div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{PRODUCT_NAME} · Painel Master</div>
             <div style={{ fontSize: 11, color: '#94a3b8' }}>Gestão do SaaS — multi-tenant</div>
           </div>
         </div>

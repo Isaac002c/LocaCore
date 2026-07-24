@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { PRODUCT_TAGLINE, PRODUCT_BRAND_COLOR, SUPPORT_EMAIL } from '../lib/brand';
 
 const Icons = {
   Dashboard: () => (
@@ -156,6 +157,22 @@ const Icons = {
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
   ),
+  Car: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 17H3v-6l2-5h11l4 5h1a2 2 0 0 1 2 2v4h-2"/>
+      <circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/>
+    </svg>
+  ),
+  Key: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3"/>
+    </svg>
+  ),
+  Zap: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  ),
 };
 
 // =============================================================================
@@ -163,6 +180,25 @@ const Icons = {
 // Itens com roles[] = visíveis apenas para essas roles. Sem roles[] = todos.
 // =============================================================================
 const sidebarConfig = {
+  // ── Locação (LocaCore: operação da locadora de veículos) ────────────────
+  locacao: {
+    label: 'Locação',
+    items: [
+      { key: 'painel',   label: 'Painel',    Icon: Icons.Dashboard, tab: 'painel', roles: ['admin'] },
+      { key: 'locacoes', label: 'Locações',  Icon: Icons.Key,       tab: 'locacoes' },
+      { key: 'frota',    label: 'Frota',     Icon: Icons.Car,       tab: 'frota' },
+      { key: 'manutencoes', label: 'Manutenções', Icon: Icons.Settings, tab: 'manutencoes' },
+      { key: 'multas',   label: 'Multas',    Icon: Icons.Shield,    tab: 'multas' },
+      { key: 'estoque',  label: 'Estoque',   Icon: Icons.Layers,    tab: 'estoque' },
+      { key: 'agenda',   label: 'Agenda',    Icon: Icons.Calendar,  tab: 'agenda' },
+      { key: 'relatorios', label: 'Relatórios', Icon: Icons.BarChart, tab: 'relatorios', roles: ['admin', 'manager'] },
+      { key: 'importacao', label: 'Importação', Icon: Icons.Layers, tab: 'importacao', roles: ['admin', 'manager'] },
+      { key: 'clients',  label: 'Clientes',  Icon: Icons.Clients,   tab: 'clients' },
+      { key: 'automacoes', label: 'Automações', Icon: Icons.Zap,    tab: 'automacoes', roles: ['admin'] },
+      { key: 'usuarios', label: 'Usuários',  Icon: Icons.Clients,   tab: 'usuarios', roles: ['admin', 'manager'] },
+      { key: 'history',  label: 'Histórico', Icon: Icons.Clock,     tab: 'history', roles: ['admin'] },
+    ],
+  },
   multas: {
     label: 'Processos',
     items: [
@@ -192,16 +228,17 @@ const sidebarConfig = {
   },
 };
 
+// Áreas do produto. A visibilidade por tenant é dada por tenant.modules (quando
+// definido); sem isso, todas aparecem (compatível com os tenants atuais).
 const modules = [
+  { key: 'locacao', label: 'Locação' },
   { key: 'multas', label: 'Processos' },
   { key: 'financeiro', label: 'Financeiro', roles: ['admin'] },
 ];
 
 // Sem branding fixo de clientes: a identidade vem dos dados do tenant (logo_url,
-// brand_color, tagline). Quando ausente, usa o padrão Nexos.
+// brand_color, tagline). Quando ausente, usa o padrão do produto (LocaCore).
 const TENANT_DEFAULTS = {};
-const NEXOS_BRAND = '#16324f';
-const NEXOS_TAGLINE = 'Plataforma de Gestão';
 
 function deriveSlug(name) {
   return (name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
@@ -212,32 +249,9 @@ function TenantLogo({ collapsed, tenant }) {
   const slug    = tenant?.slug || deriveSlug(name);
   const defaults = TENANT_DEFAULTS[slug] || {};
   const logoUrl = tenant?.logo_url || defaults.logo_url || null;
-  const tagline = tenant?.tagline  || defaults.tagline || NEXOS_TAGLINE;
-  const brandColor = tenant?.brand_color || defaults.brand_color || NEXOS_BRAND;
+  const tagline = tenant?.tagline  || defaults.tagline || PRODUCT_TAGLINE;
+  const brandColor = tenant?.brand_color || defaults.brand_color || PRODUCT_BRAND_COLOR;
   const initial = name.charAt(0).toUpperCase();
-
-  // CR Recursos: a logo é um lockup completo (símbolo + nome "CR RECURSOS /
-  // ASSESSORIA DE TRÂNSITO" em branco, vazado). Por isso exibimos SOMENTE a logo,
-  // centralizada, sem o texto HTML ao lado (evita duplicar a marca) e sem
-  // card/box/fundo. Afeta somente este tenant.
-  const isCrRecursos = slug === 'cr-recursos';
-  if (isCrRecursos && logoUrl) {
-    return (
-      <div className={`sidebar-logo sidebar-logo--cr${collapsed ? ' is-collapsed' : ''}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={logoUrl}
-          alt={name}
-          className="cr-recursos-logo-img"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling.style.display = 'flex';
-          }}
-        />
-        <div className="cr-recursos-logo-fallback">{initial}</div>
-      </div>
-    );
-  }
 
   return (
     <div className="sidebar-logo">
@@ -288,15 +302,19 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
   const userRole = user?.role || 'seller';
   const tenantSlug = tenant?.slug || deriveSlug(tenant?.name) || 'default';
 
-  // Filtra itens visíveis para a role atual
+  // Filtra itens visíveis para a role atual. Restrições por item vêm de `roles[]`
+  // no sidebarConfig — nada de regra fixa por tenant/slug no código (§14).
   const visibleItems = config.items.filter(item => {
     if (item.roles && !item.roles.includes(userRole)) return false;
-    // CR Recursos: consultor (não-admin) não vê "Prazos" (tab calendario). Só este tenant.
-    if (tenantSlug === 'cr-recursos' && userRole !== 'admin' && item.tab === 'calendario') return false;
     return true;
   });
 
-  const visibleModules = modules.filter(m => !m.roles || m.roles.includes(userRole));
+  // Áreas habilitadas para o tenant (parametrizável). Sem tenant.modules → todas.
+  const enabledModules = Array.isArray(tenant?.modules) && tenant.modules.length ? tenant.modules : null;
+  const visibleModules = modules.filter(m =>
+    (!m.roles || m.roles.includes(userRole)) &&
+    (!enabledModules || enabledModules.includes(m.key))
+  );
 
   const classes = [
     'sidebar',
@@ -363,8 +381,8 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
             <span className="sidebar-footer-label">
               <Icons.Mail /> Suporte
             </span>
-            <a href="mailto:suporte@nexos.app" className="sidebar-footer-email">
-              suporte@nexos.app
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="sidebar-footer-email">
+              {SUPPORT_EMAIL}
             </a>
           </div>
         )}

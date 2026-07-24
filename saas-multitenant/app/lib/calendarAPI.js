@@ -8,6 +8,16 @@ export const getEvents = async (scope = 'upcoming') =>
 export const getEventsRange = async (from, to) =>
   (await apiRequest(`${BASE}?from=${from}&to=${to}`)).data;
 
+// Agenda operacional da LOCADORA: eventos manuais + derivados (locações/manutenções/multas).
+export const getAgenda = async ({ from = '', to = '', type = '' } = {}) => {
+  const qs = new URLSearchParams();
+  if (from) qs.set('from', from);
+  if (to) qs.set('to', to);
+  if (type) qs.set('type', type);
+  const s = qs.toString();
+  return (await apiRequest(`${BASE}/agenda${s ? `?${s}` : ''}`)).data;
+};
+
 export const getUpcomingEvents = async (limit = 5) =>
   (await apiRequest(`${BASE}/upcoming?limit=${limit}`)).data;
 

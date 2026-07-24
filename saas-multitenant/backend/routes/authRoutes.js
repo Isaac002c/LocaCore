@@ -97,6 +97,7 @@ router.post('/login',
       // Busca todos os usuários com esse e-mail (multi-tenant: pode haver mais de um)
       const result = await client.query(
         `SELECT u.id, u.name, u.email, u.password_hash, u.tenant_id, u.role,
+                COALESCE(u.is_active, true) as is_active,
                 t.name as tenant_name, t.slug as tenant_slug, t.status as tenant_status,
                 t.logo_url as tenant_logo_url, t.brand_color as tenant_brand_color,
                 t.brand_color_dark as tenant_brand_color_dark, t.tagline as tenant_tagline
@@ -127,7 +128,12 @@ router.post('/login',
 
       // Bloqueia login se a empresa (tenant) estiver inativa — super_admin sempre pode entrar.
       if (user.role !== 'super_admin' && user.tenant_status && user.tenant_status !== 'ativo') {
-        return sendJson(res, 403, { success: false, message: 'Empresa inativa. Contate o suporte do Nexos.' });
+        return sendJson(res, 403, { success: false, message: 'Empresa inativa. Contate o suporte.' });
+      }
+
+      // Bloqueia login de usuário desativado (§9).
+      if (user.is_active === false) {
+        return sendJson(res, 403, { success: false, message: 'Usuário desativado. Contate o administrador.' });
       }
 
       // Aviso operacional: mesmo e-mail em múltiplos tenants
@@ -160,6 +166,14 @@ router.post('/login',
       res.cookie('auth-token', token, cookieOptions);
       res.cookie('tenantId', user.tenant_id.toString(), cookieOptions);
 
+      // Áreas habilitadas do tenant (best-effort; tolerante à ausência da coluna).
+      let tenantModules = null;
+      try {
+        const mres = await client.query('SELECT modules FROM tenants WHERE id = $1', [user.tenant_id]);
+        const m = mres.rows[0] && mres.rows[0].modules;
+        if (Array.isArray(m) && m.length) tenantModules = m;
+      } catch (_) { /* coluna ainda não migrada → todas as áreas */ }
+
       sendJson(res, 200, {
         success: true,
         token,
@@ -174,9 +188,12 @@ router.post('/login',
           name: user.tenant_name,
           slug: user.tenant_slug || 'default',
           logo_url: user.tenant_logo_url || null,
-          brand_color: user.tenant_brand_color || '#751518',
-          brand_color_dark: user.tenant_brand_color_dark || '#050708',
-          tagline: user.tenant_tagline || 'Plataforma de Gestão'
+          // Sem cor/tagline fixos de cliente antigo: quando ausentes, o frontend
+          // aplica o padrão do produto (LocaCore) via app/lib/brand.js.
+          brand_color: user.tenant_brand_color || null,
+          brand_color_dark: user.tenant_brand_color_dark || null,
+          tagline: user.tenant_tagline || null,
+          modules: tenantModules
         }
       });
     } catch (err) {

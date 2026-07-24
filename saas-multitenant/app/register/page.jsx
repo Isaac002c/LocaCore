@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../lib/api.js';
+import { PRODUCT_NAME } from '../lib/brand';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -82,7 +83,7 @@ export default function Register() {
             color: '#3b82f6',
             marginBottom: '8px'
           }}>
-            Nexos
+            {PRODUCT_NAME}
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '14px' }}>
             Criação de contas temporariamente desativada

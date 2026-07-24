@@ -1,0 +1,12 @@
+{
+  "description": "Ordem canônica das migrations do LocaCore aplicadas pelo runner (scripts/migrate.js). Não edite migrations já aplicadas — crie novas.",
+  "migrations": [
+    "000_nexos_schema.sql",
+    "create_financial_module.sql",
+    "create_locacore_module.sql",
+    "create_locacore_cycle2.sql",
+    "create_locacore_cycle3.sql",
+    "create_locacore_cycle4.sql",
+    "create_locacore_cycle5.sql"
+  ]
+}

@@ -22,7 +22,21 @@ const getTenantById = async (id) => {
     return result.rows[0];
 };
 
+// Lê SOMENTE as áreas habilitadas do tenant (§12/§15). Tolerante à ausência da
+// coluna `modules` (pré-migração do Ciclo 2): retorna null = todas habilitadas.
+const getTenantModules = async (id) => {
+    try {
+        const result = await pool.query('SELECT modules FROM tenants WHERE id = $1', [id]);
+        let mods = result.rows[0] && result.rows[0].modules;
+        if (typeof mods === 'string') { try { mods = JSON.parse(mods); } catch { mods = null; } }
+        return Array.isArray(mods) && mods.length ? mods : null;
+    } catch (_) {
+        return null; // coluna ainda não existe → comportamento anterior (sem gating)
+    }
+};
+
 module.exports = {
+    getTenantModules,
     createTenant,
     getAllTenants,
     getTenantById,

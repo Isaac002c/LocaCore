@@ -27,6 +27,19 @@ import MultasTarefas   from '../multas/Tarefas';
 import MultasApprovals from '../multas/Approvals';
 import MultasAgenda    from '../multas/Calendario';
 
+// Locação (LocaCore)
+import LocacaoPainel   from '../locacao/Painel';
+import Locacoes        from '../locacao/Locacoes';
+import Frota           from '../locacao/Frota';
+import Manutencoes     from '../locacao/Manutencoes';
+import Multas          from '../locacao/Multas';
+import Estoque         from '../locacao/Estoque';
+import Agenda          from '../locacao/Calendario';
+import Usuarios        from '../locacao/Usuarios';
+import Relatorios      from '../locacao/Relatorios';
+import Importacao      from '../locacao/Importacao';
+import Automacoes      from '../locacao/Automacoes';
+
 // Financeiro
 import dynamic from 'next/dynamic';
 import CaixaSemanal     from '../multas/financeiro/CaixaSemanal';
@@ -64,6 +77,23 @@ const ComingSoon = ({ moduleName }) => (
 );
 
 const modulePages = {
+  // ── Locação (LocaCore: operação da locadora de veículos) ───────────────
+  locacao: {
+    pages: {
+      painel:    LocacaoPainel,
+      locacoes:  Locacoes,
+      frota:     Frota,
+      manutencoes: Manutencoes,
+      multas:    Multas,
+      estoque:   Estoque,
+      agenda:    Agenda,
+      usuarios:  Usuarios,
+      relatorios: Relatorios,
+      clients:   MultasClients,  // reutiliza o módulo de clientes (locatários)
+      automacoes: Automacoes,
+      history:   MultasHistory,  // reutiliza o histórico/auditoria
+    },
+  },
   // ── Despachantes (operação: processos, clientes, agenda, leads) ────────
   multas: {
     pages: {
@@ -123,7 +153,7 @@ const MODULE_ALIASES = { visao: 'multas', crm: 'multas', processos: 'multas', ag
 const TAB_ALIASES = { painel: 'dashboard', home: 'dashboard' };
 
 const getDefaultTab = (module) => {
-  const defaults = { leads: 'overview', multas: 'dashboard', financeiro: 'visao', settings: 'general' };
+  const defaults = { locacao: 'locacoes', leads: 'overview', multas: 'dashboard', financeiro: 'visao', settings: 'general' };
   return defaults[module] || 'dashboard';
 };
 
@@ -171,21 +201,24 @@ function DashboardContent() {
     const tenantData = localStorage.getItem('tenant');
     if (!hasToken || !userData) { router.push('/login'); return; }
     const parsedUser = JSON.parse(userData);
-    // super_admin (Chronostek) não usa o dashboard de tenant — vai para o painel master.
+    // super_admin (operador da plataforma) não usa o dashboard de tenant — vai para o painel master.
     if (parsedUser?.role === 'super_admin') { router.replace('/master'); return; }
     setUser(parsedUser);
     setTenant(JSON.parse(tenantData || '{}'));
     setLoading(false);
   }, [router]);
 
-  // CR Recursos: consultor (não-admin) não acessa "Prazos" (tab calendario) nem por URL direta.
-  // Redireciona para a home do módulo. Não afeta admin nem outros tenants.
+  // Área inicial por tenant: se o tenant tem `modules` configurado e não usa o
+  // módulo padrão (multas), leva para a primeira área habilitada. Não afeta
+  // tenants sem `modules` (comportamento atual preservado).
   useEffect(() => {
-    if (!user || !tenant) return;
-    if ((tenant.slug || '') === 'cr-recursos' && user.role !== 'admin' && activeTab === 'calendario') {
-      router.replace('/dashboard?module=multas');
+    if (!tenant) return;
+    const hasModuleParam = !!searchParams.get('module');
+    const mods = Array.isArray(tenant.modules) ? tenant.modules : null;
+    if (!hasModuleParam && mods && mods.length && !mods.includes('multas')) {
+      router.replace(`/dashboard?module=${mods[0]}`);
     }
-  }, [user, tenant, activeTab, router]);
+  }, [tenant, searchParams, router]);
 
   const handleLogout = async () => {
     try {
@@ -209,7 +242,7 @@ function DashboardContent() {
     return (
       <div className="loading-screen">
         <div className="loading-spinner" />
-        <p>Carregando Nexos...</p>
+        <p>Carregando LocaCore...</p>
       </div>
     );
   }

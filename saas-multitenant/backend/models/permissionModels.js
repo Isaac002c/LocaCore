@@ -91,17 +91,44 @@ const updateUser = async (id, { name, email, role, is_active }, tenant_id) => {
   return result.rows[0];
 };
 
-// UPDATE - Atualizar senha
+// UPDATE - Atualizar senha. Invalida TODAS as sessões anteriores (§10):
+// sessions_valid_after = NOW() → tokens emitidos antes deixam de valer.
 const updateUserPassword = async (id, password, tenant_id) => {
   const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash(password, 10);
-  
+
   const result = await pool.query(
-    `UPDATE users 
-     SET password_hash = $1, updated_at = NOW()
+    `UPDATE users
+     SET password_hash = $1, sessions_valid_after = NOW(), updated_at = NOW()
      WHERE id = $2 AND tenant_id = $3
      RETURNING id`,
     [hashedPassword, id, tenant_id]
+  );
+  return result.rows[0];
+};
+
+// UPDATE - Ativa/desativa usuário (§9). Ao DESATIVAR, invalida as sessões
+// existentes imediatamente (sessions_valid_after = NOW()).
+const setUserActive = async (id, is_active, tenant_id) => {
+  const result = await pool.query(
+    `UPDATE users
+        SET is_active = $1,
+            sessions_valid_after = CASE WHEN $1 = false THEN NOW() ELSE sessions_valid_after END,
+            updated_at = NOW()
+      WHERE id = $2 AND tenant_id = $3
+      RETURNING id, name, email, role, is_active`,
+    [!!is_active, id, tenant_id]
+  );
+  return result.rows[0];
+};
+
+// READ - Estado de acesso p/ enforcement por requisição (leve, tolerante a
+// ausência das colunas em bancos pré-migração via COALESCE).
+const getUserAuthState = async (id, tenant_id) => {
+  const result = await pool.query(
+    `SELECT COALESCE(is_active, true) AS is_active, sessions_valid_after
+       FROM users WHERE id = $1 AND tenant_id = $2`,
+    [id, tenant_id]
   );
   return result.rows[0];
 };
@@ -160,6 +187,8 @@ module.exports = {
   createUser,
   updateUser,
   updateUserPassword,
+  setUserActive,
+  getUserAuthState,
   deleteUser,
   countUsers,
   countActiveUsers,

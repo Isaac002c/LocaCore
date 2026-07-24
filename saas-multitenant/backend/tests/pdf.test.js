@@ -19,13 +19,13 @@ const receipt = {
 };
 
 const branding = {
-  name: 'Nexo Despachantes CRM',
+  name: 'Locadora Exemplo Ltda',
   document: '12.345.678/0001-90',
   address: 'Rua das Palmeiras, 100 — Centro, Rio de Janeiro/RJ',
   phone: '(21) 99999-0000',
   email: 'contato@exemplo.com',
   logo_url: null,
-  signature: 'by ChronosTek',
+  signature: 'um produto TELUN',
   is_default: true,
 };
 

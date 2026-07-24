@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const { formatBRL, formatDateBR, valorPorExtenso } = require('./calc');
-const { PAYMENT_METHOD_LABELS } = require('./constants');
+const { PAYMENT_METHOD_LABELS, DEFAULT_BRANDING } = require('./constants');
 
 const COLORS = {
   ink: '#0f172a',
@@ -67,7 +67,7 @@ function buildReceiptPdf(receipt, branding = {}) {
   }
   const headerTop = doc.y;
   doc.fillColor(COLORS.ink).font('Helvetica-Bold').fontSize(16)
-    .text(branding.name || 'Nexos', headerTextX, headerTop, { width: pageWidth - (headerTextX - left) });
+    .text(branding.name || DEFAULT_BRANDING.name, headerTextX, headerTop, { width: pageWidth - (headerTextX - left) });
   doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted);
   if (branding.document) doc.text(`CNPJ/CPF: ${branding.document}`, headerTextX);
   if (branding.address)  doc.text(branding.address, headerTextX, doc.y, { width: pageWidth - (headerTextX - left) });
@@ -140,7 +140,7 @@ function buildReceiptPdf(receipt, branding = {}) {
   const sigX = left + (pageWidth - sigWidth) / 2;
   doc.moveTo(sigX, sigY).lineTo(sigX + sigWidth, sigY).lineWidth(1).strokeColor(COLORS.ink).stroke();
   doc.font('Helvetica-Bold').fontSize(10).fillColor(COLORS.ink)
-    .text(branding.name || 'Nexos', sigX, sigY + 6, { width: sigWidth, align: 'center' });
+    .text(branding.name || DEFAULT_BRANDING.name, sigX, sigY + 6, { width: sigWidth, align: 'center' });
   if (branding.document) {
     doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted)
       .text(branding.document, sigX, doc.y, { width: sigWidth, align: 'center' });
@@ -152,10 +152,11 @@ function buildReceiptPdf(receipt, branding = {}) {
 
   // ── Rodapé: assinatura padrão do produto ────────────────────────────────────
   // A identidade do emissor (tenant) já aparece no cabeçalho e no bloco de assinatura.
-  // Este rodapé é a atribuição do software: produto Nexos, plataforma Chronostek.
+  // Este rodapé é a atribuição do software (produto LocaCore, fornecido pela TELUN),
+  // parametrizável por env (PRODUCT_NAME / PRODUCT_SIGNATURE).
   const footerY = doc.page.height - doc.page.margins.bottom + 8;
   doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted)
-    .text('Gerado pelo Nexos · uma plataforma Chronostek', left, footerY, { width: pageWidth, align: 'center' });
+    .text(`Gerado pelo ${DEFAULT_BRANDING.name} · ${DEFAULT_BRANDING.signature}`, left, footerY, { width: pageWidth, align: 'center' });
 
   doc.end();
   return done;

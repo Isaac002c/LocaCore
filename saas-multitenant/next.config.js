@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 
 // Em desenvolvimento: proxy para localhost:5000
-// Em produção (Vercel): defina BACKEND_URL=https://api-nexos.chronostek.com.br
+// Em produção (Vercel): defina BACKEND_URL com o domínio da API (ex.: https://api.seu-dominio.com).
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
+// Origem extra liberada no connect-src do CSP. As chamadas do app usam /api
+// relativo (proxied → mesma origem), então 'self' basta; esta variável só é
+// necessária se o frontend chamar a API cross-origin. Parametrizável por env,
+// sem domínio fixo de terceiros.
+const API_PUBLIC_ORIGIN = process.env.API_PUBLIC_ORIGIN || '';
 
 const nextConfig = {
   reactStrictMode: true,
@@ -38,7 +44,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api-nexos.chronostek.com.br",
+              `connect-src 'self'${API_PUBLIC_ORIGIN ? ` ${API_PUBLIC_ORIGIN}` : ''}`,
               "frame-ancestors 'none'",
               "object-src 'none'",
             ].join('; '),

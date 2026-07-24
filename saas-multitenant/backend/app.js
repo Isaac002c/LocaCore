@@ -10,6 +10,9 @@ const rateLimit = require('express-rate-limit');
 
 const tenantContext = require('./middlewares/tenantContext');
 const pool = require('./config/db');
+const log = require('./services/logger');
+const health = require('./services/health');
+const crypto = require('crypto');
 
 const authRoutes = require('./routes/authRoutes');
 const leadsRoutes = require('./routes/leadsRoutes');
@@ -34,6 +37,17 @@ const companyRoutes       = require('./routes/companyRoutes');
 const calendarEventRoutes = require('./routes/calendarEventRoutes');
 const masterRoutes        = require('./routes/masterRoutes');
 const financialRoutes     = require('./routes/financialRoutes');
+// LocaCore — Frota (vehicles) e Locações (rentals)
+const vehicleRoutes       = require('./routes/vehicleRoutes');
+const rentalRoutes        = require('./routes/rentalRoutes');
+const configOptionRoutes  = require('./routes/configOptionRoutes');
+const maintenanceRoutes   = require('./routes/maintenanceRoutes');
+const rentalFineRoutes    = require('./routes/rentalFineRoutes');
+const inventoryRoutes     = require('./routes/inventoryRoutes');
+const reportRoutes        = require('./routes/reportRoutes');
+const importRoutes        = require('./routes/importRoutes');
+const automationRoutes    = require('./routes/automationRoutes');
+const automationWebhookRoutes = require('./routes/automationWebhookRoutes');
 
 const app = express();
 
@@ -49,7 +63,7 @@ app.set('trust proxy', 1);
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
 // Origens liberadas no CORS. Em produção, defina FRONTEND_URL com o domínio do
-// frontend do Nexos (Vercel). Sem branding/domínios de sistemas anteriores.
+// frontend do LocaCore (Vercel). Sem branding/domínios de sistemas anteriores.
 const EXTRA_ORIGINS = (process.env.EXTRA_CORS_ORIGINS || '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const allowedOrigins = [
@@ -117,6 +131,11 @@ const globalLimiter = rateLimit({
 
 app.use(globalLimiter);
 
+// Webhooks EXTERNOS (pagamento/WhatsApp): montados ANTES do express.json para
+// preservar o CORPO BRUTO (necessário para validar a assinatura HMAC). Fora de
+// /api → sem JWT; segurança por assinatura + idempotência.
+app.use('/webhooks', automationWebhookRoutes);
+
 // ============================================
 // MIDDLEWARES
 // ============================================
@@ -125,10 +144,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Log simples só em dev
-const isDev = process.env.NODE_ENV !== 'production';
+// Log estruturado por requisição (request_id + duração + tenant). Sem secrets.
 app.use((req, res, next) => {
-  if (isDev) console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  req.id = req.headers['x-request-id'] || crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  const started = Date.now();
+  res.on('finish', () => {
+    // Não loga assets estáticos nem health (ruído).
+    if (req.path.startsWith('/uploads') || req.path.startsWith('/health')) return;
+    log.info('http', {
+      request_id: req.id, method: req.method, path: req.path, status: res.statusCode,
+      duration_ms: Date.now() - started, tenant_id: req.tenantId || null, user_id: req.userId || null,
+    });
+  });
   next();
 });
 
@@ -171,11 +199,30 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/calendar-events', calendarEventRoutes);
 app.use('/api/master', masterRoutes);
 app.use('/api/financial', financialRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/rentals', rentalRoutes);
+app.use('/api/config-options', configOptionRoutes);
+app.use('/api/maintenances', maintenanceRoutes);
+app.use('/api/rental-fines', rentalFineRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/automations', automationRoutes);
 
 // ============================================
 // HEALTH CHECK (sem autenticação — para uptime monitors)
 // ============================================
 
+// Liveness: o processo está vivo (não toca no banco).
+app.get('/health/live', (req, res) => res.json({ status: 'live', uptime: process.uptime() }));
+
+// Readiness: banco + heartbeats de worker/scheduler + backlog da fila (informativo).
+app.get('/health/ready', async (req, res) => {
+  const r = await health.ready();
+  res.status(r.ok ? 200 : 503).json({ status: r.ok ? 'ready' : 'degraded', ...r });
+});
+
+// Compatibilidade: /health simples (uptime monitors antigos).
 app.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -232,6 +279,6 @@ process.on('unhandledRejection', (reason) => {
   }
 
   app.listen(PORT, () => {
-    console.log(`Nexos API rodando na porta ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    console.log(`LocaCore API rodando na porta ${PORT} (${process.env.NODE_ENV || 'development'})`);
   });
 })();

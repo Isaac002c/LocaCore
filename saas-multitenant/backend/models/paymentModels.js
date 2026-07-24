@@ -82,10 +82,28 @@ const getPaymentsByFine = async (fine_id, tenant_id) => {
   return rows;
 };
 
+// Pagamentos de uma LOCAÇÃO (LocaCore): via faturamento vinculado (b.rental_id).
+// Inclui receipt_id do recibo 'emitido', se houver (para evitar duplicidade).
+const getPaymentsByRental = async (rental_id, tenant_id) => {
+  const { rows } = await pool.query(
+    `SELECT p.*, c.name AS client_name,
+            r.id AS receipt_id, r.full_number AS receipt_number
+       FROM payments p
+       JOIN service_billings b ON p.billing_id = b.id AND b.tenant_id = p.tenant_id
+       LEFT JOIN clients  c ON p.client_id = c.id
+       LEFT JOIN receipts r ON r.payment_id = p.id AND r.status = 'emitido'
+      WHERE b.rental_id = $1 AND p.tenant_id = $2
+      ORDER BY p.payment_date DESC, p.created_at DESC`,
+    [rental_id, tenant_id]
+  );
+  return rows;
+};
+
 module.exports = {
   listPayments,
   getPaymentById,
   getPaymentsByBilling,
   getPaymentsByClient,
   getPaymentsByFine,
+  getPaymentsByRental,
 };

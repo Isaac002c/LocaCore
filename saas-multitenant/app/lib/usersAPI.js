@@ -32,6 +32,13 @@ export const changePassword = async (id, password) =>
     body: { password },
   });
 
+// Ativa/desativa usuário; desativar invalida as sessões existentes.
+export const setUserActive = async (id, is_active) =>
+  await apiRequest(`/api/users/management/${id}/active`, {
+    method: 'PATCH',
+    body: { is_active },
+  });
+
 export const deleteUser = async (id) =>
   await apiRequest(`/api/users/management/${id}`, {
     method: 'DELETE',

@@ -47,11 +47,13 @@ const DEFAULT_CATEGORIES = [
   { name: 'Outras despesas',           type: 'saida'   },
 ];
 
-// Identidade padrão do produto (usada quando o tenant não tem branding próprio).
+// Identidade padrão do PRODUTO (LocaCore, fornecido pela TELUN). Usada apenas
+// como fallback quando o tenant (a locadora) não tem branding próprio configurado.
+// Parametrizável por variável de ambiente para não fixar a marca no código.
 const DEFAULT_BRANDING = {
-  name: 'Nexos',
-  signature: 'by Nexos',
-  receipt_prefix: 'NEXOS',
+  name:           process.env.PRODUCT_NAME      || 'LocaCore',
+  signature:      process.env.PRODUCT_SIGNATURE || 'by TELUN',
+  receipt_prefix: process.env.RECEIPT_PREFIX    || 'LOCA',
 };
 
 module.exports = {

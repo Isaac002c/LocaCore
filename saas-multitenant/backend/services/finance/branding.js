@@ -3,11 +3,11 @@
 //
 // Regra do produto:
 //   * Usa o branding do tenant quando configurado (settings financeiras ou tenants).
-//   * Cai para o padrão NEXO ("Nexo Despachantes CRM" / "by ChronosTek") quando
-//     o tenant não possui identidade própria.
+//   * Cai para o padrão do produto (LocaCore / "by TELUN", em DEFAULT_BRANDING)
+//     quando o tenant não possui identidade própria.
 //   * NUNCA fixa branding de cliente nos componentes — tudo vem de dados.
-//   * A assinatura "by ChronosTek" só aparece no fallback padrão, para não
-//     substituir a marca de um tenant existente (ex.: CR Recursos).
+//   * A assinatura padrão só aparece no fallback, para não substituir a marca
+//     de um tenant (a locadora) que já tenha identidade própria.
 // =============================================================================
 
 const { DEFAULT_BRANDING } = require('./constants');

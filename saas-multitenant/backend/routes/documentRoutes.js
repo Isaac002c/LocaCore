@@ -3,6 +3,7 @@ const router = express.Router();
 const documentModel = require('../models/documentModels');
 const companyModel = require('../models/companyModels');
 const vehicleModel = require('../models/companyVehicleModels');
+const rentalModel = require('../models/rentalModels');
 const { requireAdmin } = require('../middlewares/checkPermission');
 
 // Renomear documento — utilitários de validação (nome de exibição apenas).
@@ -35,11 +36,15 @@ async function assertOwnership({ company_id, vehicle_id, tenantId }) {
 router.get('/', async (req, res) => {
   try {
     const tenantId = req.tenantId;
-    const { category, contract_id, client_id, company_id, vehicle_id } = req.query;
+    const { category, contract_id, client_id, company_id, vehicle_id, rental_id } = req.query;
 
     let documents;
 
-    if (contract_id) {
+    if (rental_id) {
+      const rental = await rentalModel.getRentalById(rental_id, tenantId);
+      if (!rental) return res.status(404).json({ success: false, error: 'Locação não encontrada' });
+      documents = await documentModel.getDocumentsByRental(rental_id, tenantId);
+    } else if (contract_id) {
       documents = await documentModel.getDocumentsByContract(contract_id, tenantId);
     } else if (vehicle_id) {
       const own = await assertOwnership({ vehicle_id, tenantId });
@@ -136,8 +141,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      contract_id, client_id, company_id, vehicle_id, file_url, file_name,
-      file_type, file_size, category, description
+      contract_id, client_id, company_id, vehicle_id, rental_id, vehicle_asset_id,
+      file_url, file_name, file_type, file_size, category, description
     } = req.body;
     const tenantId = req.tenantId;
     const userId = req.userId;
@@ -156,12 +161,22 @@ router.post('/', async (req, res) => {
       if (!own.ok) return res.status(own.status).json({ success: false, error: own.error });
     }
 
+    // Locação (LocaCore) precisa pertencer ao tenant.
+    let resolvedClientId = client_id;
+    if (rental_id) {
+      const rental = await rentalModel.getRentalById(rental_id, tenantId);
+      if (!rental) return res.status(404).json({ success: false, error: 'Locação não encontrada' });
+      if (!resolvedClientId) resolvedClientId = rental.client_id || null; // herda o locatário
+    }
+
     const document = await documentModel.createDocument({
       tenant_id: tenantId,
       contract_id,
-      client_id,
+      client_id: resolvedClientId,
       company_id,
       vehicle_id,
+      rental_id,
+      vehicle_asset_id,
       file_url,
       file_name,
       file_type,

@@ -64,6 +64,77 @@ const list = async (tenant_id, { scope = 'upcoming', from, to } = {}) => {
   return r.rows;
 };
 
+// DATE → 'YYYY-MM-DD' seguro p/ Date (node-pg) ou string (pg-mem/driver).
+const isoDate = (v) => {
+  if (!v) return null;
+  if (v instanceof Date) {
+    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+  }
+  return String(v).substring(0, 10);
+};
+
+// Agenda operacional da LOCADORA (§6): eventos MANUAIS (calendar_events) no
+// intervalo + eventos DERIVADOS (retirada/devolução de locações, manutenções e
+// vencimento de multas) agregados em memória — SEM duplicar no banco. Read-only.
+const listAgenda = async (tenant_id, { from, to, type = '' } = {}) => {
+  const f = isoDate(from) || new Date().toISOString().substring(0, 10);
+  const t = isoDate(to) || new Date(Date.now() + 30 * 86400000).toISOString().substring(0, 10);
+  const events = [];
+
+  const manual = await pool.query(
+    `SELECT e.id, e.title, e.description, e.event_date, e.start_time, e.end_time, e.type, e.status, e.priority,
+            e.rental_id, e.vehicle_id, e.client_id, e.maintenance_id,
+            c.name AS client_name, u.name AS responsible_name
+       FROM calendar_events e
+       LEFT JOIN clients c ON e.client_id = c.id AND c.tenant_id = e.tenant_id
+       LEFT JOIN users   u ON e.responsible_user_id = u.id
+      WHERE e.tenant_id = $1 AND e.event_date BETWEEN $2 AND $3`,
+    [tenant_id, f, t]
+  );
+  for (const m of manual.rows) events.push({ ...m, source: 'manual', date: isoDate(m.event_date) });
+
+  const rentals = await pool.query(
+    `SELECT r.id, r.rental_number, r.start_date, r.end_date, r.status,
+            v.plate AS vehicle_plate, c.name AS client_name
+       FROM rentals r
+       LEFT JOIN vehicles v ON v.id = r.vehicle_id AND v.tenant_id = r.tenant_id
+       LEFT JOIN clients  c ON c.id = r.client_id  AND c.tenant_id = r.tenant_id
+      WHERE r.tenant_id = $1 AND r.status <> 'cancelado'
+        AND ((r.start_date BETWEEN $2 AND $3) OR (r.end_date BETWEEN $2 AND $3))`,
+    [tenant_id, f, t]
+  ).catch(() => ({ rows: [] }));
+  for (const r of rentals.rows) {
+    const sd = isoDate(r.start_date);
+    const ed = isoDate(r.end_date);
+    if (sd && sd >= f && sd <= t) events.push({ id: `rental:${r.id}:retirada`, source: 'derived', type: 'retirada', date: sd, title: `Retirada — ${r.rental_number || ''}`.trim(), rental_id: r.id, vehicle_plate: r.vehicle_plate, client_name: r.client_name, status: r.status });
+    if (ed && ed >= f && ed <= t) events.push({ id: `rental:${r.id}:devolucao`, source: 'derived', type: 'devolucao', date: ed, title: `Devolução — ${r.rental_number || ''}`.trim(), rental_id: r.id, vehicle_plate: r.vehicle_plate, client_name: r.client_name, status: r.status });
+  }
+
+  const maint = await pool.query(
+    `SELECT m.id, m.type AS maint_type, m.scheduled_date, m.status, v.plate AS vehicle_plate
+       FROM vehicle_maintenances m
+       LEFT JOIN vehicles v ON v.id = m.vehicle_id AND v.tenant_id = m.tenant_id
+      WHERE m.tenant_id = $1 AND m.status IN ('agendada','em_andamento')
+        AND m.scheduled_date BETWEEN $2 AND $3`,
+    [tenant_id, f, t]
+  ).catch(() => ({ rows: [] }));
+  for (const m of maint.rows) events.push({ id: `maint:${m.id}`, source: 'derived', type: 'manutencao', date: isoDate(m.scheduled_date), title: `Manutenção${m.vehicle_plate ? ` — ${m.vehicle_plate}` : ''}`, maintenance_id: m.id, vehicle_plate: m.vehicle_plate, status: m.status });
+
+  const fines = await pool.query(
+    `SELECT f.id, f.fine_number, f.due_date, f.status, v.plate AS vehicle_plate
+       FROM rental_fines f
+       LEFT JOIN vehicles v ON v.id = f.vehicle_id AND v.tenant_id = f.tenant_id
+      WHERE f.tenant_id = $1 AND f.status NOT IN ('paga','cancelada','encerrada')
+        AND f.due_date BETWEEN $2 AND $3`,
+    [tenant_id, f, t]
+  ).catch(() => ({ rows: [] }));
+  for (const x of fines.rows) events.push({ id: `fine:${x.id}`, source: 'derived', type: 'multa', date: isoDate(x.due_date), title: `Multa ${x.fine_number || ''}${x.vehicle_plate ? ` — ${x.vehicle_plate}` : ''}`.trim(), rental_fine_id: x.id, vehicle_plate: x.vehicle_plate, status: x.status });
+
+  const filtered = type ? events.filter((e) => e.type === type) : events;
+  filtered.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.start_time || '').localeCompare(String(b.start_time || '')));
+  return filtered;
+};
+
 const upcoming = async (tenant_id, limit = 5) => {
   const r = await pool.query(
     `SELECT e.*, c.name AS client_name
@@ -252,6 +323,6 @@ const blockOverlapsBlock = async (tenant_id, event_date, start_time, end_time, e
 };
 
 module.exports = {
-  list, upcoming, getById, listConsultants, create, update, setStatus, remove,
+  list, listAgenda, upcoming, getById, listConsultants, create, update, setStatus, remove,
   isDayClosed, eventBlockedByPartial, hasTimeConflict, blockConflictEvents, blockOverlapsBlock,
 };

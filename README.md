@@ -1,7 +1,9 @@
-# Nexos
+# LocaCore
 
-**NEXO Despachantes CRM** · by ChronosTek — CRM SaaS multi-tenant para despachantes
-(gestão de processos/multas, clientes, empresas, agenda, leads e **módulo financeiro**).
+**LocaCore** · por TELUN — plataforma SaaS multi-tenant para **locadoras de veículos**
+(frota, locações, clientes/locatários e **módulo financeiro**), construída sobre a
+base multi-tenant do NexoCRM. O domínio de despachante (processos/multas) é
+preservado e continua disponível por tenant.
 
 ## Stack
 - **Frontend:** Next.js 14 (App Router), React 18 — `saas-multitenant/`

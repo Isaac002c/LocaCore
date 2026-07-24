@@ -142,14 +142,15 @@ function createTx(client) {
       const { rows } = await q(
         `INSERT INTO receipts (
            tenant_id, number, prefix, full_number, issue_date,
-           client_id, payment_id, billing_id, fine_id,
+           client_id, payment_id, billing_id, fine_id, rental_id,
            client_name, client_document, service_description, amount, payment_method,
            issuer_name, issuer_document, issuer_address, notes, created_by, created_by_name
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
          RETURNING *`,
         [
           data.tenant_id, data.number, data.prefix, data.full_number, data.issue_date || null,
           data.client_id || null, data.payment_id || null, data.billing_id || null, data.fine_id || null,
+          data.rental_id || null,
           data.client_name || null, data.client_document || null, data.service_description || null,
           data.amount || 0, data.payment_method || null,
           data.issuer_name || null, data.issuer_document || null, data.issuer_address || null,

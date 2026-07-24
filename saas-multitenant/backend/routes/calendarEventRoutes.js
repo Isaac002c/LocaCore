@@ -1,6 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const model   = require('../models/calendarEventModels');
+const { requireModule } = require('../middlewares/requireModule');
 
 const VALID_STATUS = ['agendado', 'concluido', 'cancelado'];
 
@@ -50,6 +51,16 @@ router.get('/', async (req, res) => {
   try {
     const { scope, from, to } = req.query;
     const data = await model.list(req.tenantId, { scope: scope || 'upcoming', from, to });
+    res.json({ success: true, data });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// GET /api/calendar-events/agenda?from=&to=&type= — agenda operacional da LOCADORA
+// (eventos manuais + derivados de locações/manutenções/multas). Gated por módulo.
+router.get('/agenda', requireModule('locacao'), async (req, res) => {
+  try {
+    const { from, to, type } = req.query;
+    const data = await model.listAgenda(req.tenantId, { from, to, type: type || '' });
     res.json({ success: true, data });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });

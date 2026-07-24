@@ -217,6 +217,33 @@ router.patch('/:id/password', async (req, res) => {
   }
 });
 
+// PATCH /api/users/management/:id/active - Ativar/desativar usuário (admin/manager).
+// Desativar invalida as sessões existentes (sessions_valid_after=NOW()). §9
+router.patch('/:id/active', requireAdminOrManager, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenantId = req.tenantId;
+    const isActive = req.body.is_active === true || req.body.is_active === 'true';
+
+    if (req.userId === id && !isActive) {
+      return res.status(400).json({ success: false, error: 'Você não pode desativar o próprio usuário.' });
+    }
+    const existing = await permissionModel.getUserById(id, tenantId);
+    if (!existing) return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+
+    const user = await permissionModel.setUserActive(id, isActive, tenantId);
+    await saasModel.createActivityLog({
+      tenant_id: tenantId, user_id: req.userId, action: isActive ? 'activate' : 'deactivate',
+      entity_type: 'user', entity_id: id,
+      description: `Usuário ${existing.name} ${isActive ? 'reativado' : 'desativado'}`,
+    });
+    res.json({ success: true, data: user });
+  } catch (err) {
+    console.error('Erro ao alterar status do usuário:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // DELETE /api/users/management/:id - Deletar usuário
 router.delete('/:id', requireAdminOrManager, async (req, res) => {
   try {
