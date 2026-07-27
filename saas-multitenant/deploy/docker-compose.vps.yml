@@ -108,7 +108,9 @@ services:
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
-    entrypoint: ["/bin/sh", "-c", "while true; do /scripts/backup.sh; sleep 86400; done"]
+    # Invoca via `sh` de propósito: o bit +x se perde em checkout Windows e o
+    # script é montado read-only — chamar direto daria "permission denied".
+    entrypoint: ["/bin/sh", "-c", "while true; do sh /scripts/backup.sh || echo '[backup] falhou'; sleep 86400; done"]
     deploy:
       resources:
         limits: { memory: 256m }
