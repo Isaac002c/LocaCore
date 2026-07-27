@@ -23,4 +23,9 @@ npm-debug.log*
 logs/
 
 .vercel
+
+# Envs reais nunca são versionados...
 .env*
+# ...mas os TEMPLATES (sem segredos) sim — o deploy depende deles no clone.
+!.env.example
+!.env*.example
