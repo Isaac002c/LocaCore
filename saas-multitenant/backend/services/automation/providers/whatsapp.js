@@ -13,16 +13,19 @@
 
 const { getSecret } = require('../secrets');
 const { verifyHmacSignature } = require('../webhookSecurity');
+const { assertSandboxAllowed, sandboxSignatureResult } = require('./guard');
 
 // ── SANDBOX (default 'null') ─────────────────────────────────────────────────
+// Em PRODUÇÃO o sandbox é bloqueado (§16): não simula envio nem valida webhook.
 const sandboxProvider = {
   name: 'null',
   isSandbox: true,
   async sendTemplateMessage({ to }) {
+    assertSandboxAllowed('WhatsApp');
     return { external_id: `sandbox-wa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, status: 'sent', to };
   },
   async getMessageStatus() { return { status: 'delivered' }; },
-  verifyWebhookSignature() { return { valid: true }; }, // sandbox não assina
+  verifyWebhookSignature() { return sandboxSignatureResult(); }, // sandbox não assina
   parseWebhook(body = {}) {
     const ev = body.event_id || body.message_id || body.external_id || `wa-evt-${Date.now()}`;
     return { external_event_id: String(ev), updates: [{ external_id: body.external_id || body.message_id || null, status: body.status || 'delivered' }] };

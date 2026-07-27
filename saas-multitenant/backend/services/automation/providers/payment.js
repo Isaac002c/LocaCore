@@ -8,11 +8,14 @@
 
 const { getSecret } = require('../secrets');
 const { safeEqual } = require('../webhookSecurity');
+const { assertSandboxAllowed, sandboxSignatureResult } = require('./guard');
 
+// Em PRODUÇÃO o sandbox é bloqueado (§16): não gera PIX fictício nem valida webhook.
 const sandboxProvider = {
   name: 'null',
   isSandbox: true,
   async createCharge({ amount, due_date }) {
+    assertSandboxAllowed('Cobrança/PIX');
     const id = `sandbox-chg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return {
       external_id: id, status: 'pending',
@@ -22,7 +25,7 @@ const sandboxProvider = {
       amount,
     };
   },
-  verifyWebhookSignature() { return { valid: true }; },
+  verifyWebhookSignature() { return sandboxSignatureResult(); },
   parseWebhook(body = {}) {
     const ev = body.event_id || body.id || `pay-evt-${Date.now()}`;
     return {
