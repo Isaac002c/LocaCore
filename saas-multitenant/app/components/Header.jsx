@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from '../lib/brand';
+import ThemeToggle from './ThemeToggle';
 
 const modules = [
   { key: 'leads', label: 'Leads' },
@@ -93,6 +94,8 @@ export default function Header({ user, tenant, onLogout }) {
       </div>
 
       <div className="header-right">
+        {/* Alternância de tema (§7): escuro / claro / sistema, persistida. */}
+        <ThemeToggle />
         {tenant && (
           <div className="tenant-badge">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
