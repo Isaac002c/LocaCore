@@ -1,0 +1,144 @@
+# =============================================================================
+# LocaCore — Compose de PRODUÇÃO para VPS COMPARTILHADA.
+#
+# Diferente de docker-compose.prod.yml (que assume host dedicado e faz bind de
+# 80/443 com nginx), este arquivo é para um servidor que JÁ HOSPEDA outros
+# sistemas. Portanto:
+#
+#   • NÃO faz bind de 80/443 (essas portas pertencem a outro projeto no host).
+#   • Exposição pública via Cloudflare Tunnel dedicado (profile `tunnel`).
+#   • API publicada apenas em 127.0.0.1 (loopback) para smoke test local.
+#   • Nomes 100% isolados: projeto `locacore`, rede `locacore-network`,
+#     volumes `locacore-*`, containers `locacore-*`.
+#   • Limites de memória (host sem swap).
+#
+#   cd /opt/locacore/saas-multitenant
+#   docker compose -f deploy/docker-compose.vps.yml --env-file deploy/.env.production up -d
+# =============================================================================
+name: locacore
+
+x-backend-image: &backend-image
+  build:
+    context: ../backend
+    dockerfile: Dockerfile
+  image: locacore-backend:latest
+  env_file: [.env.production]
+  environment:
+    NODE_ENV: production
+  networks: [locacore-network]
+  restart: unless-stopped
+  depends_on:
+    postgres: { condition: service_healthy }
+    migrate:  { condition: service_completed_successfully }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: locacore-postgres
+    env_file: [.env.production]
+    volumes:
+      - locacore-postgres-data:/var/lib/postgresql/data
+    networks: [locacore-network]
+    restart: unless-stopped
+    # SEM `ports:` — banco acessível apenas dentro de locacore-network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  # One-shot: aplica as migrations (runner com lock + checksum) e sai.
+  migrate:
+    <<: *backend-image
+    container_name: locacore-migrate
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+    command: ["node", "scripts/migrate.js", "up"]
+
+  backend:
+    <<: *backend-image
+    container_name: locacore-backend
+    command: ["node", "app.js"]
+    # Loopback apenas: acessível na VPS para smoke test, NUNCA pela internet.
+    ports: ["127.0.0.1:${API_LOCAL_PORT:-18090}:5000"]
+    volumes:
+      - locacore-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  worker:
+    <<: *backend-image
+    container_name: locacore-worker
+    command: ["node", "worker.js"]
+    volumes:
+      - locacore-uploads:/app/uploads
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+  scheduler:
+    <<: *backend-image
+    container_name: locacore-scheduler
+    command: ["node", "scheduler.js"]
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits: { memory: 256m }
+
+  # Backup diário do Postgres (pg_dump comprimido + retenção).
+  backup:
+    image: postgres:16-alpine
+    container_name: locacore-backup
+    env_file: [.env.production]
+    volumes:
+      - locacore-backups:/backups
+      - ../backend/scripts:/scripts:ro
+    networks: [locacore-network]
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    entrypoint: ["/bin/sh", "-c", "while true; do /scripts/backup.sh; sleep 86400; done"]
+    deploy:
+      resources:
+        limits: { memory: 256m }
+
+  # Exposição pública — Cloudflare Tunnel DEDICADO do LocaCore.
+  # Sobe só com o token: `--profile tunnel`. NUNCA reutilizar o token de outro
+  # projeto: cada sistema tem o seu (TUNNEL_TOKEN em .env.production, chmod 600).
+  tunnel:
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:latest
+    container_name: locacore-tunnel
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    networks: [locacore-network]
+    restart: unless-stopped
+    depends_on: [backend]
+    deploy:
+      resources:
+        limits: { memory: 128m }
+
+networks:
+  locacore-network:
+    name: locacore-network
+    driver: bridge
+
+volumes:
+  locacore-postgres-data:
+    name: locacore-postgres-data
+  locacore-uploads:
+    name: locacore-uploads
+  locacore-backups:
+    name: locacore-backups
