@@ -69,7 +69,9 @@ router.post('/', requireFinanceManage, async (req, res) => {
       client_id: b.client_id || null,
       fine_id: b.fine_id || null,
       amount: b.amount,
-      payment_date: b.payment_date || null,
+      // payment_date é NOT NULL no banco: sem valor, assume HOJE (mesmo default
+      // da tela de Faturamentos). Antes ia null e estourava 500 no INSERT.
+      payment_date: b.payment_date || new Date().toISOString().substring(0, 10),
       payment_method: b.payment_method || null,
       installment_number: b.installment_number || 1,
       installments_total: b.installments_total || 1,
