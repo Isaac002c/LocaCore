@@ -16,6 +16,11 @@ const { ValidationError, formatReceiptNumber } = require('./calc');
 const { NotFoundError } = require('./paymentService');
 const { DEFAULT_BRANDING } = require('./constants');
 
+// receipts.issue_date é NOT NULL DEFAULT CURRENT_DATE. Passar null EXPLICITAMENTE
+// no INSERT anula o default e viola a constraint — por isso a emissão precisa
+// resolver a data aqui (hoje) quando o chamador não informa.
+const todayISO = () => new Date().toISOString().substring(0, 10);
+
 function buildIssuer(settings, input) {
   return {
     issuer_name: settings.razao_social || input.defaultIssuerName || DEFAULT_BRANDING.name,
@@ -51,7 +56,7 @@ async function issueReceipt(input, repo = createDbRepo()) {
       number,
       prefix,
       full_number: fullNumber,
-      issue_date: input.issue_date || null,
+      issue_date: input.issue_date || todayISO(),
       client_id: input.client_id || payment.client_id || null,
       payment_id: input.payment_id,
       billing_id: input.billing_id || payment.billing_id || null,
@@ -106,7 +111,7 @@ async function reissueReceipt(receiptId, input, repo = createDbRepo()) {
       number,
       prefix,
       full_number: fullNumber,
-      issue_date: input.issue_date || null,
+      issue_date: input.issue_date || todayISO(),
       client_id: input.client_id || old.client_id || null,
       payment_id: input.payment_id || old.payment_id || null,
       billing_id: input.billing_id || old.billing_id || null,
