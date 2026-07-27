@@ -51,7 +51,7 @@ export default function Header({ user, tenant, onLogout }) {
     if (role === 'admin') {
       return { label: 'ADMIN', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' };
     }
-    return { label: 'VENDEDOR', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' };
+    return { label: 'VENDEDOR', color: 'var(--nx-primary)', bg: 'rgba(59, 130, 246, 0.1)' };
   };
 
   const roleBadge = getRoleBadge();
@@ -66,7 +66,7 @@ export default function Header({ user, tenant, onLogout }) {
             justifyContent: 'center',
             width: '36px',
             height: '36px',
-            background: '#2563eb',
+            background: 'var(--telun-electric-lilac)',
             borderRadius: '10px',
             flexShrink: 0
           }}>
@@ -128,7 +128,7 @@ export default function Header({ user, tenant, onLogout }) {
             className="dropdown-trigger"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#2563eb' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--telun-electric-lilac)' }}>
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
               <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
             </svg>
@@ -156,7 +156,7 @@ export default function Header({ user, tenant, onLogout }) {
         </div>
 
         <div className="header-user-info">
-          <div className="user-avatar" style={{ background: 'linear-gradient(135deg, #2563eb, #16324f)' }}>
+          <div className="user-avatar" style={{ background: 'linear-gradient(135deg, var(--telun-electric-lilac), var(--telun-deep-violet))' }}>
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <button onClick={onLogout} className="logout-btn-header">

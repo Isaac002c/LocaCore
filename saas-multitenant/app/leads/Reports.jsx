@@ -501,7 +501,7 @@ export default function Reports() {
           {Object.entries(metrics.byStatus).map(([status, data]) => {
             const percentage = metrics.total > 0 ? (data.count / metrics.total * 100).toFixed(1) : 0;
             const colors = {
-              novo: '#3B82F6',
+              novo: 'var(--nx-primary)',
               contactado: '#F59E0B',
               qualificado: '#8B5CF6',
               proposta: '#06B6D4',
@@ -578,7 +578,7 @@ export default function Reports() {
                       className="source-fill" 
                       style={{ 
                         width: `${Math.min(percentage, 100)}%`,
-                        background: parseFloat(targetProgress) >= 100 ? '#22c55e' : '#3b82f6'
+                        background: parseFloat(targetProgress) >= 100 ? '#22c55e' : 'var(--nx-primary)'
                       }}
                     ></div>
                   </div>

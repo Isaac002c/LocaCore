@@ -356,7 +356,7 @@ export default function Locacoes() {
 
   if (loading && rentals.length === 0) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando locações...</p>
     </div>
   );
@@ -668,7 +668,7 @@ export default function Locacoes() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                   {documents.map((d) => (
                     <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
-                      <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--nx-primary)', textDecoration: 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {DOC_LABELS[d.category] || d.category || 'Documento'} · {d.file_name}
                       </a>
                       <button className="btn-icon danger" title="Remover" disabled={drawerBusy} onClick={() => doDeleteDoc(d.id)}>✕</button>

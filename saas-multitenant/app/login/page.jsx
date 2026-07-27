@@ -84,7 +84,7 @@ export default function Login() {
             height: '80px',
             marginBottom: '16px',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, #1d4ed8 0%, #16324f 100%)',
+            background: 'linear-gradient(135deg, var(--telun-electric-lilac) 0%, var(--telun-deep-violet) 100%)',
             boxShadow: '0 0 24px rgba(29,78,216,0.45)',
             fontSize: '38px',
             fontWeight: 800,
@@ -190,7 +190,7 @@ export default function Login() {
             style={{
               width: '100%',
               padding: '14px',
-              background: loading ? '#1e40af' : '#2563eb',
+              background: loading ? 'var(--telun-deep-violet)' : 'var(--telun-electric-lilac)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -200,7 +200,7 @@ export default function Login() {
               fontWeight: '600',
               letterSpacing: '0.3px',
               transition: 'background 0.2s, transform 0.1s',
-              boxShadow: loading ? 'none' : '0 4px 16px rgba(37,99,235,0.4)'
+              boxShadow: loading ? 'none' : '0 4px 16px rgba(165, 107, 255, 0.4)'
             }}
           >
             {loading ? 'Entrando...' : 'Entrar'}

@@ -22,7 +22,7 @@ export const VEHICLE_STATUS = [
 ];
 const VEHICLE_STATUS_COLORS = {
   disponivel: { bg: '#dcfce7', text: '#15803d' },
-  alugado:    { bg: '#dbeafe', text: '#1d4ed8' },
+  alugado:    { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
   manutencao: { bg: '#fef3c7', text: '#b45309' },
   inativo:    { bg: '#f1f5f9', text: '#64748b' },
 };
@@ -42,7 +42,7 @@ export const RENTAL_STATUS = [
 ];
 const RENTAL_STATUS_COLORS = {
   reservado:    { bg: '#ede9fe', text: '#6d28d9' },
-  em_andamento: { bg: '#dbeafe', text: '#1d4ed8' },
+  em_andamento: { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
   atrasado:     { bg: '#fee2e2', text: '#b91c1c' },
   finalizado:   { bg: '#dcfce7', text: '#15803d' },
   cancelado:    { bg: '#f1f5f9', text: '#64748b' },

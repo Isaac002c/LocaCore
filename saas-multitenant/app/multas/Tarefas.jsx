@@ -11,9 +11,9 @@ import { requestDeletion } from '../lib/approvalsAPI';
 const COLUMNS = [
   { key: 'possui_defensor',   label: 'Já Possui Defensor',   color: '#8b5cf6', bg: '#ede9fe',                   desc: 'Já tem advogado' },
   { key: 'nao_quer_defender', label: 'Não Quer se Defender', color: '#f59e0b', bg: '#fef3c7',                   desc: 'Não tem interesse' },
-  { key: 'negociacao',        label: 'Em Negociação',        color: '#3b82f6', bg: '#eff6ff',                   desc: 'Em tratativa' },
+  { key: 'negociacao',        label: 'Em Negociação',        color: 'var(--nx-primary)', bg: '#eff6ff',                   desc: 'Em tratativa' },
   { key: 'nao_encontrado',    label: 'Não Encontrado',       color: '#ef4444', bg: 'rgba(239,68,68,0.06)',      desc: 'Não atendeu/localizado' },
-  { key: 'fechado',           label: 'Fechado',              color: '#2563eb', bg: 'rgba(37, 99, 235,0.06)',      desc: 'Contrato assinado' },
+  { key: 'fechado',           label: 'Fechado',              color: 'var(--nx-primary)', bg: 'rgba(165, 107, 255, 0.06)',      desc: 'Contrato assinado' },
   { key: 'perdido',           label: 'Perdido',              color: '#94a3b8', bg: '#f1f5f9',                   desc: 'Lead perdido' },
 ];
 
@@ -98,7 +98,7 @@ export default function Tarefas() {
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
-      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'#2563eb' }} />
+      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
       <p style={{ color:'#94a3b8', fontSize:14 }}>Carregando tarefas...</p>
     </div>
   );

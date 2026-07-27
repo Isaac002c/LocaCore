@@ -45,7 +45,7 @@ export default function LeadsAcquisition() {
 
   const getStatusColor = (status) => {
     const colors = { 
-      novo: '#3B82F6', 
+      novo: 'var(--nx-primary)', 
       contactado: '#F59E0B', 
       qualificado: '#8B5CF6', 
       proposta: '#10B981', 
@@ -223,7 +223,7 @@ export default function LeadsAcquisition() {
                       className="source-fill" 
                       style={{ 
                         width: `${percentage}%`,
-                        backgroundColor: isMostProfitable ? '#22c55e' : '#3b82f6'
+                        backgroundColor: isMostProfitable ? '#22c55e' : 'var(--nx-primary)'
                       }} 
                     />
                   </div>

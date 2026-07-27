@@ -13,7 +13,7 @@ import { maskCpf, onlyDigits, validateCPF, validateCNH } from '../../lib/process
 // ── Constantes/helpers compartilhados do módulo de eventos ──────────────────
 // Tipos selecionáveis (novos). Legados ficam só para exibição de eventos antigos.
 export const TYPES = [
-  { value: 'presencial',   label: 'Presencial',   color: '#2563eb' },
+  { value: 'presencial',   label: 'Presencial',   color: 'var(--nx-primary)' },
   { value: 'videochamada', label: 'Videochamada', color: '#6366f1' },
   { value: 'audiencia',    label: 'Audiência',    color: '#0891b2' },
   { value: 'ligacao',      label: 'Ligação',      color: '#f59e0b' },

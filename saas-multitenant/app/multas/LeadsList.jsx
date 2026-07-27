@@ -12,9 +12,9 @@ const ALL_STATUSES = [
   { value: 'entrada',           label: 'Entrada',              color: '#64748b' },
   { value: 'possui_defensor',   label: 'Já Possui Defensor',   color: '#8b5cf6' },
   { value: 'nao_quer_defender', label: 'Não Quer se Defender', color: '#f59e0b' },
-  { value: 'negociacao',        label: 'Em Negociação',        color: '#3b82f6' },
+  { value: 'negociacao',        label: 'Em Negociação',        color: 'var(--nx-primary)' },
   { value: 'nao_encontrado',    label: 'Não Encontrado',       color: '#ef4444' },
-  { value: 'fechado',           label: 'Fechado',              color: '#2563eb' },
+  { value: 'fechado',           label: 'Fechado',              color: 'var(--nx-primary)' },
   { value: 'perdido',           label: 'Perdido',              color: '#94a3b8' },
 ];
 
@@ -148,7 +148,7 @@ export default function LeadsList() {
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
-      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'#2563eb' }} />
+      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
       <p style={{ color:'#94a3b8', fontSize:14 }}>Carregando leads...</p>
     </div>
   );
@@ -223,7 +223,7 @@ export default function LeadsList() {
                   <td style={{ color:'#475569', fontSize:13 }}>{lead.created_by_name||'—'}</td>
                   <td>
                     <div className="actions-cell">
-                      <button onClick={()=>setSchedulingLead(lead)} className="btn-icon" title="Agendar" style={{ color:'#2563eb' }}>
+                      <button onClick={()=>setSchedulingLead(lead)} className="btn-icon" title="Agendar" style={{ color:'var(--nx-primary)' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="4" width="18" height="18" rx="2"/>
                           <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>

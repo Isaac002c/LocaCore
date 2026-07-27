@@ -4,7 +4,7 @@
 // Regras (MVP):
 //   * Administrador (role 'admin'): acesso completo (ler + gerenciar).
 //   * Consultor / seller / demais roles: SEM acesso por padrão → 403.
-//   * Super Admin (Chronostek): NÃO acessa dados financeiros internos do tenant.
+//   * Super Admin (TELUN): NÃO acessa dados financeiros internos do tenant.
 //
 // Segurança não depende de ocultar menu: toda rota financeira usa estes guards.
 // O tenant vem SEMPRE do token (req.tenantId); tenant_id do payload é ignorado.

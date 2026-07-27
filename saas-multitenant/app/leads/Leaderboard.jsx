@@ -162,7 +162,7 @@ export default function Leaderboard() {
                         background: rankingType === 'revenue' 
                           ? 'linear-gradient(90deg, #22c55e, #16a34a)'
                           : rankingType === 'deals'
-                            ? 'linear-gradient(90deg, #3b82f6, #2563eb)'
+                            ? 'linear-gradient(90deg, var(--nx-primary), var(--nx-primary))'
                             : 'linear-gradient(90deg, #8b5cf6, #7c3aed)'
                       }}
                     />

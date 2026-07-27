@@ -4,7 +4,7 @@
 // charts.jsx — Gráficos do módulo financeiro (recharts).
 //
 // Regras de design aplicadas (dataviz):
-//   * Paleta validada (CVD/contraste): azul #1d4ed8, verde #15803d, âmbar #d97706.
+//   * Paleta validada (CVD/contraste): azul var(--nx-primary-hover), verde #15803d, âmbar #d97706.
 //   * Cores por SIGNIFICADO: verde=recebido/entrada, âmbar=atenção/pendente/saída,
 //     vermelho=vencido, azul=informativo/faturado, cinza=cancelado (sempre c/ rótulo).
 //   * Linhas 2px, barras finas com pontas 4px, grid recessivo, 1 eixo só.
@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 
 export const CHART_COLORS = {
-  blue: '#1d4ed8',
+  blue: 'var(--nx-primary-hover)',
   green: '#15803d',
   amber: '#d97706',
   red: '#b91c1c',

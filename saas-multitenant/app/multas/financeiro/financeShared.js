@@ -2,7 +2,7 @@
 
 // Helpers compartilhados das telas financeiras (padrão visual/formatos pt-BR).
 
-export const BRAND = '#2563eb';
+export const BRAND = 'var(--nx-primary)';
 
 // R$ 1.234,56 — aceita number|string (o backend devolve NUMERIC como string).
 export function formatBRL(value) {
@@ -67,7 +67,7 @@ export const STATUS_COLORS = {
   cancelado: { bg: 'rgba(100,116,139,.14)', fg: '#64748b' },
   // faturamento
   nao_faturado:      { bg: 'rgba(100,116,139,.12)', fg: '#475569' },
-  faturado:          { bg: 'rgba(59,130,246,.14)',  fg: '#1d4ed8' },
+  faturado:          { bg: 'rgba(59,130,246,.14)',  fg: 'var(--nx-primary-hover)' },
   parcialmente_pago: { bg: 'rgba(245,158,11,.14)',  fg: '#b45309' },
   // recibos
   emitido:   { bg: 'rgba(21,128,61,.14)',   fg: '#15803d' },

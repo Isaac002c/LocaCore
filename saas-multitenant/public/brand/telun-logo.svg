@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" role="img" aria-label="TELUN">
+  <!-- PLACEHOLDER tipográfico neutro — NÃO é a logo oficial da TELUN.
+       Substituir pelo arquivo oficial. Ver public/brand/README.md -->
+  <text x="0" y="38"
+        font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="34" font-weight="700" letter-spacing="6" fill="#A56BFF">TELUN</text>
+</svg>

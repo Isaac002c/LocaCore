@@ -80,7 +80,7 @@ export default function Register() {
           <h1 style={{ 
             fontSize: '28px', 
             fontWeight: 'bold', 
-            color: '#3b82f6',
+            color: 'var(--nx-primary)',
             marginBottom: '8px'
           }}>
             {PRODUCT_NAME}
@@ -108,7 +108,7 @@ export default function Register() {
           style={{ 
             display: 'inline-block',
             padding: '14px 32px',
-            background: '#3b82f6',
+            background: 'var(--nx-primary)',
             color: 'white',
             borderRadius: '6px',
             fontSize: '16px',

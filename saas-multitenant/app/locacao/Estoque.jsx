@@ -45,7 +45,7 @@ export default function Estoque() {
 
   const displayed = items.filter((i) => !search || (i.name + ' ' + (i.code || '')).toLowerCase().includes(search.toLowerCase()));
 
-  if (loading && items.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando estoque...</p></div>;
+  if (loading && items.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando estoque...</p></div>;
 
   return (
     <div className="clients-page">

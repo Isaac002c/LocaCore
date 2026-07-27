@@ -6,7 +6,7 @@ import { getUsers, getRoles, createUser, updateUser, deleteUser, changePassword,
 const ROLE_LABELS = { admin: 'Administrador', manager: 'Gerente', operator: 'Operador', viewer: 'Visualizador' };
 const roleLabel = (r) => ROLE_LABELS[r] || r;
 const roleStyle = (r) => ({
-  admin: { bg: '#ede9fe', text: '#6d28d9' }, manager: { bg: '#dbeafe', text: '#1d4ed8' },
+  admin: { bg: '#ede9fe', text: '#6d28d9' }, manager: { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
   operator: { bg: '#dcfce7', text: '#15803d' }, viewer: { bg: '#f1f5f9', text: '#475569' },
 }[r] || { bg: '#f1f5f9', text: '#475569' });
 
@@ -68,7 +68,7 @@ export default function Usuarios() {
   const total = users.length;
   const active = users.filter((u) => u.is_active !== false).length;
 
-  if (loading && users.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando usuários...</p></div>;
+  if (loading && users.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando usuários...</p></div>;
 
   return (
     <div className="clients-page">

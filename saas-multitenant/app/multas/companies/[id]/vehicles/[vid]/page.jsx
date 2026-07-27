@@ -181,7 +181,7 @@ export default function VehicleDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando veículo...</p>
     </div>
   );
@@ -200,7 +200,7 @@ export default function VehicleDetail() {
           ← {company?.razao_social || 'Empresa'}
         </button>
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(37, 99, 235,0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, flexShrink: 0, fontFamily: 'monospace' }}>
+          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(165, 107, 255, 0.1)', color: 'var(--nx-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, flexShrink: 0, fontFamily: 'monospace' }}>
             {(vehicle.plate || '—').substring(0, 4)}
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>

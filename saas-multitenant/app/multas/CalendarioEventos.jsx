@@ -155,7 +155,7 @@ export default function CalendarioEventos() {
 
       {showSpinner ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-          <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
+          <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
           <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando agenda...</p>
         </div>
       ) : view === 'mes' ? (
@@ -221,9 +221,9 @@ export default function CalendarioEventos() {
               {SCOPES.map(s => (
                 <button key={s.key} onClick={() => setScope(s.key)}
                   style={{ padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    border: '1px solid ' + (scope === s.key ? '#2563eb' : '#e2e8f0'),
-                    background: scope === s.key ? 'var(--nx-primary-light, rgba(37, 99, 235,0.10))' : '#fff',
-                    color: scope === s.key ? '#2563eb' : '#64748b' }}>
+                    border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : '#e2e8f0'),
+                    background: scope === s.key ? 'var(--nx-primary-light, rgba(165, 107, 255, 0.10))' : '#fff',
+                    color: scope === s.key ? 'var(--nx-primary)' : '#64748b' }}>
                   {s.label}
                 </button>
               ))}
@@ -232,7 +232,7 @@ export default function CalendarioEventos() {
               <div className="ag-card"><div className="ag-empty">Nenhum evento {scope === 'past' ? 'passado' : scope === 'upcoming' ? 'próximo' : ''}.</div></div>
             ) : listDates.map(date => (
               <div key={date} className="ag-card">
-                <div className="ag-card-head" style={{ '--accent': '#2563eb', '--accent-soft': 'rgba(37, 99, 235,0.10)' }}>
+                <div className="ag-card-head" style={{ '--accent': 'var(--nx-primary)', '--accent-soft': 'rgba(165, 107, 255, 0.10)' }}>
                   <span className="ag-card-dot" />
                   <span className="ag-card-title" style={{ textTransform: 'capitalize' }}>{fmtDateLong(date)}</span>
                   <span className="ag-card-count">{groups[date].length}</span>
@@ -251,9 +251,9 @@ export default function CalendarioEventos() {
                 {SCOPES.map(s => (
                   <button key={s.key} onClick={() => setScope(s.key)}
                     style={{ textAlign: 'left', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      border: '1px solid ' + (scope === s.key ? '#2563eb' : '#e2e8f0'),
-                      background: scope === s.key ? 'var(--nx-primary-light, rgba(37, 99, 235,0.10))' : '#fff',
-                      color: scope === s.key ? '#2563eb' : '#475569' }}>
+                      border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : '#e2e8f0'),
+                      background: scope === s.key ? 'var(--nx-primary-light, rgba(165, 107, 255, 0.10))' : '#fff',
+                      color: scope === s.key ? 'var(--nx-primary)' : '#475569' }}>
                     {s.label}
                   </button>
                 ))}

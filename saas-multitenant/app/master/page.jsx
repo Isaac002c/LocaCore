@@ -10,7 +10,7 @@ const fmtDateTime = (v) => { if (!v) return 'nunca'; const dt = new Date(v); ret
 const slugify = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
 const EMPTY = { name: '', slug: '', email: '', adminName: '', adminEmail: '', adminPassword: '', status: 'ativo' };
-const WINE = '#2563eb';
+const WINE = 'var(--nx-primary)';
 
 function Stat({ label, value, color }) {
   return (
@@ -205,7 +205,7 @@ export default function MasterPanel() {
               <Stat label="Empresas (tenants)" value={overview?.total_tenants} color={WINE} />
               <Stat label="Ativas"   value={overview?.active_tenants}   color="#15803d" />
               <Stat label="Inativas" value={overview?.inactive_tenants} color="#94a3b8" />
-              <Stat label="Usuários" value={overview?.total_users}      color="#3b82f6" />
+              <Stat label="Usuários" value={overview?.total_users}      color="var(--nx-primary)" />
             </div>
 
             {/* Tenants */}

@@ -6,7 +6,7 @@ import { fmtDate } from './shared';
 
 // Cores/rótulos por tipo de evento da agenda operacional.
 const TYPE_META = {
-  retirada:   { label: 'Retirada',    bg: '#dbeafe', text: '#1d4ed8' },
+  retirada:   { label: 'Retirada',    bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
   devolucao:  { label: 'Devolução',   bg: '#dcfce7', text: '#15803d' },
   manutencao: { label: 'Manutenção',  bg: '#fef3c7', text: '#b45309' },
   multa:      { label: 'Multa',       bg: '#fee2e2', text: '#b91c1c' },
@@ -80,7 +80,7 @@ export default function Calendario() {
 
   const counts = FILTERS.reduce((acc, [k]) => { acc[k] = k ? events.filter((e) => e.type === k).length : events.length; return acc; }, {});
 
-  if (loading && events.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando agenda...</p></div>;
+  if (loading && events.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando agenda...</p></div>;
 
   return (
     <div className="clients-page">
@@ -109,8 +109,8 @@ export default function Calendario() {
           {groups.map((d) => (
             <div key={d}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: isToday(d) ? '#2563eb' : '#0f172a', margin: 0 }}>{fmtDate(d)}</h3>
-                {isToday(d) && <span style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', background: '#dbeafe', padding: '2px 8px', borderRadius: 999 }}>HOJE</span>}
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: isToday(d) ? 'var(--nx-primary)' : '#0f172a', margin: 0 }}>{fmtDate(d)}</h3>
+                {isToday(d) && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--nx-primary)', background: '#dbeafe', padding: '2px 8px', borderRadius: 999 }}>HOJE</span>}
                 <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

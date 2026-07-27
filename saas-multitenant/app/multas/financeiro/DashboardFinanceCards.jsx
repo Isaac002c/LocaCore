@@ -34,7 +34,7 @@ export default function DashboardFinanceCards() {
       <div className="md-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 className="md-section-title">Financeiro (resumo)</h3>
         <button
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 600, fontSize: 13 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--nx-primary)', fontWeight: 600, fontSize: 13 }}
           onClick={() => go('visao')}
         >
           Abrir Financeiro →

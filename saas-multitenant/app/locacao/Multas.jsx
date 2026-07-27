@@ -49,7 +49,7 @@ export default function Multas() {
   const act = async (fn, id, msg) => { try { setNotice(null); await fn(id); setNotice(msg); await load(); } catch (err) { setError(err.message); } };
   const remove = async (id) => { if (!confirm('Excluir esta multa?')) return; try { await deleteFine(id); await load(); } catch (err) { setError(err.message); } };
 
-  if (loading && rows.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando multas...</p></div>;
+  if (loading && rows.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando multas...</p></div>;
 
   return (
     <div className="clients-page">

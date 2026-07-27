@@ -309,7 +309,7 @@ export default function MultasDashboard() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#2563eb' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando...</p>
     </div>
   );
@@ -345,7 +345,7 @@ export default function MultasDashboard() {
             title="CLIENTES FECHADOS"
             value={fechados}
             subtitle={`de ${clients.length} no total`}
-            color="#2563eb"
+            color="var(--nx-primary)"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
             onClick={() => router.push('/dashboard?module=multas&tab=clients')}
           />
@@ -353,7 +353,7 @@ export default function MultasDashboard() {
             title="EM NEGOCIAÇÃO"
             value={negociando}
             subtitle="clientes em aberto"
-            color="#3b82f6"
+            color="var(--nx-primary)"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
             onClick={() => router.push('/dashboard?module=multas&tab=clients')}
           />
@@ -450,7 +450,7 @@ export default function MultasDashboard() {
               { label: 'Defesa Prévia',      value: defesaTotal,    color: '#6366f1' },
               { label: '1ª Instância',       value: inst1Total,     color: '#f59e0b' },
               { label: '2ª Instância',       value: inst2Total,     color: '#ef4444' },
-              { label: 'Tarefas ativas',     value: kanbanActive,   color: '#3b82f6' },
+              { label: 'Tarefas ativas',     value: kanbanActive,   color: 'var(--nx-primary)' },
             ].map(({ label, value, color }) => (
               <div key={label} className="md-stage-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -476,7 +476,7 @@ export default function MultasDashboard() {
                   style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
                   onClick={() => router.push('/dashboard?module=multas&tab=eventos')}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--nx-primary)', marginTop: 6, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>

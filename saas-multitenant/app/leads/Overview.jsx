@@ -223,7 +223,7 @@ export default function LeadsOverview() {
 
   const getStatusColor = (status) => {
     const colors = {
-      novo: '#3B82F6',
+      novo: 'var(--nx-primary)',
       contactado: '#F59E0B',
       qualificado: '#8B5CF6',
       proposta: '#10B981',
@@ -263,7 +263,7 @@ export default function LeadsOverview() {
   const getLeadTemperature = (score) => {
     if (score >= 30) return { label: 'Quente', color: '#EF4444' };
     if (score >= 15) return { label: 'Morno', color: '#F59E0B' };
-    return { label: 'Frio', color: '#3B82F6' };
+    return { label: 'Frio', color: 'var(--nx-primary)' };
   };
 
   // ========== PROBABILIDADES POR ESTÁGIO ==========
@@ -485,7 +485,7 @@ export default function LeadsOverview() {
                 className="target-progress-fill"
                 style={{ 
                   width: `${Math.min(metrics.targetProgress, 100)}%`,
-                  background: metrics.targetProgress >= 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #3b82f6, #2563eb)'
+                  background: metrics.targetProgress >= 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, var(--nx-primary), var(--nx-primary))'
                 }}
               />
             </div>

@@ -4,19 +4,28 @@ const bcrypt = require('bcryptjs');
 // ============================================
 // MASTER MODEL — gestão do SaaS (somente super_admin).
 // Queries CROSS-TENANT propositais: usadas APENAS por rotas com requireSuperAdmin.
-// O tenant "Chronostek" (slug) e os super_admin são excluídos das métricas/listas.
+// O tenant OPERADOR DA PLATAFORMA (TELUN) e os super_admin são excluídos das
+// métricas/listas — ele hospeda o painel master, não é um cliente.
+//
+// MIGRAÇÃO DE MARCA: o slug produtivo era `chronostek`. Durante a transição,
+// AMBOS os slugs são reconhecidos como operador para que as métricas continuem
+// corretas antes e depois da migration de banco. Ver
+// backend/migrations/MIGRATION_CHRONOSTEK_TO_TELUN.md (item "remover alias").
 // ============================================
 
-const MASTER_SLUG = 'chronostek';
+const MASTER_SLUG = process.env.MASTER_TENANT_SLUG || 'telun';
+// Aliases temporários de compatibilidade — remover após validação (ver doc).
+const MASTER_SLUG_ALIASES = ['chronostek'];
+const MASTER_SLUGS = [MASTER_SLUG, ...MASTER_SLUG_ALIASES];
 
 const getOverview = async () => {
   const r = await pool.query(
     `SELECT
-       (SELECT COUNT(*) FROM tenants WHERE slug IS DISTINCT FROM $1)                                                       AS total_tenants,
-       (SELECT COUNT(*) FROM tenants WHERE slug IS DISTINCT FROM $1 AND COALESCE(status,'ativo') = 'ativo')                AS active_tenants,
-       (SELECT COUNT(*) FROM tenants WHERE slug IS DISTINCT FROM $1 AND COALESCE(status,'ativo') <> 'ativo')               AS inactive_tenants,
+       (SELECT COUNT(*) FROM tenants WHERE (slug IS NULL OR slug <> ALL($1)))                                                       AS total_tenants,
+       (SELECT COUNT(*) FROM tenants WHERE (slug IS NULL OR slug <> ALL($1)) AND COALESCE(status,'ativo') = 'ativo')                AS active_tenants,
+       (SELECT COUNT(*) FROM tenants WHERE (slug IS NULL OR slug <> ALL($1)) AND COALESCE(status,'ativo') <> 'ativo')               AS inactive_tenants,
        (SELECT COUNT(*) FROM users WHERE role IS DISTINCT FROM 'super_admin')                                              AS total_users`,
-    [MASTER_SLUG]
+    [MASTER_SLUGS]
   );
   return r.rows[0];
 };
@@ -28,10 +37,10 @@ const listTenants = async () => {
             MAX(u.last_login) AS last_login
        FROM tenants t
        LEFT JOIN users u ON u.tenant_id = t.id
-      WHERE t.slug IS DISTINCT FROM $1
+      WHERE (t.slug IS NULL OR t.slug <> ALL($1))
       GROUP BY t.id, t.name, t.slug, t.status, t.email, t.created_at
       ORDER BY t.created_at DESC NULLS LAST`,
-    [MASTER_SLUG]
+    [MASTER_SLUGS]
   );
   return r.rows;
 };
@@ -198,7 +207,7 @@ const deleteUser = async (id) => {
 };
 
 module.exports = {
-  MASTER_SLUG, getOverview, listTenants, getTenantById, getTenantUsers,
+  MASTER_SLUG, MASTER_SLUGS, MASTER_SLUG_ALIASES, getOverview, listTenants, getTenantById, getTenantUsers,
   slugExists, slugExistsExcept, emailInTenant, emailInTenantExcept,
   createTenantWithAdmin, setTenantStatus, updateTenant, deleteTenant,
   createTenantUser, getUserById, resetUserPassword, updateUser, deleteUser,

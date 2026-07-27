@@ -110,7 +110,7 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
               </div>
               <div className="cd-doc-info">
                 {doc.file_url
-                  ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="cd-doc-name" style={{ color: '#2563eb', textDecoration: 'none' }}>{doc.file_name || 'Documento'}</a>
+                  ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="cd-doc-name" style={{ color: 'var(--nx-primary)', textDecoration: 'none' }}>{doc.file_name || 'Documento'}</a>
                   : <span className="cd-doc-name">{doc.file_name || 'Documento'}</span>}
                 <span className="cd-doc-meta">
                   {doc.category && doc.category !== 'outros' && <span>{doc.category}</span>}

@@ -47,13 +47,23 @@ const DEFAULT_CATEGORIES = [
   { name: 'Outras despesas',           type: 'saida'   },
 ];
 
-// Identidade padrão do PRODUTO (LocaCore, fornecido pela TELUN). Usada apenas
-// como fallback quando o tenant (a locadora) não tem branding próprio configurado.
-// Parametrizável por variável de ambiente para não fixar a marca no código.
+// Identidade institucional do PRODUTO — fonte única do backend (espelha
+// app/lib/brand.js no frontend).
+//   EMPRESA TELUN · PRODUTO LocaCore · ASSINATURA "Um produto TELUN"
+// Usada como fallback quando o tenant (a locadora) não tem branding próprio.
+// A locadora é a OPERADORA da locação; a TELUN é a FORNECEDORA da plataforma.
 const DEFAULT_BRANDING = {
   name:           process.env.PRODUCT_NAME      || 'LocaCore',
-  signature:      process.env.PRODUCT_SIGNATURE || 'by TELUN',
+  signature:      process.env.PRODUCT_SIGNATURE || 'Um produto TELUN',
+  company:        process.env.PLATFORM_COMPANY_NAME || 'TELUN',
+  operator:       process.env.PLATFORM_OPERATOR_NAME || 'TELUN',
+  support_email:  process.env.SUPPORT_EMAIL     || 'suporte@telun.com.br',
+  website:        process.env.PLATFORM_WEBSITE  || '',
   receipt_prefix: process.env.RECEIPT_PREFIX    || 'LOCA',
+  colors: {
+    cosmic: '#0B0B12', deepViolet: '#3B1F6A', electricLilac: '#A56BFF',
+    luminousCopper: '#FF8A3D', sandGold: '#FFD8A6',
+  },
 };
 
 module.exports = {

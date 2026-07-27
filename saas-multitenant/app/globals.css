@@ -1,17 +1,33 @@
 /* ============================================
-   TEMA BASE (NEXOS) — Variáveis Globais
-   Paleta padrão do produto Nexos (azul). A identidade por tenant
-   (logo/cor) é aplicada dinamicamente a partir dos dados do tenant.
+   TEMA BASE — LocaCore, um produto TELUN.
+   Paleta oficial TELUN (Telos + Lumen: a luz que conduz ao propósito).
+   Fonte única no JS: app/lib/brand.js — mantenha os dois em sincronia.
+
+   A identidade por TENANT (logo/cor da locadora) continua sendo aplicada
+   dinamicamente a partir dos dados do tenant — nada disso é fixado aqui.
    ============================================ */
 :root {
-  --nx-primary:        #2563eb;
-  --nx-primary-hover:  #1d4ed8;
-  --nx-primary-light:  rgba(37, 99, 235, 0.10);
-  --nx-primary-mid:    rgba(37, 99, 235, 0.16);
-  --nx-primary-text:   #93b4f5;   /* texto legível sobre fundo escuro */
+  /* Paleta institucional TELUN */
+  --telun-cosmic:          #0B0B12;  /* fundo principal (shell)            */
+  --telun-deep-violet:     #3B1F6A;  /* superfícies e áreas secundárias    */
+  --telun-electric-lilac:  #A56BFF;  /* ações principais e estado ativo    */
+  --telun-luminous-copper: #FF8A3D;  /* alertas e destaques pontuais       */
+  --telun-sand-gold:       #FFD8A6;  /* detalhes, badges, informações      */
+
+  /* Tokens do produto — apontam para a paleta TELUN */
+  --nx-primary:        var(--telun-electric-lilac);
+  --nx-primary-hover:  #8B4DF5;                      /* lilás mais profundo */
+  --nx-primary-light:  rgba(165, 107, 255, 0.10);
+  --nx-primary-mid:    rgba(165, 107, 255, 0.18);
+  --nx-primary-text:   #C9A6FF;   /* texto legível sobre fundo escuro */
+  --nx-accent:         var(--telun-luminous-copper);
+  --nx-highlight:      var(--telun-sand-gold);
+  --nx-focus-ring:     rgba(165, 107, 255, 0.45);
+
   --nx-beige:       #d3cfc3;
   --nx-gray:        #a7a5a7;
-  --nx-dark:        #050708;
+  --nx-dark:        var(--telun-cosmic);
+  --nx-surface-dark: var(--telun-deep-violet);
 }
 
 * {
@@ -97,7 +113,7 @@ a {
 
 .logo-icon {
   font-size: 32px;
-  color: #3b82f6;
+  color: var(--nx-primary);
   text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
@@ -137,12 +153,12 @@ a {
 
 .dropdown-trigger:hover {
   background: #e2e8f0;
-  border-color: #2563eb;
+  border-color: var(--nx-primary);
   color: #1e293b;
 }
 
 .module-icon {
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .dropdown-arrow {
@@ -200,8 +216,8 @@ a {
 }
 
 .dropdown-item.active {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  background: rgba(165, 107, 255, 0.1);
+  color: var(--nx-primary);
 }
 
 /* User Info */
@@ -216,11 +232,11 @@ a {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: rgba(37, 99, 235, 0.07);
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  background: rgba(165, 107, 255, 0.07);
+  border: 1px solid rgba(165, 107, 255, 0.2);
   border-radius: 20px;
   font-size: 13px;
-  color: #2563eb;
+  color: var(--nx-primary);
   font-weight: 500;
 }
 
@@ -231,7 +247,7 @@ a {
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, var(--nx-primary), #8b5cf6);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -314,9 +330,9 @@ a {
 }
 
 .module-tab.active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
-  background: rgba(37, 99, 235, 0.05);
+  color: var(--nx-primary);
+  border-bottom-color: var(--nx-primary);
+  background: rgba(165, 107, 255, 0.05);
 }
 
 .tab-icon {
@@ -347,7 +363,7 @@ a {
   width: 48px;
   height: 48px;
   border: 3px solid #1a0506;
-  border-top-color: #2563eb;
+  border-top-color: var(--nx-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -419,7 +435,7 @@ a {
   left: 0;
   width: 4px;
   height: 100%;
-  background: #2563eb;
+  background: var(--nx-primary);
 }
 
 .kpi-card:hover {
@@ -585,7 +601,7 @@ h3 {
 }
 
 .funnel-arrow {
-  color: #3b82f6;
+  color: var(--nx-primary);
   font-size: 20px;
   margin: 0 12px;
 }
@@ -618,7 +634,7 @@ h3 {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid var(--nx-primary);
   border-radius: 16px 16px 0 0;
   background: #ffffff;
 }
@@ -664,7 +680,7 @@ h3 {
 }
 
 .kanban-card:hover {
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
   transform: translateY(-2px);
 }
@@ -746,14 +762,14 @@ h3 {
 }
 
 .period-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--nx-primary);
+  color: var(--nx-primary);
   background: #f8fafc;
 }
 
 .period-btn.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: #fff;
 }
 
@@ -774,7 +790,7 @@ h3 {
 }
 
 .growth-card.current {
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
   background: linear-gradient(135deg, #ffffff, #f8fafc);
 }
 
@@ -800,7 +816,7 @@ h3 {
 
 .growth-arrow {
   font-size: 32px;
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .growth-percent {
@@ -846,7 +862,7 @@ h3 {
 
 .target-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  background: linear-gradient(90deg, var(--nx-primary), #22c55e);
   border-radius: 14px;
   transition: width 0.5s ease;
 }
@@ -975,7 +991,7 @@ h3 {
 
 .source-fill {
   height: 100%;
-  background: #3b82f6;
+  background: var(--nx-primary);
   border-radius: 5px;
   transition: width 0.3s ease;
 }
@@ -1003,8 +1019,8 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--nx-primary);
+  box-shadow: 0 0 0 3px rgba(165, 107, 255, 0.1);
 }
 
 input::placeholder, textarea::placeholder {
@@ -1022,7 +1038,7 @@ select {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--nx-primary), var(--nx-primary-hover));
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1034,9 +1050,9 @@ select {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #1d4ed8, #4a0c0d);
+  background: linear-gradient(135deg, var(--nx-primary-hover), #4a0c0d);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 12px rgba(165, 107, 255, 0.4);
 }
 
 .btn-primary:disabled {
@@ -1255,7 +1271,7 @@ tr:last-child td {
 
 .rate-fill {
   height: 100%;
-  background: #3b82f6;
+  background: var(--nx-primary);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -1283,7 +1299,7 @@ tr:last-child td {
   padding: 24px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid var(--nx-primary);
 }
 
 .status-name {
@@ -1451,7 +1467,7 @@ tr:last-child td {
 
 .ranking-bar {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  background: linear-gradient(90deg, var(--nx-primary), #22c55e);
   transition: width 0.5s ease;
 }
 
@@ -1525,7 +1541,7 @@ tr:last-child td {
 }
 
 .comparison-stat.highlight .stat-value {
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .comparison-bar {
@@ -1622,7 +1638,7 @@ tr:last-child td {
 }
 
 .chart-bar.leads {
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  background: linear-gradient(90deg, var(--nx-primary), #60a5fa);
 }
 
 .chart-bar.gained {
@@ -1657,7 +1673,7 @@ tr:last-child td {
 }
 
 .legend-dot.leads {
-  background: #3b82f6;
+  background: var(--nx-primary);
 }
 
 .legend-dot.gained {
@@ -2221,8 +2237,8 @@ tr:last-child td {
 }
 
 .kanban-card-action:hover {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: white;
 }
 
@@ -2423,7 +2439,7 @@ tr:last-child td {
 }
 
 .pipeline-bar {
-  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  background: linear-gradient(180deg, var(--nx-primary), var(--nx-primary));
 }
 
 .bar-label {
@@ -2583,7 +2599,7 @@ tr:last-child td {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--nx-primary);
   cursor: pointer;
   border: 2px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -2593,7 +2609,7 @@ tr:last-child td {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--nx-primary);
   cursor: pointer;
   border: 2px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -2653,14 +2669,14 @@ tr:last-child td {
 
 .kpi-setting-item:hover {
   background: #f1f5f9;
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
 }
 
 .kpi-setting-item input[type="checkbox"] {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--nx-primary);
 }
 
 .kpi-setting-item span {
@@ -2692,14 +2708,14 @@ tr:last-child td {
 }
 
 .ranking-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--nx-primary);
+  color: var(--nx-primary);
   background: #f8fafc;
 }
 
 .ranking-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: #fff;
 }
 
@@ -2798,13 +2814,13 @@ tr:last-child td {
 }
 
 .format-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--nx-primary);
+  color: var(--nx-primary);
 }
 
 .format-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: #fff;
 }
 
@@ -2922,7 +2938,7 @@ tr:last-child td {
 }
 
 .stat-card.completed {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid var(--nx-primary);
 }
 
 .stat-card.clients {
@@ -3024,7 +3040,7 @@ tr:last-child td {
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
   background: #ffffff;
 }
 
@@ -3068,8 +3084,8 @@ tr:last-child td {
 }
 
 .btn-filter:hover {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: white;
 }
 
@@ -3286,7 +3302,7 @@ tr:last-child td {
 
 .status-select.status-completed {
   background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .status-select.status-cancelled {
@@ -3323,7 +3339,7 @@ tr:last-child td {
 
 .doc-link {
   padding: 6px 12px;
-  background: #3b82f6;
+  background: var(--nx-primary);
   color: white;
   border-radius: 6px;
   font-size: 12px;
@@ -3333,7 +3349,7 @@ tr:last-child td {
 }
 
 .doc-link:hover {
-  background: #2563eb;
+  background: var(--nx-primary);
 }
 
 .stats-row {
@@ -3394,7 +3410,7 @@ tr:last-child td {
 
 .btn-retry {
   padding: 10px 20px;
-  background: #3b82f6;
+  background: var(--nx-primary);
   color: white;
   border: none;
   border-radius: 10px;
@@ -3404,7 +3420,7 @@ tr:last-child td {
 }
 
 .btn-retry:hover {
-  background: #2563eb;
+  background: var(--nx-primary);
 }
 
 @media (max-width: 768px) {
@@ -3490,7 +3506,7 @@ tr:last-child td {
 }
 
 .alert-card.alert-info {
-  border-left-color: #3b82f6;
+  border-left-color: var(--nx-primary);
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent);
 }
 
@@ -3668,7 +3684,7 @@ tr:last-child td {
 
 .role-manager {
   background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .role-operator {
@@ -3755,7 +3771,7 @@ tr:last-child td {
 
 .activity-card:hover {
   background: #f8fafc;
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
 }
 
 .activity-card .activity-icon {
@@ -3899,8 +3915,8 @@ tr:last-child td {
 }
 
 .btn-pagination:hover:not(:disabled) {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
   color: white;
 }
 
@@ -3933,7 +3949,7 @@ tr:last-child td {
 }
 
 .breadcrumb span:hover {
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .breadcrumb .separator {
@@ -4006,12 +4022,12 @@ tr:last-child td {
 
 .service-card:hover {
   background: #f1f5f9;
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
 }
 
 .service-card.selected {
   background: rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
+  border-color: var(--nx-primary);
 }
 
 .service-info h3 {
@@ -4085,7 +4101,7 @@ html, body {
 .sidebar {
   width: 256px;
   min-width: 256px;
-  background: #050708; /* Nexos dark shell */
+  background: var(--telun-cosmic); /* shell escuro TELUN */
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -4274,7 +4290,7 @@ html, body {
 }
 
 .sidebar-item:hover {
-  background: rgba(37, 99, 235,0.12);
+  background: rgba(165, 107, 255, 0.12);
   color: #93b4f5;
 }
 
@@ -4354,7 +4370,7 @@ html, body {
   justify-content: center;
   width: 100%;
   padding: 8px;
-  border: 1px solid rgba(37, 99, 235,0.2);
+  border: 1px solid rgba(165, 107, 255, 0.2);
   border-radius: 8px;
   background: transparent;
   color: #4a2e2e;
@@ -4363,7 +4379,7 @@ html, body {
 }
 
 .sidebar-collapse-btn:hover {
-  background: rgba(37, 99, 235,0.12);
+  background: rgba(165, 107, 255, 0.12);
   color: var(--nx-primary-text);
 }
 
@@ -4373,9 +4389,9 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border-top: 1px solid rgba(37, 99, 235,0.2);
-  border-bottom: 1px solid rgba(37, 99, 235,0.2);
-  background: rgba(37, 99, 235,0.08);
+  border-top: 1px solid rgba(165, 107, 255, 0.2);
+  border-bottom: 1px solid rgba(165, 107, 255, 0.2);
+  background: rgba(165, 107, 255, 0.08);
   flex-shrink: 0;
 }
 
@@ -4392,7 +4408,7 @@ html, body {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235,0.4);
+  box-shadow: 0 2px 8px rgba(165, 107, 255, 0.4);
 }
 
 .cr-brand-text {
@@ -4526,7 +4542,7 @@ html, body {
 }
 
 .clients-summary-card.all  { border-top-color: #94a3b8; }
-.clients-summary-card.nego { border-top-color: #3b82f6; }
+.clients-summary-card.nego { border-top-color: var(--nx-primary); }
 .clients-summary-card.fechado { border-top-color: var(--nx-primary); }
 
 .summary-number {
@@ -4620,11 +4636,11 @@ html, body {
 
 .client-status-badge.negociacao {
   background: rgba(59,130,246,0.1);
-  color: #3b82f6;
+  color: var(--nx-primary);
 }
 
 .client-status-badge.fechado {
-  background: rgba(37, 99, 235,0.1);
+  background: rgba(165, 107, 255, 0.1);
   color: var(--nx-primary);
 }
 
@@ -4718,7 +4734,7 @@ html, body {
   border: 1px solid rgba(59,130,246,0.18);
   border-radius: 20px;
   font-size: 12px;
-  color: #3b82f6;
+  color: var(--nx-primary);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -4737,7 +4753,7 @@ html, body {
 .ph-avatar {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, var(--nx-primary), #8b5cf6);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -4841,7 +4857,7 @@ html, body {
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  border-top: 3px solid var(--accent, #3b82f6);
+  border-top: 3px solid var(--accent, var(--nx-primary));
   padding: 20px;
   transition: box-shadow 0.2s, transform 0.2s;
 }
@@ -5073,8 +5089,8 @@ html, body {
 
 /* Protocolo inline */
 .cd-protocol-panel {
-  background: rgba(37, 99, 235,0.03);
-  border-top: 1px solid rgba(37, 99, 235,0.12);
+  background: rgba(165, 107, 255, 0.03);
+  border-top: 1px solid rgba(165, 107, 255, 0.12);
   padding: 14px 20px;
 }
 
@@ -5088,12 +5104,12 @@ html, body {
 .cd-protocol-title {
   font-size: 13px;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--nx-primary);
 }
 
 .cd-protocol-badge {
-  background: rgba(37, 99, 235,0.1);
-  color: #2563eb;
+  background: rgba(165, 107, 255, 0.1);
+  color: var(--nx-primary);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
@@ -5143,7 +5159,7 @@ html, body {
 .cd-protocol-form input:focus,
 .cd-protocol-form select:focus,
 .cd-protocol-form textarea:focus {
-  border-color: #2563eb;
+  border-color: var(--nx-primary);
 }
 
 .cd-protocol-upload-hint {
@@ -5186,8 +5202,8 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(37, 99, 235,0.08);
-  color: #2563eb;
+  background: rgba(165, 107, 255, 0.08);
+  color: var(--nx-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5258,7 +5274,7 @@ html, body {
 
 .md-metric-click-hint {
   font-size: 11px;
-  color: var(--accent, #2563eb);
+  color: var(--accent, var(--nx-primary));
   margin-top: 10px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -5320,14 +5336,14 @@ html, body {
 .cal-iconbtn:hover { background:#f8fafc; border-color:#cbd5e1; }
 .cal-toggle { display:flex; gap:0; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
 .cal-toggle button { padding:7px 14px; font-size:13px; font-weight:600; background:#fff; color:#64748b; border:none; cursor:pointer; }
-.cal-toggle button.active { background:var(--nx-primary, #2563eb); color:#fff; }
+.cal-toggle button.active { background:var(--nx-primary); color:#fff; }
 
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
 .cal-weekday { text-align:center; font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; padding:4px 0; }
 .cal-cell { min-height:104px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; padding:6px 7px; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:background .14s, box-shadow .14s; overflow:hidden; }
 .cal-cell:hover { background:#f8fafc; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
 .cal-cell--out { background:#f8fafc; opacity:.5; }
-.cal-cell--today .cal-daynum span:first-child { background:var(--nx-primary,#2563eb); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
+.cal-cell--today .cal-daynum span:first-child { background:var(--nx-primary); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
 .cal-cell--closed { background:repeating-linear-gradient(45deg,#fef2f2,#fef2f2 7px,#fff 7px,#fff 14px); border-color:#fecaca; }
 .cal-daynum { display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:700; color:#334155; }
 .cal-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -5649,7 +5665,7 @@ html, body {
 
 .kanban-col.drag-over {
   border-color: var(--nx-primary);
-  background: rgba(37, 99, 235,0.03);
+  background: rgba(165, 107, 255, 0.03);
 }
 
 .kanban-col-header {
@@ -5713,7 +5729,7 @@ html, body {
 .kanban-add-btn:hover {
   border-color: var(--nx-primary);
   color: var(--nx-primary);
-  background: rgba(37, 99, 235,0.04);
+  background: rgba(165, 107, 255, 0.04);
 }
 
 .kanban-cards {
@@ -5967,7 +5983,7 @@ html, body {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: #2563eb;
+  color: var(--nx-primary);
   font-weight: 500;
   background: none;
   border: none;
@@ -6002,7 +6018,7 @@ html, body {
   height: 52px;
   border-radius: 50%;
   background: var(--nx-primary-light);
-  border: 2px solid rgba(37, 99, 235,0.15);
+  border: 2px solid rgba(165, 107, 255, 0.15);
   color: var(--nx-primary);
   display: flex;
   align-items: center;
@@ -6285,7 +6301,7 @@ html, body {
 
 .user-home-card:hover {
   border-color: var(--nx-primary);
-  box-shadow: 0 2px 12px rgba(37, 99, 235,0.08);
+  box-shadow: 0 2px 12px rgba(165, 107, 255, 0.08);
 }
 
 .user-home-card.primary {
@@ -6407,16 +6423,22 @@ html, body {
   }
 }
 /* =============================================================================
-   NEXO DESIGN TOKENS + COMPONENTES (UX overhaul)
+   DESIGN TOKENS + COMPONENTES — LocaCore / TELUN
    Tokens e componentes reutilizáveis do design system. Prefixo .nx- para não
-   colidir com estilos legados. Base institucional: azul-marinho profundo.
+   colidir com estilos legados. Base institucional: paleta TELUN (escura).
+
+   IMPORTANTE (§8): as cores de STATUS abaixo (green/amber/red/cyan) NÃO seguem
+   a marca de propósito — sucesso, atenção, perigo e informação precisam
+   permanecer universalmente compreensíveis.
    ============================================================================= */
 
 :root {
-  /* Cores institucionais */
-  --nx-navy: #16324f;
-  --nx-navy-strong: #0f2438;
-  --nx-blue: #1d4ed8;
+  /* Cores institucionais — superfícies escuras da marca */
+  --nx-navy: var(--telun-deep-violet);
+  --nx-navy-strong: var(--telun-cosmic);
+  --nx-blue: var(--telun-electric-lilac);   /* ação principal */
+
+  /* Status — semânticos, preservados de propósito */
   --nx-green: #15803d;
   --nx-amber: #b45309;
   --nx-amber-chart: #d97706;
