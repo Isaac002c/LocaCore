@@ -1,0 +1,285 @@
+/* =============================================================================
+   TELUN SHELL — componentes visuais alinhados ao sistema interno da TELUN.
+   Prefixo .tl- para não colidir com o legado. Tudo por tokens semânticos
+   (definidos em globals.css): funciona igual no tema escuro e no claro.
+   Referência: §2 a §16 do escopo de UI/UX.
+   ============================================================================= */
+
+/* ── Botão de ícone (topbar, ações compactas) ─────────────────────────────── */
+.tl-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 9px;
+  background: transparent; border: 1px solid transparent;
+  color: var(--text-secondary); cursor: pointer; transition: all .15s ease;
+}
+.tl-icon-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+.tl-icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+
+/* ── LOGIN (§2): 52% institucional / 48% autenticação ─────────────────────── */
+.tl-login { display: flex; min-height: 100vh; background: var(--background); }
+.tl-login__brandside {
+  flex: 0 0 52%; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 40px 56px; position: relative; overflow: hidden;
+  background: var(--sidebar);
+}
+/* Glow radial sutil no alto do painel institucional (como na referência). */
+.tl-login__brandside::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 78% 8%, rgba(165, 107, 255, .20), transparent 70%),
+    radial-gradient(50% 40% at 15% 95%, rgba(59, 31, 106, .28), transparent 70%);
+}
+.tl-login__brandside > * { position: relative; z-index: 1; }
+.tl-login__logo { display: flex; align-items: center; gap: 12px; }
+.tl-login__logo-mark {
+  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 19px;
+}
+.tl-login__logo-text { font-size: 19px; font-weight: 700; letter-spacing: 3px; color: var(--text-primary); }
+.tl-login__center { max-width: 560px; }
+.tl-login__title {
+  font-size: clamp(28px, 3.1vw, 40px); font-weight: 700; line-height: 1.2;
+  color: var(--text-primary); margin: 0; letter-spacing: -0.4px;
+}
+.tl-login__title span { display: block; }          /* 2ª linha, mesma cor do título */
+.tl-login__title em { font-style: normal; color: var(--primary); }  /* palavra-destaque */
+.tl-login__lead { margin-top: 20px; font-size: 15px; line-height: 1.65; color: var(--text-secondary); max-width: 46ch; }
+.tl-login__kicker {
+  margin-top: 30px; font-size: 11.5px; font-weight: 600; letter-spacing: 2.4px;
+  color: var(--text-muted);
+}
+.tl-login__kicker b { color: var(--highlight); font-weight: 600; }
+.tl-login__footer { font-size: 12.5px; color: var(--text-muted); }
+
+.tl-login__formside {
+  flex: 1 1 48%; display: flex; align-items: center; justify-content: center; padding: 40px 32px;
+}
+.tl-login__form { width: 100%; max-width: 360px; }
+.tl-login__form h2 { font-size: 23px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; }
+.tl-login__sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 26px; }
+.tl-login__mobilebrand { display: none; }
+
+/* ── Campos ───────────────────────────────────────────────────────────────── */
+.tl-field { margin-bottom: 16px; }
+.tl-field label {
+  display: block; font-size: 12.5px; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 7px;
+}
+.tl-input, .tl-select {
+  width: 100%; height: 42px; padding: 0 13px;
+  background: var(--surface); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 9px;
+  font-size: 14px; transition: border-color .15s, box-shadow .15s;
+}
+.tl-input::placeholder { color: var(--text-muted); }
+.tl-input:focus, .tl-select:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.tl-field--password { position: relative; }
+.tl-field--password .tl-input { padding-right: 44px; }
+.tl-field__reveal {
+  position: absolute; right: 6px; bottom: 4px;
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: none; border: 0; color: var(--text-muted); cursor: pointer; border-radius: 7px;
+}
+.tl-field__reveal:hover { color: var(--text-primary); background: var(--surface-hover); }
+.tl-field__reveal:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+
+/* ── Botões (§15) ─────────────────────────────────────────────────────────── */
+.tl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 42px; padding: 0 18px; border-radius: 9px; border: 1px solid transparent;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.tl-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.tl-btn--primary { background: var(--primary); color: var(--primary-contrast); }
+.tl-btn--primary:hover:not(:disabled) { background: var(--primary-hover); }
+.tl-btn--secondary { background: var(--surface); color: var(--text-primary); border-color: var(--border); }
+.tl-btn--secondary:hover:not(:disabled) { background: var(--surface-hover); }
+.tl-btn--danger { background: var(--danger); color: #fff; }
+.tl-btn:disabled { opacity: .6; cursor: not-allowed; }
+.tl-btn--block { width: 100%; }
+
+.tl-alert {
+  padding: 11px 13px; border-radius: 9px; font-size: 13.5px; margin-bottom: 16px;
+  background: rgba(240, 83, 79, 0.12);
+  border: 1px solid rgba(240, 83, 79, 0.40);
+  color: var(--danger);
+}
+
+/* ── SIDEBAR (§4) ─────────────────────────────────────────────────────────── */
+.tl-sidebar {
+  width: 244px; flex-shrink: 0; background: var(--sidebar);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh;
+  transition: width .18s ease;
+}
+.tl-sidebar--collapsed { width: 68px; }
+.tl-sidebar__head {
+  height: 60px; display: flex; align-items: center; gap: 11px;
+  padding: 0 16px; border-bottom: 1px solid var(--border);
+}
+.tl-sidebar__nav { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+.tl-navitem {
+  display: flex; align-items: center; gap: 11px; padding: 9px 11px;
+  border-radius: 9px; color: var(--text-secondary); font-size: 14px; font-weight: 500;
+  cursor: pointer; border: 0; background: none; width: 100%; text-align: left;
+  transition: background .15s, color .15s;
+}
+.tl-navitem:hover { background: var(--surface-hover); color: var(--text-primary); }
+.tl-navitem.is-active {
+  background: var(--primary-soft); color: var(--primary); font-weight: 600;
+  position: relative;
+}
+/* Barra indicadora à esquerda do item ativo (como na referência). */
+.tl-navitem.is-active::before {
+  content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 22px; border-radius: 0 3px 3px 0; background: var(--primary);
+}
+.tl-navitem.is-active svg { color: var(--primary); }
+.tl-navitem:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.tl-navitem__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-sidebar--collapsed .tl-navitem { justify-content: center; padding: 9px; }
+.tl-sidebar--collapsed .tl-navitem__label,
+.tl-sidebar--collapsed .tl-sidebar__foot-text { display: none; }
+.tl-sidebar__foot {
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  font-size: 11.5px; color: var(--text-muted);
+}
+
+/* ── TOPBAR (§6) ──────────────────────────────────────────────────────────── */
+.tl-topbar {
+  height: 60px; display: flex; align-items: center; gap: 12px; padding: 0 18px;
+  background: var(--topbar); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 30;
+}
+.tl-search { flex: 1; max-width: 460px; position: relative; display: flex; align-items: center; }
+.tl-search .tl-input { height: 38px; padding-left: 36px; padding-right: 56px; background: var(--surface-secondary); }
+.tl-search__icon { position: absolute; left: 11px; color: var(--text-muted); pointer-events: none; display: flex; }
+.tl-search__kbd {
+  position: absolute; right: 9px; font-size: 11px; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; background: var(--surface);
+}
+.tl-user { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: 9px; cursor: pointer; border: 0; background: none; }
+.tl-user:hover { background: var(--surface-hover); }
+.tl-user__avatar {
+  width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 13px;
+}
+.tl-user__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.25; }
+.tl-user__role { font-size: 11.5px; color: var(--text-muted); }
+
+/* ── SHELL / CONTEÚDO (§3, §11) ───────────────────────────────────────────────
+   Layout da referência: a TOPBAR ocupa a largura TOTAL (com a marca TELUN no
+   canto superior esquerdo) e a SIDEBAR fica ABAIXO dela, à esquerda. */
+.tl-shell {
+  display: grid; height: 100vh; overflow: hidden; background: var(--background);
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 60px 1fr;
+  grid-template-areas: 'topbar topbar' 'sidebar main';
+}
+.tl-shell > .tl-topbar { grid-area: topbar; }
+.tl-shell > .tl-sidebar { grid-area: sidebar; height: auto; min-height: 0; }
+.tl-main { grid-area: main; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* Marca no canto superior esquerdo da topbar, alinhada à coluna da sidebar. */
+.tl-topbar__brand {
+  display: flex; align-items: center; gap: 10px;
+  width: 244px; flex-shrink: 0; padding-right: 14px;
+}
+.tl-topbar__brand-mark {
+  width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 15px;
+}
+.tl-topbar__brand-text { font-size: 15px; font-weight: 700; letter-spacing: 2.6px; color: var(--text-primary); }
+.tl-content { flex: 1; overflow-y: auto; padding: 20px 24px 40px; }
+.tl-breadcrumb { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
+.tl-breadcrumb span + span::before { content: '/'; margin: 0 7px; color: var(--border-strong); }
+.tl-breadcrumb .is-current { color: var(--text-secondary); }
+
+.tl-tabs {
+  display: flex; gap: 22px; border-bottom: 1px solid var(--border);
+  margin-bottom: 20px; overflow-x: auto; scrollbar-width: none;
+}
+.tl-tabs::-webkit-scrollbar { display: none; }
+.tl-tab {
+  padding: 10px 1px; background: none; border: 0; border-bottom: 2px solid transparent;
+  color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer;
+  white-space: nowrap; transition: color .15s, border-color .15s;
+}
+.tl-tab:hover { color: var(--text-primary); }
+.tl-tab.is-active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tl-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); border-radius: 5px; }
+
+.tl-pagehead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.tl-pagehead__title { font-size: 21px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.tl-pagehead__desc { font-size: 13.5px; color: var(--text-secondary); margin: 5px 0 0; }
+
+/* ── FILTROS (§12) ────────────────────────────────────────────────────────── */
+.tl-filters {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  padding: 14px; margin-bottom: 18px; display: flex; gap: 11px; align-items: flex-end; flex-wrap: wrap;
+}
+.tl-filters .tl-field { margin-bottom: 0; }
+.tl-filters__actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ── TABELAS (§13) ────────────────────────────────────────────────────────── */
+.tl-tablewrap { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; overflow: hidden; }
+.tl-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tl-table th {
+  text-align: left; padding: 11px 14px; font-size: 11.5px; font-weight: 600;
+  letter-spacing: .4px; text-transform: uppercase;
+  color: var(--text-muted); background: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.tl-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.tl-table tbody tr:last-child td { border-bottom: 0; }
+.tl-table tbody tr:hover { background: var(--surface-hover); }
+
+.tl-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  background: var(--surface-secondary); color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.tl-badge--success { background: rgba(52, 199, 123, .14); color: var(--success); border-color: rgba(52, 199, 123, .35); }
+.tl-badge--warning { background: rgba(255, 176, 32, .14); color: var(--warning); border-color: rgba(255, 176, 32, .35); }
+.tl-badge--danger  { background: rgba(240, 83, 79, .14);  color: var(--danger);  border-color: rgba(240, 83, 79, .35); }
+.tl-badge--info    { background: var(--primary-soft); color: var(--primary); border-color: rgba(165, 107, 255, .35); }
+
+/* ── CARDS (§14) ──────────────────────────────────────────────────────────── */
+.tl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 16px; }
+.tl-card__label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; }
+.tl-card__value { font-size: 25px; font-weight: 700; color: var(--text-primary); margin-top: 7px; }
+.tl-card__hint { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ── RESPONSIVO (§19) ─────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Sidebar vira drawer sobreposto; a topbar continua no topo. */
+  .tl-shell { grid-template-columns: 1fr; grid-template-areas: 'topbar' 'main'; }
+  .tl-shell > .tl-sidebar {
+    position: fixed; top: 60px; bottom: 0; left: 0; z-index: 60;
+    transform: translateX(-100%); transition: transform .18s ease;
+  }
+  .tl-shell > .tl-sidebar.is-open { transform: translateX(0); box-shadow: 0 0 40px rgba(0, 0, 0, .45); }
+  .tl-topbar__brand { width: auto; }
+  .tl-topbar__brand-text { display: none; }
+  .tl-search { max-width: none; }
+}
+@media (max-width: 900px) {
+  .tl-login { flex-direction: column; min-height: 100dvh; }
+  .tl-login__brandside { display: none; }
+  .tl-login__mobilebrand { display: flex; align-items: center; gap: 11px; padding: 26px 24px 0; justify-content: center; }
+  .tl-login__formside { flex: 1; align-items: flex-start; padding: 26px 24px 40px; }
+  .tl-login__form { max-width: 420px; margin: 0 auto; }
+}
+@media (max-width: 640px) {
+  .tl-content { padding: 16px 14px 32px; }
+  .tl-search__kbd { display: none; }
+  .tl-user__name, .tl-user__role { display: none; }
+  .tl-filters { flex-direction: column; align-items: stretch; }
+  .tl-filters__actions { margin-left: 0; }
+  .tl-table th, .tl-table td { padding: 10px; }
+}

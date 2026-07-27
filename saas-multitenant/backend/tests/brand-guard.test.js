@@ -111,9 +111,14 @@ test('config de marca: identidade e paleta oficiais', () => {
 
 test('paleta TELUN aplicada nas variáveis CSS', () => {
   const css = fs.readFileSync(path.join(ROOT, 'app', 'globals.css'), 'utf8');
+  // Constantes da marca continuam declaradas...
   assert.match(css, /--telun-cosmic:\s*#0B0B12/);
   assert.match(css, /--telun-electric-lilac:\s*#A56BFF/);
-  assert.match(css, /--nx-primary:\s*var\(--telun-electric-lilac\)/, 'primary deve vir da paleta');
+  // ...e a cadeia agora passa pela camada SEMÂNTICA (permite tema claro/escuro):
+  //   --nx-primary → --primary → #A56BFF (escuro) / #7C3FE4 (claro)
+  assert.match(css, /--nx-primary:\s*var\(--primary\)/, 'primary deve vir do token semântico');
+  assert.match(css, /--primary:\s*#A56BFF/i, 'tema escuro usa Electric Lilac');
+  assert.match(css, /--primary:\s*#7C3FE4/i, 'tema claro usa o roxo de contraste');
   // Status permanecem semânticos (§8)
   assert.match(css, /--nx-green:\s*#15803d/, 'sucesso permanece verde');
   assert.match(css, /--nx-red:\s*#b91c1c/, 'perigo permanece vermelho');

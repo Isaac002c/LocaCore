@@ -7,28 +7,96 @@
    dinamicamente a partir dos dados do tenant — nada disso é fixado aqui.
    ============================================ */
 :root {
-  /* Paleta institucional TELUN */
-  --telun-cosmic:          #0B0B12;  /* fundo principal (shell)            */
-  --telun-deep-violet:     #3B1F6A;  /* superfícies e áreas secundárias    */
-  --telun-electric-lilac:  #A56BFF;  /* ações principais e estado ativo    */
-  --telun-luminous-copper: #FF8A3D;  /* alertas e destaques pontuais       */
-  --telun-sand-gold:       #FFD8A6;  /* detalhes, badges, informações      */
+  /* ── Paleta institucional TELUN (constantes da marca) ───────────────────── */
+  --telun-cosmic:          #0B0B12;
+  --telun-deep-violet:     #3B1F6A;
+  --telun-electric-lilac:  #A56BFF;
+  --telun-luminous-copper: #FF8A3D;
+  --telun-sand-gold:       #FFD8A6;
 
-  /* Tokens do produto — apontam para a paleta TELUN */
-  --nx-primary:        var(--telun-electric-lilac);
-  --nx-primary-hover:  #8B4DF5;                      /* lilás mais profundo */
-  --nx-primary-light:  rgba(165, 107, 255, 0.10);
-  --nx-primary-mid:    rgba(165, 107, 255, 0.18);
-  --nx-primary-text:   #C9A6FF;   /* texto legível sobre fundo escuro */
-  --nx-accent:         var(--telun-luminous-copper);
-  --nx-highlight:      var(--telun-sand-gold);
-  --nx-focus-ring:     rgba(165, 107, 255, 0.45);
+  /* ── TEMA ESCURO (padrão) — tokens SEMÂNTICOS ──────────────────────────── */
+  --background:         #090811;
+  --sidebar:            #0A0912;
+  --topbar:             #0A0912;
+  --surface:            #11101A;
+  --surface-secondary:  #15131F;
+  --surface-hover:      #1C1828;
+  --border:             #2B2738;
+  --border-strong:      #3A3448;
+  --text-primary:       #F7F5FA;
+  --text-secondary:     #AAA4B8;
+  --text-muted:         #777184;
+  --primary:            #A56BFF;
+  --primary-hover:      #B783FF;
+  --primary-soft:       rgba(165, 107, 255, 0.14);
+  --primary-contrast:   #0B0B12;
+  --focus-ring:         rgba(165, 107, 255, 0.40);
 
-  --nx-beige:       #d3cfc3;
-  --nx-gray:        #a7a5a7;
-  --nx-dark:        var(--telun-cosmic);
-  --nx-surface-dark: var(--telun-deep-violet);
+  /* Estados — semânticos, legíveis nos dois temas */
+  --success: #34C77B;
+  --warning: #FFB020;
+  --danger:  #F0534F;
+  --info:    #4C9AFF;
+  --accent:  var(--telun-luminous-copper);
+  --highlight: var(--telun-sand-gold);
+
+  color-scheme: dark;
 }
+
+/* ── TEMA CLARO ───────────────────────────────────────────────────────────── */
+:root[data-theme='light'] {
+  --background:         #F6F5F8;
+  --sidebar:            #FFFFFF;
+  --topbar:             #FFFFFF;
+  --surface:            #FFFFFF;
+  --surface-secondary:  #F1EFF5;
+  --surface-hover:      #EAE6F1;
+  --border:             #DDD8E5;
+  --border-strong:      #C9C2D6;
+  --text-primary:       #17131D;
+  --text-secondary:     #5E5868;
+  --text-muted:         #817A8C;
+  --primary:            #7C3FE4;
+  --primary-hover:      #6A2FD1;
+  --primary-soft:       rgba(124, 63, 228, 0.10);
+  --primary-contrast:   #FFFFFF;
+  --focus-ring:         rgba(124, 63, 228, 0.30);
+
+  --success: #16A34A;
+  --warning: #B45309;
+  --danger:  #DC2626;
+  --info:    #2563EB;
+
+  color-scheme: light;
+}
+
+/* ── PONTE: os tokens legados --nx-* passam a derivar do tema ──────────────
+   Isto faz a base de CSS já existente acompanhar a troca de tema sem
+   reescrever regra por regra. Novos componentes devem usar os semânticos. */
+:root {
+  --nx-primary:        var(--primary);
+  --nx-primary-hover:  var(--primary-hover);
+  --nx-primary-light:  var(--primary-soft);
+  --nx-primary-mid:    var(--primary-soft);
+  --nx-primary-text:   var(--primary);
+  --nx-accent:         var(--accent);
+  --nx-highlight:      var(--highlight);
+  --nx-focus-ring:     var(--focus-ring);
+
+  --nx-bg:             var(--background);
+  --nx-surface:        var(--surface);
+  --nx-border:         var(--border);
+  --nx-border-strong:  var(--border-strong);
+  --nx-ink:            var(--text-primary);
+  --nx-ink-2:          var(--text-secondary);
+  --nx-muted:          var(--text-muted);
+  --nx-gray:           var(--text-secondary);
+  --nx-dark:           var(--sidebar);
+  --nx-surface-dark:   var(--surface-secondary);
+  --nx-beige:          var(--text-secondary);
+}
+
+html, body { background: var(--background); color: var(--text-primary); }
 
 * {
   box-sizing: border-box;
@@ -6446,14 +6514,15 @@ html, body {
   --nx-cyan: #0891b2;
   --nx-gray: #64748b;
 
-  /* Superfícies e texto */
-  --nx-bg: #f6f7f9;
-  --nx-surface: #ffffff;
-  --nx-border: #e2e8f0;
-  --nx-border-strong: #cbd5e1;
-  --nx-ink: #0f172a;
-  --nx-ink-2: #475569;
-  --nx-muted: #94a3b8;
+  /* Superfícies e texto — derivam do TEMA (claro/escuro), ver topo do arquivo.
+     NÃO fixar hex aqui: quebraria a troca de tema. */
+  --nx-bg: var(--background);
+  --nx-surface: var(--surface);
+  --nx-border: var(--border);
+  --nx-border-strong: var(--border-strong);
+  --nx-ink: var(--text-primary);
+  --nx-ink-2: var(--text-secondary);
+  --nx-muted: var(--text-muted);
 
   /* Forma */
   --nx-radius: 10px;

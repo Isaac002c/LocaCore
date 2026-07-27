@@ -3,21 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../lib/api.js';
-import { PRODUCT_NAME, PRODUCT_SIGNATURE, COPYRIGHT } from '../lib/brand';
+import { BRAND } from '../lib/brand';
 
-// A tela de login é institucional do produto (LocaCore) e não deve usar branding
-// de tenant. Logo, nome, cores e identidade visual são do produto. O tenant (a
-// locadora) só aparece DEPOIS do login, na área autenticada (sidebar/header).
-// Não puxar logo_url / brand_color / nome do tenant aqui.
+// Login institucional do produto (LocaCore, um produto TELUN). NÃO usa branding
+// de tenant: logo, nome e cores são do produto. A locadora só aparece DEPOIS do
+// login, na área autenticada (sidebar/topbar).
+//
+// Composição (§2): 52% institucional à esquerda · 48% formulário à direita.
+// No mobile vira coluna única, sem card flutuante genérico.
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;              // bloqueia múltiplos envios
     setError('');
     setLoading(true);
 
@@ -27,26 +31,19 @@ export default function Login() {
         body: { email, password },
       });
 
-      // Armazenar token em cookie HTTP-only (backend envia cookie)
-      // Salva no localStorage para uso nas chamadas API
+      // Token em localStorage para o header Authorization; o backend também
+      // envia cookie httpOnly via Set-Cookie.
       if (data.token) {
-        // Token em localStorage para o header Authorization nas chamadas API
-        // O backend também envia cookie httpOnly via Set-Cookie (mais seguro)
         localStorage.setItem('token', data.token);
         localStorage.setItem('auth-token', data.token);
       }
 
-      // Salvar dados do usuário
-      const userData = {
-        ...data.user,
-        role: data.user.role || 'admin'
-      };
+      const userData = { ...data.user, role: data.user.role || 'admin' };
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('tenant', JSON.stringify(data.tenant));
-      
       localStorage.setItem('tenantId', data.tenant?.id || '');
 
-      // super_admin (operador da plataforma) vai para o painel /master; demais para o tenant.
+      // super_admin (operador da plataforma) vai para /master; demais para o tenant.
       router.push(userData.role === 'super_admin' ? '/master' : '/dashboard');
     } catch (err) {
       setError(err.message);
@@ -55,168 +52,112 @@ export default function Login() {
     }
   };
 
+  const Logo = ({ compact = false }) => (
+    <div className="tl-login__logo">
+      <span className="tl-login__logo-mark" aria-hidden="true">T</span>
+      <span className="tl-login__logo-text" style={compact ? { fontSize: 17 } : undefined}>
+        {BRAND.companyName}
+      </span>
+    </div>
+  );
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      background: 'linear-gradient(160deg, #060a14 0%, #0a0f1e 60%, #0d1428 100%)',
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(59,130,246,0.2)',
-        padding: '48px 40px',
-        borderRadius: '16px',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.08)',
-        width: '100%',
-        maxWidth: '420px'
-      }}>
-        {/* Marca do produto */}
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '80px',
-            height: '80px',
-            marginBottom: '16px',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, var(--telun-electric-lilac) 0%, var(--telun-deep-violet) 100%)',
-            boxShadow: '0 0 24px rgba(29,78,216,0.45)',
-            fontSize: '38px',
-            fontWeight: 800,
-            color: '#fff',
-          }}>
-            {PRODUCT_NAME.charAt(0)}
-          </div>
-          <h1 style={{
-            fontSize: '26px',
-            fontWeight: '700',
-            color: '#ffffff',
-            marginBottom: '4px',
-            letterSpacing: '-0.5px'
-          }}>
-            {PRODUCT_NAME}
+    <div className="tl-login">
+      {/* ── Área institucional (52%) ─────────────────────────────────── */}
+      <aside className="tl-login__brandside">
+        <Logo />
+
+        <div className="tl-login__center">
+          <h1 className="tl-login__title">
+            Gestão que <em>move</em> sua operação.
+            <span>Clareza para conduzir sua frota.</span>
           </h1>
-          <p style={{ color: '#64748b', fontSize: '13px' }}>
-            {PRODUCT_SIGNATURE}
+          <p className="tl-login__lead">
+            Clientes, veículos, locações, financeiro e automações em um único
+            ambiente, com dados reais e visão completa da operação.
+          </p>
+          <p className="tl-login__kicker">
+            PROPÓSITO <b>•</b> DIREÇÃO <b>•</b> EVOLUÇÃO
           </p>
         </div>
 
-        <form onSubmit={handleLogin}>
-          {error && (
-            <div style={{
-              background: '#fef2f2',
-              color: '#ef4444',
-              padding: '12px',
-              borderRadius: '6px',
-              marginBottom: '20px',
-              fontSize: '14px'
-            }}>
-              {error}
-            </div>
-          )}
+        <p className="tl-login__footer">
+          {BRAND.productName} · {BRAND.productSignature}
+        </p>
+      </aside>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              color: '#94a3b8',
-              fontSize: '13px',
-              fontWeight: '500',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              E-mail
-            </label>
+      {/* ── Marca no topo (apenas mobile) ─────────────────────────────── */}
+      <div className="tl-login__mobilebrand">
+        <Logo compact />
+      </div>
+
+      {/* ── Área de autenticação (48%) ───────────────────────────────── */}
+      <main className="tl-login__formside">
+        <form className="tl-login__form" onSubmit={handleLogin} noValidate>
+          <h2>Acessar o {BRAND.productName}</h2>
+          <p className="tl-login__sub">Entre com suas credenciais para continuar.</p>
+
+          {error && <div className="tl-alert" role="alert">{error}</div>}
+
+          <div className="tl-field">
+            <label htmlFor="email">E-mail</label>
             <input
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              id="email" type="email" className="tl-input"
+              value={email} onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email" required autoFocus
+              placeholder="voce@empresa.com.br"
             />
           </div>
 
-          <div style={{ marginBottom: '28px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              color: '#94a3b8',
-              fontSize: '13px',
-              fontWeight: '500',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              Senha
-            </label>
+          <div className="tl-field tl-field--password">
+            <label htmlFor="password">Senha</label>
             <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              id="password" type={showPassword ? 'text' : 'password'} className="tl-input"
+              value={password} onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password" required
+              placeholder="Sua senha"
             />
+            <button
+              type="button" className="tl-field__reveal"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {showPassword ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
           </div>
 
           <button
             type="submit"
+            className="tl-btn tl-btn--primary tl-btn--block"
             disabled={loading}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: loading ? 'var(--telun-deep-violet)' : 'var(--telun-electric-lilac)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.8 : 1,
-              fontSize: '15px',
-              fontWeight: '600',
-              letterSpacing: '0.3px',
-              transition: 'background 0.2s, transform 0.1s',
-              boxShadow: loading ? 'none' : '0 4px 16px rgba(165, 107, 255, 0.4)'
-            }}
+            style={{ marginTop: 8 }}
           >
+            {!loading && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+            )}
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
-        </form>
 
-        <p style={{
-          textAlign: 'center',
-          marginTop: '24px',
-          color: 'rgba(211,207,195,0.35)',
-          fontSize: '11px',
-          letterSpacing: '0.5px'
-        }}>
-          {COPYRIGHT}
-        </p>
-      </div>
+          <p style={{ marginTop: 22, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+            {BRAND.productName} · {BRAND.productSignature}
+          </p>
+        </form>
+      </main>
     </div>
   );
 }

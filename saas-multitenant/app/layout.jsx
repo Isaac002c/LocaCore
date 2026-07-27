@@ -1,4 +1,5 @@
 import './globals.css';
+import './telun-shell.css';
 import { Inter } from 'next/font/google';
 import EnvBanner from './components/EnvBanner';
 import { BRAND, TELUN_COLORS } from './lib/brand';
@@ -42,9 +43,25 @@ export const viewport = {
   initialScale: 1,
 };
 
+// Aplica o tema ANTES da primeira pintura, evitando flash de tela clara.
+// Prioridade: preferência salva → preferência do SO → escuro (§7).
+const THEME_BOOTSTRAP = `
+(function(){try{
+  var m=localStorage.getItem('locacore-theme');
+  var t=(m==='light'||m==='dark')?m:
+    (m==='system'
+      ? (window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')
+      : 'dark');
+  document.documentElement.setAttribute('data-theme',t);
+}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+`;
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body className={inter.className}>
         <EnvBanner />
         {children}
