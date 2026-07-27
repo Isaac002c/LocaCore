@@ -1,0 +1,35 @@
+# =============================================================================
+# LocaCore — nginx FASE 1 (HTTP puro). Use ANTES de existir o certificado.
+# Serve o desafio ACME do Let's Encrypt e faz proxy para a API.
+#
+# O domínio vem de ${API_DOMAIN} (envsubst da imagem oficial do nginx).
+# NGINX_ENVSUBST_FILTER=API_DOMAIN garante que só essa variável é substituída —
+# as variáveis do nginx ($host, $remote_addr, ...) permanecem intactas.
+#
+# Depois de emitir o certificado, troque para a pasta `templates` (fase 2).
+# =============================================================================
+
+server {
+    listen 80;
+    server_name ${API_DOMAIN};
+
+    # Desafio webroot do Let's Encrypt (volume compartilhado com o certbot)
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass         http://backend:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_connect_timeout 10s;
+        proxy_buffering    off;
+    }
+}

@@ -1,11 +1,17 @@
 # =============================================================================
-# LocaCore — Docker Compose de PRODUÇÃO (VPS). Serviços separados: API, worker,
-# scheduler, Postgres, frontend, proxy e backup. NÃO executado neste ambiente
-# (sem Docker); testado por revisão. Ajuste os hosts/segredos em .env.prod.
+# LocaCore — Docker Compose de PRODUÇÃO (VPS).
 #
+# Arquitetura alvo: BACKEND + POSTGRES na VPS; FRONTEND na VERCEL.
+# Por isso o serviço `frontend` fica atrás do profile "frontend" (NÃO sobe por
+# padrão) — a Vercel serve o Next.js e faz proxy /api|/auth para esta API.
+#
+#   cd /opt/locacore/saas-multitenant
 #   docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Fase 1 (sem certificado): NGINX_TEMPLATES=templates-init
+# Fase 2 (com certificado):  NGINX_TEMPLATES=templates
+# Passo a passo completo: deploy/DEPLOY_LOCACORE.md
 # =============================================================================
-version: "3.9"
 
 x-backend-image: &backend-image
   build:
@@ -30,6 +36,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks: [locacore]
     restart: unless-stopped
+    # SEM `ports:` — o banco fica só na rede interna do Docker, não exposto na VPS.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -52,6 +59,8 @@ services:
     <<: *backend-image
     container_name: locacore-backend
     command: ["node", "app.js"]
+    volumes:
+      - uploads:/app/uploads          # uploads persistem entre rebuilds/deploys
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health/ready || exit 1"]
       interval: 15s
@@ -65,7 +74,9 @@ services:
     <<: *backend-image
     container_name: locacore-worker
     command: ["node", "worker.js"]
-    stop_grace_period: 15s              # tempo para o shutdown gracioso (SIGTERM)
+    volumes:
+      - uploads:/app/uploads          # mesmo storage local da API
+    stop_grace_period: 15s            # tempo para o shutdown gracioso (SIGTERM)
     deploy:
       resources:
         limits: { memory: 384m }
@@ -79,30 +90,33 @@ services:
       resources:
         limits: { memory: 256m }
 
-  frontend:
-    build:
-      context: ..
-      dockerfile: Dockerfile.frontend
-    image: locacore-frontend:latest
-    container_name: locacore-frontend
-    env_file: [../.env.prod]
+  # Reverse proxy + TLS. Templates com envsubst: só ${API_DOMAIN} é substituído
+  # (NGINX_ENVSUBST_FILTER), preservando $host/$remote_addr do próprio nginx.
+  proxy:
+    image: nginx:alpine
+    container_name: locacore-proxy
     environment:
-      NODE_ENV: production
-      BACKEND_URL: http://backend:5000
+      API_DOMAIN: ${API_DOMAIN}
+      NGINX_ENVSUBST_FILTER: API_DOMAIN
+    volumes:
+      - ../nginx/${NGINX_TEMPLATES:-templates-init}:/etc/nginx/templates:ro
+      - certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    ports: ["80:80", "443:443"]
     networks: [locacore]
     restart: unless-stopped
     depends_on: [backend]
 
-  proxy:
-    image: nginx:alpine
-    container_name: locacore-proxy
+  # Renovação automática do certificado (a EMISSÃO inicial é manual — ver runbook).
+  certbot:
+    image: certbot/certbot:latest
+    container_name: locacore-certbot
     volumes:
-      - ../nginx:/etc/nginx/conf.d:ro
-      - certs:/etc/letsencrypt:ro
-    ports: ["80:80", "443:443"]
+      - certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
     networks: [locacore]
     restart: unless-stopped
-    depends_on: [backend, frontend]
+    entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
 
   # Backup diário do Postgres (pg_dump comprimido + retenção). Ver scripts/backup.sh.
   backup:
@@ -118,6 +132,23 @@ services:
       postgres: { condition: service_healthy }
     entrypoint: ["/bin/sh", "-c", "while true; do /scripts/backup.sh; sleep 86400; done"]
 
+  # OPCIONAL — só se você quiser servir o frontend na PRÓPRIA VPS em vez da Vercel.
+  # Suba com: docker compose ... --profile frontend up -d
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ..
+      dockerfile: Dockerfile.frontend
+    image: locacore-frontend:latest
+    container_name: locacore-frontend
+    env_file: [../.env.prod]
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:5000
+    networks: [locacore]
+    restart: unless-stopped
+    depends_on: [backend]
+
 networks:
   locacore:
     driver: bridge
@@ -125,3 +156,5 @@ networks:
 volumes:
   pgdata:
   certs:
+  certbot_www:
+  uploads:

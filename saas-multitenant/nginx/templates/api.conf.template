@@ -1,0 +1,61 @@
+# =============================================================================
+# LocaCore — nginx FASE 2 (HTTPS). Use DEPOIS de emitir o certificado.
+# Redireciona HTTP → HTTPS e faz proxy TLS para a API (serviço `backend`).
+#
+# O domínio vem de ${API_DOMAIN} (envsubst da imagem oficial do nginx).
+# NGINX_ENVSUBST_FILTER=API_DOMAIN protege as variáveis do nginx ($host, etc.).
+# =============================================================================
+
+# ── HTTP: só ACME + redirect ─────────────────────────────────────────────────
+server {
+    listen 80;
+    server_name ${API_DOMAIN};
+
+    # Mantém o webroot para a RENOVAÇÃO automática do certificado
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ── HTTPS: proxy para a API ──────────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${API_DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${API_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${API_DOMAIN}/privkey.pem;
+
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # HSTS — habilite só depois de confirmar que o HTTPS está estável
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    # Deve casar com o limite de body do Express (10mb)
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass         http://backend:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        "upgrade";
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_connect_timeout 10s;
+
+        # Sem buffering para respostas JSON
+        proxy_buffering off;
+    }
+}
