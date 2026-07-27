@@ -9,7 +9,16 @@ const STATUSES = ['identificada', 'aguardando_validacao', 'aguardando_condutor',
   'aguardando_pagamento', 'cobrada', 'paga', 'recorrida', 'cancelada', 'encerrada'];
 
 const toStrOrNull = (v) => (v === '' || v === undefined || v === null ? null : v);
-const toDateOrNull = (v) => (v === '' || v === undefined || v === null ? null : String(v).substring(0, 10));
+// DATE → 'YYYY-MM-DD'. O Postgres devolve DATE como objeto Date; String(date)
+// .substring(0,10) daria "Mon Jul 27" e quebraria o UPDATE. Getters locais para
+// não deslocar o dia por fuso horário.
+const toDateOrNull = (v) => {
+  if (v === '' || v === undefined || v === null) return null;
+  if (v instanceof Date) {
+    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+  }
+  return String(v).substring(0, 10);
+};
 const toIntOrNull = (v) => { const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; };
 const cents = (v) => Math.round((Number(v) || 0) * 100);
 const money2 = (v) => { const c = cents(v); return (c < 0 ? 0 : c / 100).toFixed(2); };

@@ -8,7 +8,16 @@ const pool = require('../config/db');
 
 const STATUSES = ['agendada', 'em_andamento', 'concluida', 'cancelada'];
 const toStrOrNull = (v) => (v === '' || v === undefined || v === null ? null : v);
-const toDateOrNull = (v) => (v === '' || v === undefined || v === null ? null : String(v).substring(0, 10));
+// DATE → 'YYYY-MM-DD'. O driver do Postgres devolve DATE como objeto Date; usar
+// String(date).substring(0,10) produziria "Mon Jul 27" e quebraria o UPDATE.
+// Getters locais (não toISOString) para não deslocar o dia por fuso horário.
+const toDateOrNull = (v) => {
+  if (v === '' || v === undefined || v === null) return null;
+  if (v instanceof Date) {
+    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+  }
+  return String(v).substring(0, 10);
+};
 const toIntOrNull = (v) => { const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; };
 const money2 = (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? (Math.round(n * 100) / 100).toFixed(2) : '0.00'; };
 
