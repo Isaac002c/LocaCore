@@ -1,46 +1,15 @@
 'use client';
 
-const pageInfo = {
-  // Visão Geral
-  home:       { title: 'Visão Geral',        subtitle: 'Resumo executivo da operação — clientes, processos, agenda e finanças.' },
-  // Processos
-  painel:     { title: 'Processos',          subtitle: 'Visão operacional: etapas, prazos e resultados dos processos.' },
-  // Financeiro
-  visao:        { title: 'Visão Financeira', subtitle: 'Indicadores, gráficos e desempenho financeiro por período.' },
-  resumo:       { title: 'Visão Financeira', subtitle: 'Indicadores, gráficos e desempenho financeiro por período.' },
-  caixa:        { title: 'Caixa',            subtitle: 'Movimento semanal de entradas e saídas.' },
-  lancamentos:  { title: 'Lançamentos',      subtitle: 'Entradas e saídas financeiras — manuais e automáticas.' },
-  faturamentos: { title: 'Faturamentos',     subtitle: 'Cobranças por processo ou serviço, pagamentos e saldos.' },
-  pagamentos:   { title: 'Pagamentos',       subtitle: 'Todos os pagamentos registrados, parcelas e sinais.' },
-  recibos:      { title: 'Recibos',          subtitle: 'Emissão, reemissão e histórico de recibos.' },
-  config:       { title: 'Configurações Financeiras', subtitle: 'Identidade do recibo, numeração e formas de pagamento.' },
-  // Multas (legado)
-  dashboard:  { title: 'Dashboard',         subtitle: 'Visão geral de clientes, serviços, prazos e etapas.' },
-  clients:    { title: 'Clientes',           subtitle: 'Gerencie todos os clientes e seus processos.' },
-  companies:  { title: 'Empresas',           subtitle: 'Pessoas jurídicas, frota e processos vinculados.' },
-  leads:      { title: 'Leads',              subtitle: 'Lista e cadastro de leads captados.' },
-  tarefas:    { title: 'Tarefas',            subtitle: 'Quadro kanban de acompanhamento operacional dos leads.' },
-  approvals:  { title: 'Aprovações',         subtitle: 'Solicitações de exclusão aguardando aprovação.' },
-  defesa:     { title: 'Defesa Prévia',      subtitle: 'Processos em fase de defesa prévia.' },
-  instancia1: { title: '1ª Instância',       subtitle: 'Processos em primeira instância.' },
-  instancia2: { title: '2ª Instância',       subtitle: 'Processos em segunda instância.' },
-  calendario: { title: 'Prazos',             subtitle: 'Prazos dos processos por urgência.' },
-  eventos:    { title: 'Agenda',             subtitle: 'Eventos e agendamentos da equipe.' },
-  deferidos:  { title: 'Deferidos',          subtitle: 'Processos com resultado deferido — prova social.' },
-  documents:  { title: 'Documentos',         subtitle: 'Gerencie documentos e arquivos dos processos.' },
-  history:    { title: 'Histórico',          subtitle: 'Registro completo de atividades e alterações.' },
-  // Leads
-  overview:    { title: 'Overview',          subtitle: 'Visão geral de leads e desempenho.' },
-  acquisition: { title: 'Aquisição',         subtitle: 'Gerenciamento e captação de novos leads.' },
-  pipeline:    { title: 'Pipeline',          subtitle: 'Acompanhe o funil de vendas.' },
-  leaderboard: { title: 'Ranking',           subtitle: 'Desempenho e ranking da equipe.' },
-  performance: { title: 'Performance',       subtitle: 'Análise de performance e metas.' },
-  export:      { title: 'Exportar',          subtitle: 'Exportação de dados e relatórios.' },
-  reports:     { title: 'Relatórios',        subtitle: 'Relatórios detalhados de vendas.' },
-  // Settings
-  general:      { title: 'Configurações',    subtitle: 'Ajuste as configurações da conta e do sistema.' },
-  team:         { title: 'Equipe',           subtitle: 'Gerencie usuários, cargos e permissões.' },
-  integrations: { title: 'Integrações',      subtitle: 'Configure integrações com outros sistemas.' },
+import { getPageInfo } from '../lib/navigation';
+
+// Telas legadas que não estão no menu, mas ainda podem ser abertas por URL.
+const LEGACY_PAGE_INFO = {
+  defesa:       { title: 'Defesa Prévia', subtitle: 'Processos em fase de defesa prévia.' },
+  instancia1:   { title: '1ª Instância',  subtitle: 'Processos em primeira instância.' },
+  instancia2:   { title: '2ª Instância',  subtitle: 'Processos em segunda instância.' },
+  documents:    { title: 'Documentos',    subtitle: 'Gerencie documentos e arquivos dos processos.' },
+  team:         { title: 'Equipe',        subtitle: 'Gerencie usuários, cargos e permissões.' },
+  integrations: { title: 'Integrações',   subtitle: 'Configure integrações com outros sistemas.' },
 };
 
 function LogoutIcon() {
@@ -72,15 +41,19 @@ function MenuIcon() {
   );
 }
 
-export default function PageHeader({ currentTab, user, tenant, onLogout, onMobileMenuToggle }) {
-  const info = pageInfo[currentTab] || { title: 'Dashboard', subtitle: '' };
+const ROLE_LABELS = { admin: 'ADMIN', manager: 'GERENTE', operator: 'OPERADOR', seller: 'CONSULTOR', viewer: 'LEITURA' };
+
+export default function PageHeader({ currentModule, currentTab, user, tenant, onLogout, onMobileMenuToggle }) {
+  const info = getPageInfo(currentModule, currentTab)
+    || LEGACY_PAGE_INFO[currentTab]
+    || { title: 'LocaCore', subtitle: '' };
   const role = user?.role;
 
   const getRoleBadge = () => {
     if (role === 'admin') {
-      return { label: 'ADMIN', color: 'var(--nx-primary)', bg: 'rgba(165, 107, 255, 0.08)', border: 'rgba(165, 107, 255, 0.2)' };
+      return { label: 'ADMIN', color: 'var(--primary)', bg: 'var(--primary-soft)', border: 'var(--border-strong)' };
     }
-    return { label: 'CONSULTOR', color: '#475569', bg: 'rgba(71,85,105,0.08)', border: 'rgba(71,85,105,0.2)' };
+    return { label: ROLE_LABELS[role] || 'CONSULTOR', color: 'var(--text-secondary)', bg: 'var(--surface-secondary)', border: 'var(--border)' };
   };
 
   const badge = getRoleBadge();

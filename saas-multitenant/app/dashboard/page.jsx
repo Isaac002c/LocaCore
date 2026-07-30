@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense, useRef } from 'react';
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import PageHeader from '../components/PageHeader';
+import {
+  ErrorBoundary, PageLoading, ScreenNotFound, PermissionDenied, ModuleUnavailable,
+} from '../components/states';
+import {
+  resolveModule, resolveTab, getDefaultTab, canAccessTab, getModuleItems,
+} from '../lib/navigation';
 
 // Leads
 import LeadsOverview     from '../leads/Overview';
@@ -89,6 +95,7 @@ const modulePages = {
       agenda:    Agenda,
       usuarios:  Usuarios,
       relatorios: Relatorios,
+      importacao: Importacao,
       clients:   MultasClients,  // reutiliza o módulo de clientes (locatários)
       automacoes: Automacoes,
       history:   MultasHistory,  // reutiliza o histórico/auditoria
@@ -148,28 +155,47 @@ const modulePages = {
   },
 };
 
-// Aliases de módulos do overhaul anterior → Despachantes/Financeiro (URLs antigas).
-const MODULE_ALIASES = { visao: 'multas', crm: 'multas', processos: 'multas', agenda: 'multas' };
-const TAB_ALIASES = { painel: 'dashboard', home: 'dashboard' };
+// Nomes das áreas para as mensagens de módulo indisponível.
+const MODULE_LABELS = { locacao: 'O módulo Locação', multas: 'O módulo Processos', financeiro: 'O módulo Financeiro' };
 
-const getDefaultTab = (module) => {
-  const defaults = { locacao: 'locacoes', leads: 'overview', multas: 'dashboard', financeiro: 'visao', settings: 'general' };
-  return defaults[module] || 'dashboard';
-};
-
-function CachedTabs({ moduleKey, activeTab }) {
-  const moduleData = modulePages[moduleKey] || modulePages.leads;
+// Renderiza a tela ativa mantendo as já visitadas montadas (preserva estado ao
+// alternar de aba). Se a tab NÃO existir no módulo, mostra uma tela explicativa
+// — a área central nunca fica em branco (§3).
+function CachedTabs({ moduleKey, activeTab, role, onGoHome, onNavigate }) {
+  const moduleData = modulePages[moduleKey];
   const mountedRef = useRef({});
+  const pages = moduleData?.pages || {};
+  const known = Object.prototype.hasOwnProperty.call(pages, activeTab);
+
+  // Item de menu correspondente (para título do boundary e checagem de role).
+  const navItem = getModuleItems(moduleKey).find((i) => i.tab === activeTab);
+
+  if (!moduleData) {
+    return <ModuleUnavailable moduleLabel={MODULE_LABELS[moduleKey] || 'Este módulo'} />;
+  }
+
+  if (!known) {
+    return <ScreenNotFound tab={activeTab} moduleKey={moduleKey} onGoHome={onGoHome} />;
+  }
+
+  // Gating por perfil no cliente. O backend continua sendo a autoridade (403),
+  // isto só evita chamar a API e mostrar erro genérico para quem não tem acesso.
+  if (navItem && !canAccessTab(moduleKey, activeTab, role)) {
+    return <PermissionDenied what={`"${navItem.label}"`} role={role} />;
+  }
 
   return (
     <>
-      {Object.entries(moduleData.pages).map(([key, Page]) => {
+      {Object.entries(pages).map(([key, Page]) => {
         const isActive = key === activeTab;
         if (!isActive && !mountedRef.current[key]) return null;
         mountedRef.current[key] = true;
+        const label = getModuleItems(moduleKey).find((i) => i.tab === key)?.label || key;
         return (
           <div key={key} style={{ display: isActive ? 'block' : 'none' }}>
-            <Page />
+            <ErrorBoundary label={label} resetKey={`${moduleKey}:${key}`}>
+              <Page onNavigate={onNavigate} />
+            </ErrorBoundary>
           </div>
         );
       })}
@@ -187,10 +213,10 @@ function DashboardContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const rawModule = searchParams.get('module') || 'multas';
-  const currentModule = MODULE_ALIASES[rawModule] || rawModule;
+  const role = user?.role || 'seller';
+  const currentModule = resolveModule(searchParams.get('module'));
   const rawTab    = searchParams.get('tab');
-  const activeTab = (rawTab && (TAB_ALIASES[rawTab] || rawTab)) || getDefaultTab(currentModule);
+  const activeTab = resolveTab(currentModule, rawTab, role);
 
   useEffect(() => {
     // Aceita token de localStorage (primário) ou cookie (fallback)
@@ -233,19 +259,23 @@ function DashboardContent() {
     }
   };
 
-  const handleNavigate = (moduleKey, tabKey) => {
+  const handleNavigate = useCallback((moduleKey, tabKey) => {
     setMobileSidebarOpen(false);
     router.push(`/dashboard?module=${moduleKey}&tab=${tabKey}`);
-  };
+  }, [router]);
+
+  const goHome = useCallback(() => {
+    handleNavigate(currentModule, getDefaultTab(currentModule, role));
+  }, [handleNavigate, currentModule, role]);
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>Carregando LocaCore...</p>
-      </div>
-    );
+    return <PageLoading label="Carregando LocaCore..." />;
   }
+
+  // Gating de módulo por tenant: se o tenant tem `modules` e a área não está
+  // habilitada, explica em vez de renderizar telas que só dariam 403.
+  const enabledModules = Array.isArray(tenant?.modules) && tenant.modules.length ? tenant.modules : null;
+  const moduleBlocked = enabledModules && currentModule !== 'settings' && !enabledModules.includes(currentModule);
 
   return (
     <div className="app-shell">
@@ -270,6 +300,7 @@ function DashboardContent() {
 
       <div className={`shell-main${sidebarCollapsed ? ' sidebar-is-collapsed' : ''}`}>
         <PageHeader
+          currentModule={currentModule}
           currentTab={activeTab}
           user={user}
           tenant={tenant}
@@ -277,7 +308,17 @@ function DashboardContent() {
           onMobileMenuToggle={() => setMobileSidebarOpen(v => !v)}
         />
         <div className="shell-content">
-          <CachedTabs moduleKey={currentModule} activeTab={activeTab} />
+          {moduleBlocked ? (
+            <ModuleUnavailable moduleLabel={MODULE_LABELS[currentModule] || 'Este módulo'} />
+          ) : (
+            <CachedTabs
+              moduleKey={currentModule}
+              activeTab={activeTab}
+              role={role}
+              onGoHome={goHome}
+              onNavigate={handleNavigate}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -286,13 +327,10 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>Carregando...</p>
-      </div>
-    }>
-      <DashboardContent />
+    <Suspense fallback={<PageLoading label="Carregando..." />}>
+      <ErrorBoundary label="painel principal">
+        <DashboardContent />
+      </ErrorBoundary>
     </Suspense>
   );
 }

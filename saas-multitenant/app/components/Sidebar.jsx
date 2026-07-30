@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import { PRODUCT_TAGLINE, PRODUCT_BRAND_COLOR, SUPPORT_EMAIL } from '../lib/brand';
+import { NAV_MODULES, NAV_ITEMS, getVisibleItems, getDefaultTab } from '../lib/navigation';
 
 const Icons = {
   Dashboard: () => (
@@ -173,68 +172,26 @@ const Icons = {
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
     </svg>
   ),
+  Wrench: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3z"/>
+      <path d="M14.7 6.3 18 3l3 3-3.3 3.3"/>
+    </svg>
+  ),
+  Upload: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  ),
 };
 
 // =============================================================================
-// Navegação: DUAS áreas — Despachantes (operação/processos) e Financeiro.
-// Itens com roles[] = visíveis apenas para essas roles. Sem roles[] = todos.
+// Navegação: a estrutura (áreas, telas, roles, rótulos) vem de lib/navigation.js
+// — MESMA fonte usada pelo roteador de telas e pelo cabeçalho. Aqui ficam só os
+// ícones e a apresentação.
 // =============================================================================
-const sidebarConfig = {
-  // ── Locação (LocaCore: operação da locadora de veículos) ────────────────
-  locacao: {
-    label: 'Locação',
-    items: [
-      { key: 'painel',   label: 'Painel',    Icon: Icons.Dashboard, tab: 'painel', roles: ['admin'] },
-      { key: 'locacoes', label: 'Locações',  Icon: Icons.Key,       tab: 'locacoes' },
-      { key: 'frota',    label: 'Frota',     Icon: Icons.Car,       tab: 'frota' },
-      { key: 'manutencoes', label: 'Manutenções', Icon: Icons.Settings, tab: 'manutencoes' },
-      { key: 'multas',   label: 'Multas',    Icon: Icons.Shield,    tab: 'multas' },
-      { key: 'estoque',  label: 'Estoque',   Icon: Icons.Layers,    tab: 'estoque' },
-      { key: 'agenda',   label: 'Agenda',    Icon: Icons.Calendar,  tab: 'agenda' },
-      { key: 'relatorios', label: 'Relatórios', Icon: Icons.BarChart, tab: 'relatorios', roles: ['admin', 'manager'] },
-      { key: 'importacao', label: 'Importação', Icon: Icons.Layers, tab: 'importacao', roles: ['admin', 'manager'] },
-      { key: 'clients',  label: 'Clientes',  Icon: Icons.Clients,   tab: 'clients' },
-      { key: 'automacoes', label: 'Automações', Icon: Icons.Zap,    tab: 'automacoes', roles: ['admin'] },
-      { key: 'usuarios', label: 'Usuários',  Icon: Icons.Clients,   tab: 'usuarios', roles: ['admin', 'manager'] },
-      { key: 'history',  label: 'Histórico', Icon: Icons.Clock,     tab: 'history', roles: ['admin'] },
-    ],
-  },
-  multas: {
-    label: 'Processos',
-    items: [
-      { key: 'dashboard',  label: 'Dashboard',  Icon: Icons.Dashboard,  tab: 'dashboard',  roles: ['admin'] },
-      { key: 'clients',    label: 'Clientes',   Icon: Icons.Clients,    tab: 'clients' },
-      { key: 'companies',  label: 'Empresas',   Icon: Icons.Building,   tab: 'companies' },
-      { key: 'deferidos',  label: 'Deferidos',  Icon: Icons.Award,      tab: 'deferidos' },
-      { key: 'leads',      label: 'Leads',      Icon: Icons.Target,     tab: 'leads' },
-      { key: 'tarefas',    label: 'Tarefas',    Icon: Icons.Tasks,      tab: 'tarefas' },
-      { key: 'calendario', label: 'Prazos',     Icon: Icons.Calendar,   tab: 'calendario' },
-      { key: 'eventos',    label: 'Agenda',     Icon: Icons.CalEvent,   tab: 'eventos' },
-      { key: 'history',    label: 'Histórico',  Icon: Icons.Clock,      tab: 'history',    roles: ['admin'] },
-      { key: 'approvals',  label: 'Aprovações', Icon: Icons.Approvals,  tab: 'approvals',  roles: ['admin'] },
-    ],
-  },
-  financeiro: {
-    label: 'Financeiro',
-    items: [
-      { key: 'visao',        label: 'Visão Financeira', Icon: Icons.BarChart, tab: 'visao',        roles: ['admin'] },
-      { key: 'caixa',        label: 'Caixa',            Icon: Icons.Wallet,   tab: 'caixa',        roles: ['admin'] },
-      { key: 'lancamentos',  label: 'Lançamentos',      Icon: Icons.Layers,   tab: 'lancamentos',  roles: ['admin'] },
-      { key: 'faturamentos', label: 'Faturamentos',     Icon: Icons.Dollar,   tab: 'faturamentos', roles: ['admin'] },
-      { key: 'pagamentos',   label: 'Pagamentos',       Icon: Icons.Card,     tab: 'pagamentos',   roles: ['admin'] },
-      { key: 'recibos',      label: 'Recibos',          Icon: Icons.Receipt,  tab: 'recibos',      roles: ['admin'] },
-      { key: 'config',       label: 'Configurações',    Icon: Icons.Settings, tab: 'config',       roles: ['admin'] },
-    ],
-  },
-};
-
-// Áreas do produto. A visibilidade por tenant é dada por tenant.modules (quando
-// definido); sem isso, todas aparecem (compatível com os tenants atuais).
-const modules = [
-  { key: 'locacao', label: 'Locação' },
-  { key: 'multas', label: 'Processos' },
-  { key: 'financeiro', label: 'Financeiro', roles: ['admin'] },
-];
+const MODULE_SECTION_LABEL = Object.fromEntries(NAV_MODULES.map((m) => [m.key, m.label]));
 
 // Sem branding fixo de clientes: a identidade vem dos dados do tenant (logo_url,
 // brand_color, tagline). Quando ausente, usa o padrão do produto (LocaCore).
@@ -296,25 +253,25 @@ function TenantLogo({ collapsed, tenant }) {
 }
 
 export default function Sidebar({ currentModule, currentTab, onNavigate, collapsed, onToggleCollapse, mobileOpen, user, tenant }) {
-  // Módulo efetivo: Financeiro tem sidebar própria; qualquer outro cai no de Despachantes.
-  const moduleKey = sidebarConfig[currentModule] ? currentModule : 'multas';
-  const config   = sidebarConfig[moduleKey];
   const userRole = user?.role || 'seller';
   const tenantSlug = tenant?.slug || deriveSlug(tenant?.name) || 'default';
 
-  // Filtra itens visíveis para a role atual. Restrições por item vêm de `roles[]`
-  // no sidebarConfig — nada de regra fixa por tenant/slug no código (§14).
-  const visibleItems = config.items.filter(item => {
-    if (item.roles && !item.roles.includes(userRole)) return false;
-    return true;
-  });
-
   // Áreas habilitadas para o tenant (parametrizável). Sem tenant.modules → todas.
   const enabledModules = Array.isArray(tenant?.modules) && tenant.modules.length ? tenant.modules : null;
-  const visibleModules = modules.filter(m =>
+  const visibleModules = NAV_MODULES.filter(m =>
     (!m.roles || m.roles.includes(userRole)) &&
     (!enabledModules || enabledModules.includes(m.key))
   );
+
+  // Módulo efetivo do MENU: quando a área atual não tem menu próprio (ex.:
+  // 'settings'), mostra o menu da primeira área habilitada do tenant — nunca
+  // um menu de área que o tenant não contratou.
+  const fallbackModule = visibleModules[0]?.key || 'multas';
+  const moduleKey = NAV_ITEMS[currentModule] && currentModule !== 'settings' ? currentModule : fallbackModule;
+  const sectionLabel = MODULE_SECTION_LABEL[moduleKey] || 'Menu';
+
+  // Itens visíveis para a role atual (restrições vêm de roles[] em navigation.js).
+  const visibleItems = getVisibleItems(moduleKey, userRole);
 
   const classes = [
     'sidebar',
@@ -336,7 +293,8 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
             <button
               key={m.key}
               className={`sidebar-module-btn${moduleKey === m.key ? ' active' : ''}`}
-              onClick={() => onNavigate(m.key, sidebarConfig[m.key]?.items[0]?.tab || 'dashboard')}
+              /* Primeira tela VISÍVEL para a role — evita cair numa tela sem permissão. */
+              onClick={() => onNavigate(m.key, getDefaultTab(m.key, userRole))}
             >
               {m.label}
             </button>
@@ -347,9 +305,10 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
       <div className="sidebar-divider" />
 
       <nav className="sidebar-nav" aria-label="Navegação principal">
-        {!collapsed && <span className="sidebar-section-label">{config.label}</span>}
+        {!collapsed && <span className="sidebar-section-label">{sectionLabel}</span>}
         {visibleItems.map(item => {
-          const isActive = currentTab === item.tab;
+          const isActive = currentModule === moduleKey && currentTab === item.tab;
+          const Icon = Icons[item.icon] || Icons.Dashboard;
           return (
             <button
               key={item.key}
@@ -358,7 +317,7 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
               title={collapsed ? item.label : undefined}
               aria-current={isActive ? 'page' : undefined}
             >
-              <span className="sidebar-item-icon"><item.Icon /></span>
+              <span className="sidebar-item-icon"><Icon /></span>
               {!collapsed && <span className="sidebar-item-label">{item.label}</span>}
             </button>
           );
