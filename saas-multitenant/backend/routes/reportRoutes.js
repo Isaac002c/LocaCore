@@ -3,6 +3,7 @@ const router = express.Router();
 const reports = require('../models/reportModels');
 const { checkPermission } = require('../middlewares/checkPermission');
 const { requireModule } = require('../middlewares/requireModule');
+const { toISODate } = require('../utils/date');
 
 // ============================================
 // REPORT ROUTES (§ Dashboard/Relatórios) — /api/reports. Gated por módulo
@@ -23,10 +24,20 @@ const sendCsv = (res, filename, header, rows) => {
   res.send('﻿' + lines.join('\r\n'));
 };
 
-// GET /api/reports/overview — snapshot consolidado (Painel).
+// GET /api/reports/overview?from=&to= — snapshot consolidado (Painel).
+// Indicadores operacionais são "agora"; os financeiros respeitam o período.
 router.get('/overview', checkPermission('reports:read'), async (req, res) => {
   try {
-    res.json({ success: true, data: await reports.overview(req.tenantId) });
+    const data = await reports.overview(req.tenantId, { from: req.query.from, to: req.query.to });
+    res.json({ success: true, data });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// GET /api/reports/dashboard-series?from=&to= — séries dos gráficos do Painel.
+router.get('/dashboard-series', checkPermission('reports:read'), async (req, res) => {
+  try {
+    const data = await reports.dashboardSeries(req.tenantId, { from: req.query.from, to: req.query.to });
+    res.json({ success: true, data });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -37,7 +48,7 @@ router.get('/revenue', checkPermission('reports:read'), async (req, res) => {
     if (req.query.format === 'csv') {
       return sendCsv(res, `faturamento_${data.from}_${data.to}.csv`,
         ['Data', 'Locação', 'Cliente', 'Placa', 'Descrição', 'Faturado', 'Recebido', 'Status'],
-        data.rows.map((r) => [String(r.data).substring(0, 10), r.rental_number, r.client_name, r.vehicle_plate, r.description, brl(r.final_amount), brl(r.paid_amount), r.financial_status]));
+        data.rows.map((r) => [toISODate(r.data), r.rental_number, r.client_name, r.vehicle_plate, r.description, brl(r.final_amount), brl(r.paid_amount), r.financial_status]));
     }
     res.json({ success: true, data });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -50,7 +61,7 @@ router.get('/rentals', checkPermission('reports:read'), async (req, res) => {
     if (req.query.format === 'csv') {
       return sendCsv(res, 'locacoes.csv',
         ['Locação', 'Status', 'Início', 'Fim', 'Cliente', 'Placa', 'Total', 'Caução'],
-        data.rows.map((r) => [r.rental_number, r.status, String(r.start_date).substring(0, 10), String(r.end_date).substring(0, 10), r.client_name, r.vehicle_plate, brl(r.total_amount), brl(r.deposit_amount)]));
+        data.rows.map((r) => [r.rental_number, r.status, toISODate(r.start_date), toISODate(r.end_date), r.client_name, r.vehicle_plate, brl(r.total_amount), brl(r.deposit_amount)]));
     }
     res.json({ success: true, data });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }

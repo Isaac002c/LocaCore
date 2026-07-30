@@ -9,6 +9,9 @@
 const { getSecret } = require('../secrets');
 const { safeEqual } = require('../webhookSecurity');
 const { assertSandboxAllowed, sandboxSignatureResult } = require('./guard');
+// due_date pode vir do banco como objeto Date: coerção segura para 'YYYY-MM-DD'
+// (o provedor rejeita "Wed Jul 29"). Ver utils/date.js.
+const { toISODate } = require('../../../utils/date');
 
 // Em PRODUÇÃO o sandbox é bloqueado (§16): não gera PIX fictício nem valida webhook.
 const sandboxProvider = {
@@ -21,7 +24,7 @@ const sandboxProvider = {
       external_id: id, status: 'pending',
       pix_code: `00020126SANDBOX-${id}5204000053039865802BR`,
       payment_link: null,
-      expires_at: due_date ? new Date(`${String(due_date).substring(0, 10)}T23:59:59Z`).toISOString() : null,
+      expires_at: due_date ? new Date(`${toISODate(due_date)}T23:59:59Z`).toISOString() : null,
       amount,
     };
   },
@@ -65,7 +68,7 @@ function asaasProvider({ fetchImpl, secretFn = getSecret } = {}) {
       if (!external_customer_id) throw new Error('Cliente externo (Asaas customer id) ausente — crie/vincule antes.');
       const payment = await api('/payments', {
         method: 'POST',
-        body: JSON.stringify({ customer: external_customer_id, billingType: 'PIX', value: Number(amount), dueDate: String(due_date).substring(0, 10), description }),
+        body: JSON.stringify({ customer: external_customer_id, billingType: 'PIX', value: Number(amount), dueDate: toISODate(due_date), description }),
       });
       // Busca o QR/copia-e-cola do PIX.
       let pix = {};

@@ -81,6 +81,19 @@ const remove = async (id, tenant_id) => {
   return r.rows[0];
 };
 
+// Existe OUTRA manutenção bloqueando o veículo? Só 'em_andamento' torna o
+// veículo indisponível (agendada ainda não começou). `exceptId` ignora a
+// manutenção que está sendo concluída/cancelada agora.
+const hasBlockingMaintenance = async (vehicle_id, tenant_id, exceptId = null) => {
+  if (!vehicle_id) return false;
+  const params = [vehicle_id, tenant_id];
+  let sql = `SELECT 1 FROM vehicle_maintenances
+              WHERE vehicle_id = $1 AND tenant_id = $2 AND status = 'em_andamento'`;
+  if (exceptId) { params.push(exceptId); sql += ` AND id <> $${params.length}`; }
+  const r = await pool.query(`${sql} LIMIT 1`, params);
+  return r.rows.length > 0;
+};
+
 // Manutenções próximas/vencidas (para alertas e dashboard). Limite calculado em JS.
 const upcomingOrOverdue = async (tenant_id, days = 7) => {
   const bound = new Date(Date.now() + (parseInt(days, 10) || 7) * 86400000).toISOString().substring(0, 10);
@@ -93,4 +106,4 @@ const upcomingOrOverdue = async (tenant_id, days = 7) => {
   return r.rows;
 };
 
-module.exports = { STATUSES, list, getById, create, update, setStatus, remove, upcomingOrOverdue };
+module.exports = { STATUSES, list, getById, create, update, setStatus, remove, upcomingOrOverdue, hasBlockingMaintenance };

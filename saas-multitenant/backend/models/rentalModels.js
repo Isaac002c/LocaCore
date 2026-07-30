@@ -56,8 +56,8 @@ const canTransition = (from, to) => from === to || (ALLOWED_TRANSITIONS[from] ||
 // Nº de diárias timezone-safe (mínimo 1 quando há período).
 const daysBetween = (start, end) => {
   if (!start || !end) return null;
-  const [ys, ms, ds] = String(start).substring(0, 10).split('-').map(Number);
-  const [ye, me, de] = String(end).substring(0, 10).split('-').map(Number);
+  const [ys, ms, ds] = toDateOrNull(start).split('-').map(Number);
+  const [ye, me, de] = toDateOrNull(end).split('-').map(Number);
   if (!ys || !ye) return null;
   const a = Date.UTC(ys, ms - 1, ds);
   const b = Date.UTC(ye, me - 1, de);

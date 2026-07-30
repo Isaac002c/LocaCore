@@ -18,6 +18,7 @@ const { resolveBranding } = require('../services/finance/branding');
 const { checkPermission } = require('../middlewares/checkPermission');
 const { requireModule } = require('../middlewares/requireModule');
 const activityLog = require('../services/activityLogService');
+const { toBrDate } = require('../utils/date');
 
 // ============================================
 // LOCAÇÕES (rentals) — LocaCore. Gating de módulo + permissões granulares (§12/§15).
@@ -306,7 +307,7 @@ router.post('/:id/recibo', checkPermission('rentals:receipt'), async (req, res) 
     const branding = resolveBranding({ tenant, settings });
 
     const veic = [rental.vehicle_brand, rental.vehicle_model].filter(Boolean).join(' ') || 'veículo';
-    const per = (v) => (v ? String(v).substring(0, 10).split('-').reverse().join('/') : '');
+    const per = (v) => toBrDate(v);
     const description = req.body.service_description
       || `Recebimento referente à locação ${rental.rental_number}, veículo ${veic}${rental.vehicle_plate ? `, placa ${rental.vehicle_plate}` : ''}${rental.start_date ? `, período de ${per(rental.start_date)} a ${per(rental.end_date)}` : ''}.`;
 

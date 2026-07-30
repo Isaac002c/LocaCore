@@ -64,3 +64,47 @@ test('elegibilidade: concluída a manutenção e liberado o veículo, a locaçã
   assert.ok(r.id);
   assert.equal(r.status, 'reservado');
 });
+
+// =============================================================================
+// §8 — "Concluir manutenção deve liberar o veículo APENAS quando não existir
+// outro bloqueio." Antes, concluir uma manutenção fazia setVehicleStatus
+// ('disponivel') incondicionalmente: um carro com OUTRA manutenção em andamento
+// (ou desativado de propósito) voltava a aparecer como locável.
+// =============================================================================
+test('hasBlockingMaintenance: detecta outra manutenção em andamento', async () => {
+  const v = await vehicleModel.createVehicle({ tenant_id: T, plate: 'BLK1B11', brand: 'VW', model: 'Gol', daily_rate: 90, status: 'disponivel' });
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T), false, 'sem manutenção não bloqueia');
+
+  const m1 = await maint.create({ tenant_id: T, vehicle_id: v.id, type: 'freios', status: 'em_andamento' });
+  const m2 = await maint.create({ tenant_id: T, vehicle_id: v.id, type: 'pneus', status: 'em_andamento' });
+
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T), true);
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T, m1.id), true, 'm2 ainda bloqueia ao concluir m1');
+
+  await maint.setStatus(m2.id, 'concluida', T);
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T, m1.id), false, 'concluída não bloqueia mais');
+
+  // 'agendada' não bloqueia: ainda não começou.
+  await maint.create({ tenant_id: T, vehicle_id: v.id, type: 'revisão', status: 'agendada' });
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T, m1.id), false, 'agendada não bloqueia');
+});
+
+test('hasBlockingMaintenance: é isolado por tenant e por veículo', async () => {
+  const v = await vehicleModel.createVehicle({ tenant_id: T, plate: 'ISO1I11', brand: 'Ford', model: 'Ka', daily_rate: 80, status: 'disponivel' });
+  await maint.create({ tenant_id: T, vehicle_id: v.id, status: 'em_andamento' });
+  assert.equal(await maint.hasBlockingMaintenance(v.id, T), true);
+  assert.equal(await maint.hasBlockingMaintenance(v.id, 'outro-tenant'), false, 'não vaza entre tenants');
+
+  const outro = await vehicleModel.createVehicle({ tenant_id: T, plate: 'ISO2I22', brand: 'Ford', model: 'Ka', daily_rate: 80, status: 'disponivel' });
+  assert.equal(await maint.hasBlockingMaintenance(outro.id, T), false, 'não vaza entre veículos');
+});
+
+test('regressão: a rota consulta o bloqueio antes de liberar e não reativa inativo', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'routes', 'maintenanceRoutes.js'), 'utf8');
+  assert.match(src, /hasBlockingMaintenance/, 'syncVehicle deve checar outro bloqueio');
+  assert.match(src, /veh\.status === 'inativo'/, 'veículo inativo não pode ser reativado ao concluir manutenção');
+  assert.match(src, /syncVehicle\(maint\.vehicle_id, maint\.status, req\.tenantId, maint\.id\)/,
+    'a manutenção atual precisa ser excluída da checagem');
+});
