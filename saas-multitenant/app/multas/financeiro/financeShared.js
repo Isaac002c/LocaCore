@@ -97,7 +97,7 @@ export function AccessDenied() {
       <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 12 }}>
         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
-      <h3 style={{ color: '#0f172a', marginBottom: 6 }}>Acesso restrito</h3>
+      <h3 style={{ color: 'var(--text-primary)', marginBottom: 6 }}>Acesso restrito</h3>
       <p style={{ color: '#94a3b8' }}>O módulo financeiro está disponível apenas para administradores.</p>
     </div>
   );

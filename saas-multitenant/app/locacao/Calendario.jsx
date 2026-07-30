@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAgenda, createEvent, deleteEvent } from '../lib/calendarAPI';
 import { fmtDate } from './shared';
+import { PageLoading, InlineError, EmptyState } from '../components/states';
 
 // Cores/rótulos por tipo de evento da agenda operacional.
 const TYPE_META = {
@@ -80,16 +81,16 @@ export default function Calendario() {
 
   const counts = FILTERS.reduce((acc, [k]) => { acc[k] = k ? events.filter((e) => e.type === k).length : events.length; return acc; }, {});
 
-  if (loading && events.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando agenda...</p></div>;
+  if (loading && events.length === 0) return <PageLoading label="Carregando agenda..." />;
 
   return (
     <div className="clients-page">
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       <div className="clients-toolbar" style={{ flexWrap: 'wrap', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="clients-search-input" style={{ width: 150 }} />
-          <span style={{ color: '#94a3b8' }}>até</span>
+          <span style={{ color: 'var(--text-muted)' }}>até</span>
           <input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} className="clients-search-input" style={{ width: 150 }} />
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -103,13 +104,18 @@ export default function Calendario() {
       </div>
 
       {groups.length === 0 ? (
-        <div className="empty-state" style={{ padding: '60px 0', textAlign: 'center' }}><p style={{ color: '#94a3b8' }}>Nenhum evento no período.</p></div>
+        <EmptyState
+          title="Nenhum compromisso no período"
+          description="Retiradas, devoluções, manutenções e vencimentos de multa aparecem aqui automaticamente. Você também pode criar eventos manuais."
+          actionLabel="Novo evento"
+          onAction={() => openNew()}
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {groups.map((d) => (
             <div key={d}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: isToday(d) ? 'var(--nx-primary)' : '#0f172a', margin: 0 }}>{fmtDate(d)}</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: isToday(d) ? 'var(--primary)' : 'var(--text-primary)', margin: 0 }}>{fmtDate(d)}</h3>
                 {isToday(d) && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--nx-primary)', background: '#dbeafe', padding: '2px 8px', borderRadius: 999 }}>HOJE</span>}
                 <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
               </div>
@@ -119,16 +125,16 @@ export default function Calendario() {
                   return (
                     <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, borderLeft: `4px solid ${m.text}` }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: m.text, background: m.bg, padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>{m.label}</span>
-                      {ev.start_time && <span style={{ fontSize: 13, fontWeight: 600, color: '#475569', minWidth: 44 }}>{String(ev.start_time).substring(0, 5)}</span>}
+                      {ev.start_time && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', minWidth: 44 }}>{String(ev.start_time).substring(0, 5)}</span>}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>{ev.title}</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{ev.title}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                           {[ev.client_name, ev.vehicle_plate, ev.responsible_name && `resp. ${ev.responsible_name}`, ev.status].filter(Boolean).join(' · ')}
                         </div>
                       </div>
                       {ev.source === 'manual'
                         ? <button className="btn-icon danger" title="Excluir" onClick={() => remove(ev)}>✕</button>
-                        : <span style={{ fontSize: 11, color: '#cbd5e1', fontStyle: 'italic', whiteSpace: 'nowrap' }}>automático</span>}
+                        : <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>automático</span>}
                     </div>
                   );
                 })}
@@ -150,7 +156,7 @@ export default function Calendario() {
                 <div className="form-group"><label>Tipo</label><select value={form.type} onChange={set('type')}><option value="lembrete">Lembrete</option><option value="tarefa">Tarefa</option><option value="outro">Evento</option></select></div>
               </div>
               <div className="form-group"><label>Descrição</label><textarea rows="2" value={form.description} onChange={set('description')} /></div>
-              <p style={{ fontSize: 12, color: '#94a3b8' }}>Retiradas, devoluções, manutenções e multas aparecem automaticamente na agenda.</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Retiradas, devoluções, manutenções e multas aparecem automaticamente na agenda.</p>
               <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Criar'}</button></div>
             </form>
           </div>

@@ -83,10 +83,10 @@ export default function Header({ user, tenant, onLogout }) {
             </svg>
           </div>
           <div style={{ marginLeft: '10px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', lineHeight: 1.2 }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1.2 }}>
               {PRODUCT_NAME}
             </div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.2 }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.2 }}>
               {PRODUCT_TAGLINE}
             </div>
           </div>

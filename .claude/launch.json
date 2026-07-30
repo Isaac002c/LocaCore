@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "locacore-backend-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["saas-multitenant/backend/demo-server.js"],
+      "port": 5000
+    },
+    {
       "name": "nexo-frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "saas-multitenant", "run", "dev"],

@@ -51,7 +51,7 @@ const NX_TOOLTIP = {
     borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(15,23,42,.10)',
     fontSize: 12.5, padding: '8px 12px',
   },
-  labelStyle: { fontWeight: 700, color: '#0f172a', marginBottom: 4 },
+  labelStyle: { fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 },
 };
 const LEGEND = { wrapperStyle: { fontSize: 12 }, iconType: 'circle', iconSize: 8 };
 
@@ -121,7 +121,7 @@ export function HBarChart({ data, nameKey, valueKey = 'total', color = CHART_COL
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
         <CartesianGrid stroke={CHART_COLORS.grid} horizontal={false} />
         <XAxis type="number" tick={AXIS} tickFormatter={fmtCompact} tickLine={false} axisLine={false} />
-        <YAxis type="category" dataKey={nameKey} tick={{ ...AXIS, fill: '#475569' }} width={130} tickLine={false} axisLine={false} />
+        <YAxis type="category" dataKey={nameKey} tick={{ ...AXIS, fill: 'var(--text-secondary)' }} width={130} tickLine={false} axisLine={false} />
         <Tooltip {...NX_TOOLTIP} formatter={(v) => [valueFormatter(v), 'Total']} cursor={{ fill: 'rgba(148,163,184,.08)' }} />
         <Bar dataKey={valueKey} fill={color} radius={[0, 4, 4, 0]} maxBarSize={18} />
       </BarChart>
@@ -146,7 +146,7 @@ export function CategoryChart({ data }) {
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }} barGap={2}>
         <CartesianGrid stroke={CHART_COLORS.grid} horizontal={false} />
         <XAxis type="number" tick={AXIS} tickFormatter={fmtCompact} tickLine={false} axisLine={false} />
-        <YAxis type="category" dataKey="category" tick={{ ...AXIS, fill: '#475569' }} width={130} tickLine={false} axisLine={false} />
+        <YAxis type="category" dataKey="category" tick={{ ...AXIS, fill: 'var(--text-secondary)' }} width={130} tickLine={false} axisLine={false} />
         <Tooltip {...NX_TOOLTIP} formatter={(v, name) => [fmtBRL(v), name]} cursor={{ fill: 'rgba(148,163,184,.08)' }} />
         <Legend {...LEGEND} />
         <Bar dataKey="entrada" name="Entradas" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} maxBarSize={14} />

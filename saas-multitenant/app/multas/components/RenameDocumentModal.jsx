@@ -54,7 +54,7 @@ export default function RenameDocumentModal({ doc, onClose, onRenamed }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Renomear documento</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Renomear documento</h2>
           <button type="button" onClick={onClose} className="btn-close">✕</button>
         </div>
         {error && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{error}</div>}
@@ -70,9 +70,9 @@ export default function RenameDocumentModal({ doc, onClose, onRenamed }) {
                 placeholder="Ex.: Procuração - João da Silva"
                 style={{ flex: 1 }}
               />
-              {ext && <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{ext}</span>}
+              {ext && <span style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{ext}</span>}
             </div>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 0' }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 0' }}>
               {ext
                 ? `A extensão ${ext} é mantida automaticamente. O arquivo anexado não muda.`
                 : 'O arquivo anexado não muda — apenas o nome exibido.'}

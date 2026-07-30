@@ -156,7 +156,7 @@ export default function CalendarioEventos() {
       {showSpinner ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
           <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-          <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando agenda...</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando agenda...</p>
         </div>
       ) : view === 'mes' ? (
         <>
@@ -275,7 +275,7 @@ export default function CalendarioEventos() {
             <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h2 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', textTransform: 'capitalize' }}>{fmtDateLong(dayDrawer)}</h2>
+                  <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'capitalize' }}>{fmtDateLong(dayDrawer)}</h2>
                   <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 700, background: `${DAY_STATUS[st].color}18`, color: DAY_STATUS[st].color, padding: '2px 10px', borderRadius: 999 }}>
                     {DAY_STATUS[st].label}
                   </span>
@@ -320,7 +320,7 @@ export default function CalendarioEventos() {
               )}
 
               {normal.length === 0 ? (
-                <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia.</p>
               ) : (
                 <div className="ag-list" style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
                   {normal.map(ev => <EventRow key={ev.id} ev={ev} onView={openView} onEdit={openEdit} onCancel={cancelEvent} onRemove={removeEvent} />)}
@@ -343,7 +343,7 @@ export default function CalendarioEventos() {
             <div className="modal-content" style={{ maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header" style={{ alignItems: 'flex-start' }}>
                 <div style={{ minWidth: 0, paddingRight: 8 }}>
-                  <h2 style={{ fontSize: 19, fontWeight: 700, color: '#0f172a', wordBreak: 'break-word' }}>{ev.title}</h2>
+                  <h2 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{ev.title}</h2>
                   <div style={{ display: 'flex', gap: 7, marginTop: 7, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: ti.color, background: `${ti.color}18`, padding: '3px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{ti.label}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: cancelled ? '#94a3b8' : ti.color, background: cancelled ? '#f1f5f9' : `${ti.color}18`, padding: '3px 10px', borderRadius: 999 }}>{STATUS_LABEL[ev.status] || 'Agendado'}</span>
@@ -372,8 +372,8 @@ export default function CalendarioEventos() {
 
                 {ev.description && (
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Observações</div>
-                    <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 8, padding: '9px 12px', fontSize: 13, lineHeight: 1.5, color: '#334155', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Observações</div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 8, padding: '9px 12px', fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {ev.description}
                     </div>
                   </div>
@@ -411,7 +411,7 @@ export default function CalendarioEventos() {
         <div className="modal-overlay" onClick={() => setBlockModal(null)}>
           <div className="modal-content" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{blockModal.id ? 'Editar bloqueio' : 'Bloquear agenda'}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{blockModal.id ? 'Editar bloqueio' : 'Bloquear agenda'}</h2>
               <button type="button" onClick={() => setBlockModal(null)} className="btn-close">✕</button>
             </div>
             {blockError && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{blockError}</div>}
@@ -436,7 +436,7 @@ export default function CalendarioEventos() {
                   <div className="form-group"><label>Fim</label><input type="time" value={blockModal.end} onChange={(e) => setBlockModal(b => ({ ...b, end: e.target.value }))} /></div>
                 </div>
               )}
-              <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0 8px' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 8px' }}>
                 {blockModal.mode === 'dia'
                   ? 'Bloqueia o dia inteiro — nenhum novo evento poderá ser criado.'
                   : 'Bloqueia apenas o período informado. Eventos fora dele continuam permitidos. Os horários acima podem ser ajustados.'}
@@ -477,13 +477,13 @@ function EventRow({ ev, onView, onEdit, onCancel, onRemove }) {
           {fmtTime(ev.start_time) && fmtTime(ev.end_time) && <span>{fmtTime(ev.start_time)}–{fmtTime(ev.end_time)}</span>}
           {ev.service_name && <span>· {ev.service_name}</span>}
           {ev.client_name && <span>· {ev.client_name}</span>}
-          {ev.responsible_name && <span style={{ color: '#cbd5e1' }}>· resp.: {ev.responsible_name}</span>}
-          {ev.description && <span style={{ color: '#94a3b8' }}>· {ev.description}</span>}
+          {ev.responsible_name && <span style={{ color: 'var(--text-muted)' }}>· resp.: {ev.responsible_name}</span>}
+          {ev.description && <span style={{ color: 'var(--text-muted)' }}>· {ev.description}</span>}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
         {!isBlock && (cancelled
-          ? <span className="ag-pill" style={{ background: '#f1f5f9', color: '#94a3b8' }}>Cancelado</span>
+          ? <span className="ag-pill" style={{ background: '#f1f5f9', color: 'var(--text-muted)' }}>Cancelado</span>
           : <span className="ag-pill" style={{ background: `${ti.color}18`, color: ti.color }}>{STATUS_LABEL[ev.status] || 'Agendado'}</span>)}
         <button className="btn-icon" title="Editar" onClick={(e) => { e.stopPropagation(); onEdit(ev); }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -506,8 +506,8 @@ function DetailItem({ label, value, capitalize }) {
   if (value == null || value === '') return null;
   return (
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', wordBreak: 'break-word', textTransform: capitalize ? 'capitalize' : 'none' }}>{value}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', wordBreak: 'break-word', textTransform: capitalize ? 'capitalize' : 'none' }}>{value}</div>
     </div>
   );
 }

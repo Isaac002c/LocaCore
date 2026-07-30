@@ -8,6 +8,7 @@ import {
 } from '../lib/automationsAPI';
 import { MetricCard, PageHead, EmptyState } from '../components/ui';
 import { fmtMoney, fmtDate } from './shared';
+import { PageLoading, InlineError } from '../components/states';
 
 const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const TABS = [
@@ -73,12 +74,7 @@ export default function Automacoes() {
     setSettings((s) => ({ ...s, [k]: v }));
   };
 
-  if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando automações...</p>
-    </div>
-  );
+  if (loading) return <PageLoading label="Carregando automações..." />;
 
   return (
     <div>
@@ -88,7 +84,7 @@ export default function Automacoes() {
         {TABS.map((t) => <button key={t.key} role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'active' : ''} onClick={() => onTab(t.key)}>{t.label}</button>)}
       </div>
 
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={loadPanel} />
       {notice && <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between', wordBreak: 'break-word' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
 
       {/* ── PAINEL ─────────────────────────────────────────────── */}
@@ -147,7 +143,7 @@ export default function Automacoes() {
               <div className="form-group"><label>Janela fim (h)</label><input type="number" min="1" max="24" value={settings.whatsapp_send_end_hour} onChange={setField('whatsapp_send_end_hour')} /></div>
               <div className="form-group"><label>Máx. lembretes</label><input type="number" min="0" value={settings.reminder_max} onChange={setField('reminder_max')} /></div>
             </div>
-            <p style={{ fontSize: 12, color: '#94a3b8' }}>Credenciais do provedor não ficam no banco — configuradas por variável de ambiente. O sandbox simula o envio para homologação.</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Credenciais do provedor não ficam no banco — configuradas por variável de ambiente. O sandbox simula o envio para homologação.</p>
           </div>
 
           <div className="nx-form-section">
@@ -177,7 +173,7 @@ export default function Automacoes() {
               <div className="form-group"><label>Custo por mensagem (R$)</label><input type="number" step="0.0001" min="0" value={settings.cost_per_message} onChange={setField('cost_per_message')} /></div>
               <div className="form-group"><label>Custo por nota (R$)</label><input type="number" step="0.0001" min="0" value={settings.cost_per_fiscal} onChange={setField('cost_per_fiscal')} /></div>
             </div>
-            <p style={{ fontSize: 12, color: '#94a3b8' }}>Custos de mensagens, emissão fiscal, certificados e demais serviços externos são cobrados separadamente conforme o consumo.</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Custos de mensagens, emissão fiscal, certificados e demais serviços externos são cobrados separadamente conforme o consumo.</p>
           </div>
 
           <div className="form-actions"><button className="btn-primary" disabled={busy} onClick={() => saveSettings(settings)}>Salvar configurações</button></div>
@@ -235,12 +231,12 @@ export default function Automacoes() {
           <div className="nx-form-section-title">Consumo de serviços externos</div>
           <table className="data-table"><thead><tr><th>Tipo</th><th>Quantidade</th><th>Total</th></tr></thead>
             <tbody>
-              {costs.by_kind.length === 0 && <tr><td colSpan="3" style={{ color: '#94a3b8' }}>Sem custos no período.</td></tr>}
+              {costs.by_kind.length === 0 && <tr><td colSpan="3" style={{ color: 'var(--text-muted)' }}>Sem custos no período.</td></tr>}
               {costs.by_kind.map((c) => <tr key={c.kind}><td>{c.kind}</td><td>{c.quantidade}</td><td>{fmtCost(c.total)}</td></tr>)}
             </tbody>
           </table>
           <p style={{ marginTop: 10, fontWeight: 700 }}>Total: {fmtCost(costs.total)}</p>
-          <p style={{ fontSize: 12, color: '#94a3b8' }}>Cobrado separadamente da mensalidade, conforme o consumo.</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cobrado separadamente da mensalidade, conforme o consumo.</p>
         </div>
       )}
     </div>

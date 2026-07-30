@@ -117,7 +117,7 @@ function StageCard({ groupKey, info, count, active, onClick }) {
         <span className="md-stage-card-count" style={{ color: info.color }}>{count}</span>
         <span className="md-stage-card-sub">processo{count !== 1 ? 's' : ''}</span>
       </div>
-      <div className="md-stage-card-arrow" style={{ color: active ? info.color : '#cbd5e1' }}>
+      <div className="md-stage-card-arrow" style={{ color: active ? info.color : 'var(--text-muted)' }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           {active ? <polyline points="18 15 12 9 6 15"/> : <polyline points="6 9 12 15 18 9"/>}
         </svg>
@@ -178,7 +178,7 @@ function StagePanel({ groupKey, info, stageData, onClose }) {
                           {c.due_date ? ` · Vence ${formatDate(c.due_date)}` : ''}
                         </span>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
                         <polyline points="9 18 15 12 9 6"/>
                       </svg>
                     </div>
@@ -238,7 +238,7 @@ function DeferidosPanel({ items, onClose }) {
                       {c.due_date ? ` · ${formatDate(c.due_date)}` : ''}
                     </span>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
                 </div>
@@ -310,7 +310,7 @@ export default function MultasDashboard() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p>
     </div>
   );
 
@@ -445,8 +445,8 @@ export default function MultasDashboard() {
         <SectionCard title="Resumo Geral">
           <div className="md-stages">
             {[
-              { label: 'Total de Contratos', value: totalContracts, color: '#475569' },
-              { label: 'Clientes',           value: clients.length, color: '#475569' },
+              { label: 'Total de Contratos', value: totalContracts, color: 'var(--text-secondary)' },
+              { label: 'Clientes',           value: clients.length, color: 'var(--text-secondary)' },
               { label: 'Defesa Prévia',      value: defesaTotal,    color: '#6366f1' },
               { label: '1ª Instância',       value: inst1Total,     color: '#f59e0b' },
               { label: '2ª Instância',       value: inst2Total,     color: '#ef4444' },
@@ -467,7 +467,7 @@ export default function MultasDashboard() {
 
         <SectionCard title="Próximos eventos">
           {upcomingEvents.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>Nenhum evento próximo.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>Nenhum evento próximo.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {upcomingEvents.map(ev => (
@@ -478,8 +478,8 @@ export default function MultasDashboard() {
                 >
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--nx-primary)', marginTop: 6, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {formatDate(ev.event_date)}{ev.start_time ? ` · ${String(ev.start_time).substring(0,5)}` : ''}{ev.client_name ? ` · ${ev.client_name}` : ''}
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { getVehicles } from '../lib/vehiclesAPI';
 import { getClients } from '../lib/clientsAPI';
 import { getRentals } from '../lib/rentalsAPI';
 import { fmtMoney, fmtDate, toInputDate } from './shared';
+import { PageLoading, InlineError, EmptyState } from '../components/states';
 
 const STATUS = [
   ['identificada', 'Identificada'], ['aguardando_validacao', 'Aguard. validação'], ['aguardando_condutor', 'Aguard. condutor'],
@@ -49,7 +50,7 @@ export default function Multas() {
   const act = async (fn, id, msg) => { try { setNotice(null); await fn(id); setNotice(msg); await load(); } catch (err) { setError(err.message); } };
   const remove = async (id) => { if (!confirm('Excluir esta multa?')) return; try { await deleteFine(id); await load(); } catch (err) { setError(err.message); } };
 
-  if (loading && rows.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando multas...</p></div>;
+  if (loading && rows.length === 0) return <PageLoading label="Carregando multas..." />;
 
   return (
     <div className="clients-page">
@@ -59,7 +60,7 @@ export default function Multas() {
         <div className="clients-summary-card fechado"><span className="summary-number" style={{ fontSize: 20 }}>{fmtMoney(stats?.valor_aberto || 0)}</span><span className="summary-label">Valor em aberto</span></div>
       </div>
 
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
       {notice && <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
 
       <div className="clients-toolbar">
@@ -70,9 +71,14 @@ export default function Multas() {
       <div className="clients-table-wrap"><table className="data-table">
         <thead><tr><th>Nº / Órgão</th><th>Veículo</th><th>Cliente</th><th>Infração</th><th>Total</th><th>Status</th><th style={{ width: 220 }}>Ações</th></tr></thead>
         <tbody>
-          {rows.length === 0 ? <tr><td colSpan="7"><div className="empty-state" style={{ padding: '40px 0' }}><p style={{ color: '#94a3b8' }}>Nenhuma multa registrada</p></div></td></tr> : rows.map((f) => (
+          {rows.length === 0 ? <tr><td colSpan="7"><EmptyState
+              title={filter ? 'Nenhuma multa neste status' : 'Nenhuma multa registrada'}
+              description={filter
+                ? 'Troque o filtro de status para ver as demais multas.'
+                : 'Registre infrações recebidas para vincular ao veículo, à locação e ao condutor — e cobrar do cliente quando for o caso.'}
+            /></td></tr> : rows.map((f) => (
             <tr key={f.id}>
-              <td><strong>{f.fine_number || '—'}</strong><div style={{ fontSize: 12, color: '#94a3b8' }}>{f.organ || ''}</div></td>
+              <td><strong>{f.fine_number || '—'}</strong><div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{f.organ || ''}</div></td>
               <td>{f.vehicle_plate || '—'}</td>
               <td>{f.client_name || '—'}</td>
               <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(f.infraction_date)}</td>

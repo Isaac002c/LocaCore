@@ -13,7 +13,7 @@ export default function ConfigFinanceira() {
   if (!isAdmin()) return <AccessDenied />;
   return (
     <div className="clients-page">
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>Configurações Financeiras</h2>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>Configurações Financeiras</h2>
       <div className="settings-tabs" style={{ marginBottom: 16 }}>
         <button className={`settings-tab ${tab === 'empresa' ? 'active' : ''}`} onClick={() => setTab('empresa')}>Empresa & Recibo</button>
         <button className={`settings-tab ${tab === 'categorias' ? 'active' : ''}`} onClick={() => setTab('categorias')}>Categorias</button>
@@ -80,7 +80,7 @@ function EmpresaSettings() {
       <Feedback {...(feedback || {})} onClose={() => setFeedback(null)} />
       {error && <div className="error-message" style={{ marginBottom: 12 }}>{error}</div>}
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: '4px 0 10px' }}>IDENTIDADE (RECIBOS)</h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', margin: '4px 0 10px' }}>IDENTIDADE (RECIBOS)</h3>
       <div className="modal-form">
         <div className="form-group">
           <label>Razão social / Nome</label>
@@ -97,7 +97,7 @@ function EmpresaSettings() {
         </div>
       </div>
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: '18px 0 10px' }}>NUMERAÇÃO DO RECIBO</h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', margin: '18px 0 10px' }}>NUMERAÇÃO DO RECIBO</h3>
       <div className="modal-form">
         <div className="form-row">
           <div className="form-group">
@@ -109,13 +109,13 @@ function EmpresaSettings() {
             <input type="number" min="1" value={form.next_receipt_number} onChange={set('next_receipt_number')} />
           </div>
         </div>
-        <p style={{ fontSize: 12, color: '#94a3b8' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           Já existem recibos até o número {data?.max_receipt_number ?? 0}. O próximo número deve ser maior que este.
           Exemplo do formato: <strong>{(form.receipt_prefix || 'NEXO')}-{String(form.next_receipt_number || 1).padStart(6, '0')}</strong>
         </p>
       </div>
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: '18px 0 10px' }}>FORMAS DE PAGAMENTO HABILITADAS</h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', margin: '18px 0 10px' }}>FORMAS DE PAGAMENTO HABILITADAS</h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
         {PAYMENT_METHODS.map((m) => (
           <label key={m.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
@@ -206,7 +206,7 @@ function CategoriesSettings() {
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} style={{ opacity: c.active ? 1 : 0.55 }}>
-                <td><strong style={{ color: '#0f172a' }}>{c.name}</strong>{c.description && <span style={{ display: 'block', fontSize: 12, color: '#94a3b8' }}>{c.description}</span>}</td>
+                <td><strong style={{ color: 'var(--text-primary)' }}>{c.name}</strong>{c.description && <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>{c.description}</span>}</td>
                 <td><span style={{ color: c.type === 'entrada' ? '#15803d' : '#b91c1c', fontWeight: 600 }}>{c.type === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
                 <td><span className={`client-status-badge ${c.active ? 'fechado' : 'negociacao'}`}>{c.active ? 'Ativa' : 'Inativa'}</span></td>
                 <td>

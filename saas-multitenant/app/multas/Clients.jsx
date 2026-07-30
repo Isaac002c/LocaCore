@@ -216,7 +216,7 @@ export default function MultasClients() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando clientes...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando clientes...</p>
     </div>
   );
 
@@ -249,7 +249,7 @@ export default function MultasClients() {
       {/* Barra de ações */}
       <div className="clients-toolbar">
         <div className="clients-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -299,11 +299,11 @@ export default function MultasClients() {
               <tr>
                 <td colSpan="7">
                   <div className="empty-state" style={{ padding: '40px 0' }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 8 }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 8 }}>
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
                       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
-                    <p style={{ color: '#94a3b8' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>
                       {filterStatus ? `Nenhum cliente com status "${STATUS_LABELS[filterStatus]}"` : 'Nenhum cliente cadastrado'}
                     </p>
                   </div>
@@ -325,13 +325,13 @@ export default function MultasClients() {
                     }}>
                       {client.name?.charAt(0).toUpperCase()}
                     </div>
-                    <strong style={{ color: '#0f172a' }}>{client.name}</strong>
+                    <strong style={{ color: 'var(--text-primary)' }}>{client.name}</strong>
                   </div>
                 </td>
-                <td style={{ color: '#475569', fontFamily: 'monospace', fontSize: 13 }}>{formatCPF(client.cpf)}</td>
-                <td style={{ color: '#475569' }}>{client.cnh || '—'}</td>
-                <td style={{ color: '#475569', whiteSpace: 'nowrap' }}>{formatPhone(client.phone)}</td>
-                <td style={{ color: '#475569' }}>{client.email || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 13 }}>{formatCPF(client.cpf)}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{client.cnh || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{formatPhone(client.phone)}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{client.email || '—'}</td>
                 <td>
                   <span className={`client-status-badge ${client.status || 'negociacao'}`}>
                     {STATUS_LABELS[client.status] || 'Negociação'}
@@ -367,10 +367,10 @@ export default function MultasClients() {
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
                 </h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                   {editingClient ? 'Atualize os dados do cliente' : 'Preencha os dados do novo cliente'}
                 </p>
               </div>

@@ -170,16 +170,16 @@ export default function Lancamentos() {
                   <tr key={t.id} style={{ opacity: t.status === 'cancelado' ? 0.55 : 1 }}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(t.transaction_date)}</td>
                     <td><span style={{ color: t.type === 'entrada' ? '#15803d' : '#b91c1c', fontWeight: 700 }}>{t.type === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
-                    <td style={{ color: '#475569' }}>{t.category_name || '—'}</td>
-                    <td style={{ color: '#475569' }}>{t.description || '—'}</td>
-                    <td style={{ color: '#334155' }}>
+                    <td style={{ color: 'var(--text-secondary)' }}>{t.category_name || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{t.description || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
                       {t.client_name || '—'}
-                      {t.client_phone && <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.client_phone}</div>}
+                      {t.client_phone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.client_phone}</div>}
                     </td>
-                    <td style={{ color: '#334155', fontFamily: 'monospace', fontWeight: 600 }}>{t.plate || t.fine_plate || '—'}</td>
-                    <td style={{ color: '#475569' }}>{PAYMENT_METHOD_LABELS[t.payment_method] || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontWeight: 600 }}>{t.plate || t.fine_plate || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{PAYMENT_METHOD_LABELS[t.payment_method] || '—'}</td>
                     <td><StatusBadge status={t.status} label={TRANSACTION_STATUS_LABELS[t.status]} /></td>
-                    <td><span style={{ fontSize: 11, color: '#94a3b8' }}>{t.origin === 'pagamento' ? 'Automático' : 'Manual'}</span></td>
+                    <td><span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.origin === 'pagamento' ? 'Automático' : 'Manual'}</span></td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: t.type === 'entrada' ? '#15803d' : '#b91c1c' }}>{formatBRL(t.amount)}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className="actions-cell">

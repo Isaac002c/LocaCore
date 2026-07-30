@@ -14,7 +14,7 @@ const COLUMNS = [
   { key: 'negociacao',        label: 'Em Negociação',        color: 'var(--nx-primary)', bg: '#eff6ff',                   desc: 'Em tratativa' },
   { key: 'nao_encontrado',    label: 'Não Encontrado',       color: '#ef4444', bg: 'rgba(239,68,68,0.06)',      desc: 'Não atendeu/localizado' },
   { key: 'fechado',           label: 'Fechado',              color: 'var(--nx-primary)', bg: 'rgba(165, 107, 255, 0.06)',      desc: 'Contrato assinado' },
-  { key: 'perdido',           label: 'Perdido',              color: '#94a3b8', bg: '#f1f5f9',                   desc: 'Lead perdido' },
+  { key: 'perdido',           label: 'Perdido',              color: 'var(--text-muted)', bg: '#f1f5f9',                   desc: 'Lead perdido' },
 ];
 
 const formatDate = (v) => (!v ? '—' : new Date(v).toLocaleDateString('pt-BR'));
@@ -99,7 +99,7 @@ export default function Tarefas() {
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
       <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
-      <p style={{ color:'#94a3b8', fontSize:14 }}>Carregando tarefas...</p>
+      <p style={{ color:'var(--text-muted)', fontSize:14 }}>Carregando tarefas...</p>
     </div>
   );
 
@@ -112,12 +112,12 @@ export default function Tarefas() {
         </div>
         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
           <div style={{ position:'relative' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"
               style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" placeholder="Buscar por nome..." value={search} onChange={e=>setSearch(e.target.value)}
-              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', width:200, color:'#0f172a' }}
+              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', width:200, color:'var(--text-primary)' }}
             />
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function Tarefas() {
               {selectedLead.notes && (
                 <div className="lead-panel-field" style={{ gridColumn:'1/-1' }}>
                   <span className="lead-panel-field-label">Observações</span>
-                  <span className="lead-panel-field-value" style={{ fontStyle:'italic', color:'#64748b' }}>{selectedLead.notes}</span>
+                  <span className="lead-panel-field-value" style={{ fontStyle:'italic', color:'var(--text-secondary)' }}>{selectedLead.notes}</span>
                 </div>
               )}
             </div>
@@ -259,7 +259,7 @@ export default function Tarefas() {
               <button onClick={()=>setShowDeleteModal(null)} className="btn-close">✕</button>
             </div>
             <form onSubmit={handleSolicitarExclusao} className="modal-form">
-              <p style={{ fontSize:13, color:'#475569', marginBottom:12 }}>
+              <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}>
                 Solicitando exclusão de: <strong>{showDeleteModal.name}</strong>
               </p>
               <div className="form-group">

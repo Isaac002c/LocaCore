@@ -80,7 +80,7 @@ export function EmptyState({ title = 'Nada por aqui', description, actionLabel, 
   return (
     <div className="nx-empty" style={small ? { padding: '20px 12px' } : undefined}>
       {icon || (
-        <svg width={small ? 28 : 40} height={small ? 28 : 40} viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+        <svg width={small ? 28 : 40} height={small ? 28 : 40} viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
           <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7" />
           <path d="M3 9h18" /><circle cx="17.5" cy="17.5" r="3.5" /><path d="M17.5 16v1.5l1 1" />
         </svg>

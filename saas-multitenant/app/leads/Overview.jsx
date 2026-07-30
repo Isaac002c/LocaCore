@@ -841,7 +841,7 @@ export default function LeadsOverview() {
         <div className="modal-overlay" onClick={() => setShowForecastModal(false)}>
           <div className="modal large" onClick={e => e.stopPropagation()}>
             <h3>⚙️ Configurar Probabilidades de Forecast</h3>
-            <p style={{ color: '#64748b', marginBottom: '20px', fontSize: '14px' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '14px' }}>
               Ajuste as probabilidades de fechamento para cada estágio do funil. 
               Isso afetará o cálculo da receita projetada.
             </p>
@@ -911,7 +911,7 @@ export default function LeadsOverview() {
         <div className="modal-overlay" onClick={() => setShowKPISettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>⚙️ Personalizar KPIs</h3>
-            <p style={{ color: '#64748b', marginBottom: '20px', fontSize: '14px' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '14px' }}>
               Escolha quais indicadores deseja visualizar no seu dashboard.
             </p>
             

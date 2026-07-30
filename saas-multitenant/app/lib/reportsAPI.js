@@ -12,7 +12,11 @@ const qs = (params = {}) => {
   return str ? `?${str}` : '';
 };
 
-export const getOverview = async () => (await apiRequest(`${BASE}/overview`)).data;
+export const getOverview = async ({ from = '', to = '' } = {}) =>
+  (await apiRequest(`${BASE}/overview${qs({ from, to })}`)).data;
+
+export const getDashboardSeries = async ({ from = '', to = '' } = {}) =>
+  (await apiRequest(`${BASE}/dashboard-series${qs({ from, to })}`)).data;
 
 export const getRevenue = async ({ from = '', to = '' } = {}) =>
   (await apiRequest(`${BASE}/revenue${qs({ from, to })}`)).data;

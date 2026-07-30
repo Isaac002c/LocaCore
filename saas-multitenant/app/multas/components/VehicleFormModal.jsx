@@ -55,7 +55,7 @@ export default function VehicleFormModal({ companyId, vehicle, onClose, onSaved 
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{editing ? 'Editar Veículo' : 'Novo Veículo'}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{editing ? 'Editar Veículo' : 'Novo Veículo'}</h2>
           <button type="button" onClick={onClose} className="btn-close">✕</button>
         </div>
         {error && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{error}</div>}

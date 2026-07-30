@@ -48,7 +48,7 @@ export default function Deferidos() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando deferidos...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando deferidos...</p>
     </div>
   );
 
@@ -60,11 +60,11 @@ export default function Deferidos() {
           <p className="ag-head-sub">Processos com resultado <strong style={{ color: GREEN }}>DEFERIDO</strong> — prova social para apresentar a clientes.</p>
         </div>
         <div style={{ position: 'relative' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input type="text" placeholder="Buscar cliente, auto, placa..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft: 34, paddingRight: 12, height: 38, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff', width: 240, color: '#0f172a' }} />
+            style={{ paddingLeft: 34, paddingRight: 12, height: 38, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff', width: 240, color: 'var(--text-primary)' }} />
         </div>
       </div>
 
@@ -80,7 +80,7 @@ export default function Deferidos() {
         </div>
         {filtered.length === 0 ? (
           <div className="ag-empty">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
             Nenhum processo deferido encontrado.
@@ -112,7 +112,7 @@ export default function Deferidos() {
           <div className="modal-content" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selected.client_name || 'Processo'}</h2>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{selected.client_name || 'Processo'}</h2>
                 <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 700, background: '#dcfce7', color: GREEN, padding: '2px 10px', borderRadius: 999 }}>
                   DEFERIDO · somente leitura
                 </span>
@@ -120,13 +120,13 @@ export default function Deferidos() {
               <button type="button" onClick={() => setSelected(null)} className="btn-close">✕</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: '#334155', padding: '4px 2px 8px' }}>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Tipo</span>{selected.company_id ? 'Empresa' : 'Cliente'}</div>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Órgão</span>{selected.organ || '—'}</div>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Nº Auto/Processo</span>{selected.numero_multa || '—'}</div>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Placa</span>{selected.vehicle_plate || '—'}</div>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Andamento</span>Deferido</div>
-              <div><span style={{ color: '#94a3b8', display: 'block', fontSize: 11 }}>Prazo</span>{fmtDate(selected.due_date)}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: 'var(--text-secondary)', padding: '4px 2px 8px' }}>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Tipo</span>{selected.company_id ? 'Empresa' : 'Cliente'}</div>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Órgão</span>{selected.organ || '—'}</div>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Nº Auto/Processo</span>{selected.numero_multa || '—'}</div>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Placa</span>{selected.vehicle_plate || '—'}</div>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Andamento</span>Deferido</div>
+              <div><span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 11 }}>Prazo</span>{fmtDate(selected.due_date)}</div>
             </div>
 
             <div className="form-actions">

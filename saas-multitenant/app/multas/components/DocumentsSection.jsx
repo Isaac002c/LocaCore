@@ -86,8 +86,8 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
     <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9' }}>
         <div>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>{subtitle || `${visibleDocs.length} documento(s)`}</p>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{subtitle || `${visibleDocs.length} documento(s)`}</p>
         </div>
         <button onClick={() => { setError(null); setShow(true); }} className="btn-primary" style={{ background: '#475569', borderColor: '#475569' }}>+ Documento</button>
       </div>
@@ -96,9 +96,9 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
       {renameOk && <div style={{ margin: '12px 18px 0', fontSize: 13, color: '#15803d', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px' }}>Documento renomeado com sucesso.</div>}
 
       {loading ? (
-        <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Carregando...</div>
+        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Carregando...</div>
       ) : visibleDocs.length === 0 ? (
-        <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Nenhum documento anexado.</div>
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Nenhum documento anexado.</div>
       ) : (
         <div className="cd-doc-list" style={{ padding: 12 }}>
           {visibleDocs.map((doc) => (
@@ -140,7 +140,7 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
         <div className="modal-overlay" onClick={() => setShow(false)}>
           <div className="modal-content" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Adicionar Documento</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Adicionar Documento</h2>
               <button type="button" onClick={() => setShow(false)} className="btn-close">✕</button>
             </div>
             {error && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{error}</div>}

@@ -9,13 +9,13 @@ import { requestDeletion } from '../lib/approvalsAPI';
 import EventFormModal from './components/EventFormModal';
 
 const ALL_STATUSES = [
-  { value: 'entrada',           label: 'Entrada',              color: '#64748b' },
+  { value: 'entrada',           label: 'Entrada',              color: 'var(--text-secondary)' },
   { value: 'possui_defensor',   label: 'Já Possui Defensor',   color: '#8b5cf6' },
   { value: 'nao_quer_defender', label: 'Não Quer se Defender', color: '#f59e0b' },
   { value: 'negociacao',        label: 'Em Negociação',        color: 'var(--nx-primary)' },
   { value: 'nao_encontrado',    label: 'Não Encontrado',       color: '#ef4444' },
   { value: 'fechado',           label: 'Fechado',              color: 'var(--nx-primary)' },
-  { value: 'perdido',           label: 'Perdido',              color: '#94a3b8' },
+  { value: 'perdido',           label: 'Perdido',              color: 'var(--text-muted)' },
 ];
 
 const SOURCE_OPTIONS = ['Indicação','WhatsApp','Instagram','Site','Google','Facebook','Telefone','Presencial','Lista','Outros'];
@@ -55,7 +55,7 @@ const displayToIso = (v) => {
   return null;
 };
 
-const getStatusInfo = (v) => ALL_STATUSES.find(s=>s.value===v) || { label: v, color: '#94a3b8' };
+const getStatusInfo = (v) => ALL_STATUSES.find(s=>s.value===v) || { label: v, color: 'var(--text-muted)' };
 
 export default function LeadsList() {
   const [leads,        setLeads]        = useState([]);
@@ -149,7 +149,7 @@ export default function LeadsList() {
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
       <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
-      <p style={{ color:'#94a3b8', fontSize:14 }}>Carregando leads...</p>
+      <p style={{ color:'var(--text-muted)', fontSize:14 }}>Carregando leads...</p>
     </div>
   );
 
@@ -159,21 +159,21 @@ export default function LeadsList() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, gap:12, flexWrap:'wrap' }}>
         <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
           <div style={{ position:'relative' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"
               style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)' }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" placeholder="Buscar por nome..." value={search}
               onChange={e=>setSearch(e.target.value)}
-              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', color:'#0f172a', width:200 }}
+              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', color:'var(--text-primary)', width:200 }}
             />
           </div>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'#0f172a', outline:'none' }}>
+            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'var(--text-primary)', outline:'none' }}>
             <option value="">Todos os status</option>
             {ALL_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <span style={{ fontSize:13, color:'#94a3b8' }}>{displayed.length} lead{displayed.length!==1?'s':''}</span>
+          <span style={{ fontSize:13, color:'var(--text-muted)' }}>{displayed.length} lead{displayed.length!==1?'s':''}</span>
         </div>
         <button className="btn-primary" onClick={openNew} style={{ display:'flex', alignItems:'center', gap:6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -201,16 +201,16 @@ export default function LeadsList() {
           </thead>
           <tbody>
             {displayed.length === 0 ? (
-              <tr><td colSpan="8" style={{ textAlign:'center', padding:'40px 0', color:'#94a3b8' }}>Nenhum lead encontrado</td></tr>
+              <tr><td colSpan="8" style={{ textAlign:'center', padding:'40px 0', color:'var(--text-muted)' }}>Nenhum lead encontrado</td></tr>
             ) : displayed.map(lead => {
               const si = getStatusInfo(lead.status);
               return (
                 <tr key={lead.id}>
-                  <td><strong style={{ color:'#0f172a' }}>{lead.name}</strong></td>
-                  <td style={{ fontFamily:'monospace', fontSize:13, color:'#475569' }}>{lead.cpf||'—'}</td>
-                  <td style={{ color:'#475569' }}>{lead.cnh||'—'}</td>
-                  <td style={{ color:'#475569', whiteSpace:'nowrap' }}>{lead.phone||'—'}</td>
-                  <td style={{ color:'#475569', whiteSpace:'nowrap' }}>{formatDate(lead.created_at)}</td>
+                  <td><strong style={{ color:'var(--text-primary)' }}>{lead.name}</strong></td>
+                  <td style={{ fontFamily:'monospace', fontSize:13, color:'var(--text-secondary)' }}>{lead.cpf||'—'}</td>
+                  <td style={{ color:'var(--text-secondary)' }}>{lead.cnh||'—'}</td>
+                  <td style={{ color:'var(--text-secondary)', whiteSpace:'nowrap' }}>{lead.phone||'—'}</td>
+                  <td style={{ color:'var(--text-secondary)', whiteSpace:'nowrap' }}>{formatDate(lead.created_at)}</td>
                   <td>
                     <select
                       value={lead.status}
@@ -220,7 +220,7 @@ export default function LeadsList() {
                       {ALL_STATUSES.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </td>
-                  <td style={{ color:'#475569', fontSize:13 }}>{lead.created_by_name||'—'}</td>
+                  <td style={{ color:'var(--text-secondary)', fontSize:13 }}>{lead.created_by_name||'—'}</td>
                   <td>
                     <div className="actions-cell">
                       <button onClick={()=>setSchedulingLead(lead)} className="btn-icon" title="Agendar" style={{ color:'var(--nx-primary)' }}>
@@ -265,8 +265,8 @@ export default function LeadsList() {
           <div className="modal-content" style={{ maxWidth:520 }} onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize:18, fontWeight:700, color:'#0f172a' }}>{editingLead?'Editar Lead':'Novo Lead'}</h2>
-                <p style={{ fontSize:12, color:'#94a3b8', marginTop:2 }}>{editingLead?'Atualize os dados do lead':'Cadastre um novo contato'}</p>
+                <h2 style={{ fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>{editingLead?'Editar Lead':'Novo Lead'}</h2>
+                <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{editingLead?'Atualize os dados do lead':'Cadastre um novo contato'}</p>
               </div>
               <button onClick={()=>setShowModal(false)} className="btn-close">✕</button>
             </div>
@@ -330,11 +330,11 @@ export default function LeadsList() {
         <div className="modal-overlay" onClick={()=>setShowDeleteModal(null)}>
           <div className="modal-content" style={{ maxWidth:420 }} onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize:16, fontWeight:700, color:'#0f172a' }}>Solicitar Exclusão</h2>
+              <h2 style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)' }}>Solicitar Exclusão</h2>
               <button onClick={()=>setShowDeleteModal(null)} className="btn-close">✕</button>
             </div>
             <form onSubmit={handleSolicitarExclusao} className="modal-form">
-              <p style={{ fontSize:13, color:'#475569', marginBottom:12 }}>
+              <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}>
                 Solicitando exclusão de: <strong>{showDeleteModal.name}</strong>
               </p>
               <div className="form-group">

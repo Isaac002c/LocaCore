@@ -12,7 +12,7 @@ const COLUMNS = [
   {
     key:   'entrada',
     label: 'Entrada',
-    color: '#64748b',
+    color: 'var(--text-secondary)',
     bg:    '#f1f5f9',
     desc:  'Novos contatos',
   },
@@ -235,7 +235,7 @@ export default function MultasLeads() {
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando leads...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando leads...</p>
     </div>
   );
 
@@ -251,7 +251,7 @@ export default function MultasLeads() {
           <div style={{ position: 'relative' }}>
             <svg
               width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="#94a3b8" strokeWidth="2"
+              stroke="var(--text-muted)" strokeWidth="2"
               style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
             >
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -265,7 +265,7 @@ export default function MultasLeads() {
                 paddingLeft: 34, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
                 border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13,
                 outline: 'none', background: '#fff', width: 200,
-                color: '#0f172a',
+                color: 'var(--text-primary)',
               }}
             />
           </div>
@@ -409,7 +409,7 @@ export default function MultasLeads() {
               {selectedLead.notes && (
                 <div className="lead-panel-field" style={{ gridColumn: '1/-1' }}>
                   <span className="lead-panel-field-label">Observações</span>
-                  <span className="lead-panel-field-value" style={{ fontStyle: 'italic', color: '#64748b' }}>{selectedLead.notes}</span>
+                  <span className="lead-panel-field-value" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>{selectedLead.notes}</span>
                 </div>
               )}
               {BLOCKED_STATUSES.includes(selectedLead.status) && (
@@ -417,7 +417,7 @@ export default function MultasLeads() {
                   <span className="lead-panel-field-label" style={{ color: COLUMNS.find(c => c.key === selectedLead.status)?.color }}>
                     {MOTIVO_LABELS[selectedLead.status]}
                   </span>
-                  <span className="lead-panel-field-value" style={{ fontStyle: selectedLead.motivo ? 'normal' : 'italic', color: selectedLead.motivo ? '#0f172a' : '#94a3b8' }}>
+                  <span className="lead-panel-field-value" style={{ fontStyle: selectedLead.motivo ? 'normal' : 'italic', color: selectedLead.motivo ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                     {selectedLead.motivo || 'Não informado'}
                   </span>
                 </div>
@@ -474,10 +474,10 @@ export default function MultasLeads() {
           <div className="modal-content" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {editingLead ? 'Editar Lead' : 'Novo Lead'}
                 </h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                   {editingLead ? 'Atualize os dados do lead' : 'Cadastre um novo contato'}
                 </p>
               </div>

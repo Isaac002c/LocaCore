@@ -283,3 +283,108 @@
   .tl-filters__actions { margin-left: 0; }
   .tl-table th, .tl-table td { padding: 10px; }
 }
+
+/* =============================================================================
+   ESTADOS DE TELA (§3) — carregando / erro / vazio / sem permissão.
+   Usados por app/components/states.jsx. A área central NUNCA fica vazia.
+   ============================================================================= */
+.nx-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 6px;
+  padding: 56px 24px; min-height: 220px;
+  color: var(--text-secondary);
+}
+.nx-state h4 {
+  margin: 6px 0 0; font-size: 16px; font-weight: 700; color: var(--text-primary);
+}
+.nx-state p {
+  margin: 0; font-size: 13.5px; line-height: 1.6; max-width: 46ch; color: var(--text-secondary);
+}
+.nx-state code {
+  background: var(--surface-secondary); border: 1px solid var(--border);
+  border-radius: 5px; padding: 1px 6px; font-size: 12px; color: var(--text-primary);
+}
+.nx-state-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.nx-state--error   { color: var(--danger); }
+.nx-state--denied  { color: var(--warning); }
+.nx-state--empty   { color: var(--text-muted); }
+
+.nx-state-detail { margin-top: 12px; max-width: 60ch; text-align: left; }
+.nx-state-detail summary {
+  cursor: pointer; font-size: 12px; color: var(--text-muted);
+  list-style: none; user-select: none;
+}
+.nx-state-detail summary::-webkit-details-marker { display: none; }
+.nx-state-detail summary::before { content: '▸ '; }
+.nx-state-detail[open] summary::before { content: '▾ '; }
+.nx-state-detail code {
+  display: block; margin-top: 8px; padding: 10px 12px; white-space: pre-wrap;
+  word-break: break-word; font-size: 11.5px; color: var(--text-secondary);
+}
+
+@keyframes nx-spin { to { transform: rotate(360deg); } }
+.nx-state-spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  animation: nx-spin .8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-state-spinner { animation-duration: 2.4s; }
+}
+
+/* Erro de AÇÃO (não de carregamento): banner em linha, com retry opcional. */
+.nx-inline-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 14px; margin-bottom: 14px; border-radius: 9px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, transparent);
+  color: var(--text-primary); font-size: 13.5px;
+}
+.nx-inline-error-msg { min-width: 0; word-break: break-word; }
+.nx-inline-error-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.nx-inline-error-btn {
+  background: transparent; border: 1px solid var(--border-strong); color: var(--text-primary);
+  border-radius: 7px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.nx-inline-error-btn:hover { background: var(--surface-hover); }
+
+/* =============================================================================
+   PAINEL (§5) — rótulo de seção, barras horizontais e barras agrupadas.
+   Gráficos sem dependência externa: leves, temáveis e legíveis nos dois temas.
+   ============================================================================= */
+.nx-section-label {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--text-muted); margin: 22px 0 10px;
+}
+.nx-section-label:first-child { margin-top: 4px; }
+
+/* Lista de barras horizontais (ocupação, status, aging, receita por veículo) */
+.nx-barlist { display: flex; flex-direction: column; gap: 9px; padding: 4px 0; }
+.nx-barlist-row { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; align-items: center; gap: 10px; }
+.nx-barlist-label {
+  font-size: 12.5px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nx-barlist-track { height: 9px; border-radius: 999px; background: var(--surface-secondary); overflow: hidden; }
+.nx-barlist-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s ease; }
+.nx-barlist-value { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+
+/* Barras agrupadas por dia (faturado x recebido) */
+.nx-bars { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+.nx-bars-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); }
+.nx-bars-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.nx-bars-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.nx-bars-plot {
+  flex: 1; min-height: 180px; display: flex; align-items: flex-end; gap: 10px;
+  overflow-x: auto; padding-bottom: 2px;
+}
+.nx-bars-group { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 34px; flex: 1 0 auto; height: 100%; }
+.nx-bars-pair { flex: 1; display: flex; align-items: flex-end; gap: 3px; width: 100%; justify-content: center; }
+.nx-bars-bar { width: 12px; min-height: 2px; border-radius: 3px 3px 0 0; transition: height .3s ease; }
+.nx-bars-x { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .nx-barlist-row { grid-template-columns: minmax(70px, 40%) 1fr auto; }
+  .nx-section-label { margin: 18px 0 8px; }
+}

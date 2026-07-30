@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsers, getRoles, createUser, updateUser, deleteUser, changePassword, setUserActive } from '../lib/usersAPI';
+import { PageLoading, InlineError, EmptyState } from '../components/states';
 
 const ROLE_LABELS = { admin: 'Administrador', manager: 'Gerente', operator: 'Operador', viewer: 'Visualizador' };
 const roleLabel = (r) => ROLE_LABELS[r] || r;
@@ -68,7 +69,7 @@ export default function Usuarios() {
   const total = users.length;
   const active = users.filter((u) => u.is_active !== false).length;
 
-  if (loading && users.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando usuários...</p></div>;
+  if (loading && users.length === 0) return <PageLoading label="Carregando usuários..." />;
 
   return (
     <div className="clients-page">
@@ -78,7 +79,7 @@ export default function Usuarios() {
         <div className="clients-summary-card nego"><span className="summary-number">{total - active}</span><span className="summary-label">Inativos</span></div>
       </div>
 
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       <div className="clients-toolbar">
         <div style={{ flex: 1 }} />
@@ -88,7 +89,10 @@ export default function Usuarios() {
       <div className="clients-table-wrap"><table className="data-table">
         <thead><tr><th>Nome</th><th>E-mail</th><th>Função</th><th>Status</th><th style={{ width: 260 }}>Ações</th></tr></thead>
         <tbody>
-          {users.length === 0 ? <tr><td colSpan="5"><div className="empty-state" style={{ padding: '40px 0' }}><p style={{ color: '#94a3b8' }}>Nenhum usuário</p></div></td></tr> : users.map((u) => {
+          {users.length === 0 ? <tr><td colSpan="5"><EmptyState
+              title="Nenhum usuário cadastrado"
+              description="Cadastre a equipe da locadora e defina o perfil de cada pessoa. O perfil controla o que cada um enxerga e pode fazer."
+            /></td></tr> : users.map((u) => {
             const rs = roleStyle(u.role); const inactive = u.is_active === false;
             return (
               <tr key={u.id} style={inactive ? { opacity: 0.6 } : undefined}>
@@ -130,7 +134,7 @@ export default function Usuarios() {
       {pwUser && (
         <div className="modal-overlay" onClick={() => setPwUser(null)}>
           <div className="modal-content" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><div><h2 style={{ fontSize: 18, fontWeight: 700 }}>Redefinir senha</h2><p style={{ fontSize: 12, color: '#94a3b8' }}>{pwUser.name} — encerra as sessões ativas</p></div><button className="btn-close" onClick={() => setPwUser(null)}>✕</button></div>
+            <div className="modal-header"><div><h2 style={{ fontSize: 18, fontWeight: 700 }}>Redefinir senha</h2><p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{pwUser.name} — encerra as sessões ativas</p></div><button className="btn-close" onClick={() => setPwUser(null)}>✕</button></div>
             <form onSubmit={submitPw} className="modal-form">
               <div className="form-group"><label>Nova senha *</label><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} required minLength={6} autoFocus placeholder="Mínimo 6 caracteres" /></div>
               <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setPwUser(null)}>Cancelar</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Redefinir'}</button></div>

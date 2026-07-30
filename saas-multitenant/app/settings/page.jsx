@@ -45,9 +45,9 @@ export default function SettingsPage() {
       'active': { label: 'Ativo', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
       'trial': { label: 'Trial', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
       'cancelled': { label: 'Cancelado', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-      'expired': { label: 'Expirado', color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)' }
+      'expired': { label: 'Expirado', color: 'var(--text-secondary)', bg: 'rgba(100, 116, 139, 0.1)' }
     };
-    return statusMap[status] || { label: status, color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)' };
+    return statusMap[status] || { label: status, color: 'var(--text-secondary)', bg: 'rgba(100, 116, 139, 0.1)' };
   };
 
   const getActionIcon = (action) => {

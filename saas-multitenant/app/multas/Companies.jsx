@@ -150,7 +150,7 @@ export default function MultasCompanies() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando empresas...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando empresas...</p>
     </div>
   );
 
@@ -181,7 +181,7 @@ export default function MultasCompanies() {
 
       <div className="clients-toolbar">
         <div className="clients-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -223,10 +223,10 @@ export default function MultasCompanies() {
               <tr>
                 <td colSpan="6">
                   <div className="empty-state" style={{ padding: '40px 0' }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 8 }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 8 }}>
                       <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
                     </svg>
-                    <p style={{ color: '#94a3b8' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>
                       {filterStatus ? `Nenhuma empresa ${STATUS_LABELS[filterStatus]?.toLowerCase()}` : 'Nenhuma empresa cadastrada'}
                     </p>
                   </div>
@@ -245,14 +245,14 @@ export default function MultasCompanies() {
                       {c.razao_social?.charAt(0).toUpperCase()}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <strong style={{ color: '#0f172a', display: 'block' }}>{c.razao_social}</strong>
-                      {c.nome_fantasia && <span style={{ fontSize: 12, color: '#94a3b8' }}>{c.nome_fantasia}</span>}
+                      <strong style={{ color: 'var(--text-primary)', display: 'block' }}>{c.razao_social}</strong>
+                      {c.nome_fantasia && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.nome_fantasia}</span>}
                     </div>
                   </div>
                 </td>
-                <td style={{ color: '#475569', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>{maskCnpj(c.cnpj) || '—'}</td>
-                <td style={{ color: '#475569' }}>{c.responsavel || '—'}</td>
-                <td style={{ color: '#475569', whiteSpace: 'nowrap' }}>{c.phone || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>{maskCnpj(c.cnpj) || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{c.responsavel || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{c.phone || '—'}</td>
                 <td>
                   <span className={`client-status-badge ${c.status === 'inativo' ? 'negociacao' : 'fechado'}`}>
                     {STATUS_LABELS[c.status] || 'Ativo'}
@@ -285,10 +285,10 @@ export default function MultasCompanies() {
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {editing ? 'Editar Empresa' : 'Nova Empresa'}
                 </h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                   {editing ? 'Atualize os dados da empresa' : 'Preencha os dados da nova empresa'}
                 </p>
               </div>

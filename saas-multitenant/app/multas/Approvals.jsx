@@ -69,10 +69,10 @@ export default function Approvals() {
   if (!isAdmin) {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'80px 0', gap:16 }}>
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
-        <p style={{ color:'#94a3b8', fontSize:15 }}>Acesso restrito a administradores.</p>
+        <p style={{ color:'var(--text-muted)', fontSize:15 }}>Acesso restrito a administradores.</p>
       </div>
     );
   }
@@ -83,16 +83,16 @@ export default function Approvals() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           <select value={filter} onChange={e=>setFilter(e.target.value)}
-            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'#0f172a', outline:'none' }}>
+            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'var(--text-primary)', outline:'none' }}>
             <option value="">Todas</option>
             <option value="pending">Pendentes</option>
             <option value="approved">Aprovadas</option>
             <option value="rejected">Recusadas</option>
           </select>
-          <span style={{ fontSize:13, color:'#94a3b8' }}>{items.length} solicitação(ões)</span>
+          <span style={{ fontSize:13, color:'var(--text-muted)' }}>{items.length} solicitação(ões)</span>
         </div>
         <button onClick={handleArchive} disabled={archiving}
-          style={{ padding:'8px 16px', borderRadius:8, fontSize:13, background:'#fff', border:'1px solid #e2e8f0', color:'#475569', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+          style={{ padding:'8px 16px', borderRadius:8, fontSize:13, background:'#fff', border:'1px solid #e2e8f0', color:'var(--text-secondary)', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
           </svg>
@@ -119,7 +119,7 @@ export default function Approvals() {
           <div className="loading-spinner" style={{ width:28, height:28, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
         </div>
       ) : items.length === 0 ? (
-        <div style={{ textAlign:'center', padding:'60px 0', color:'#94a3b8' }}>
+        <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-muted)' }}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom:12 }}>
             <path d="M9 11l3 3L22 4"/>
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -145,24 +145,24 @@ export default function Approvals() {
                 const sc = STATUS_COLORS[item.status] || STATUS_COLORS.pending;
                 return (
                   <tr key={item.id}>
-                    <td style={{ color:'#0f172a' }}>
+                    <td style={{ color:'var(--text-primary)' }}>
                       <strong>{item.requester_name || '—'}</strong>
-                      {item.requester_email && <div style={{ fontSize:11, color:'#94a3b8' }}>{item.requester_email}</div>}
+                      {item.requester_email && <div style={{ fontSize:11, color:'var(--text-muted)' }}>{item.requester_email}</div>}
                     </td>
-                    <td style={{ fontSize:13, color:'#475569' }}>{TYPE_LABELS[item.target_type] || item.target_type}</td>
-                    <td style={{ color:'#0f172a', fontWeight:500 }}>{item.target_label || item.target_id}</td>
-                    <td style={{ color:'#64748b', fontSize:13, maxWidth:200 }}>
+                    <td style={{ fontSize:13, color:'var(--text-secondary)' }}>{TYPE_LABELS[item.target_type] || item.target_type}</td>
+                    <td style={{ color:'var(--text-primary)', fontWeight:500 }}>{item.target_label || item.target_id}</td>
+                    <td style={{ color:'var(--text-secondary)', fontSize:13, maxWidth:200 }}>
                       <span style={{ display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {item.reason || '—'}
                       </span>
                     </td>
-                    <td style={{ color:'#475569', fontSize:12, whiteSpace:'nowrap' }}>{formatDate(item.created_at)}</td>
+                    <td style={{ color:'var(--text-secondary)', fontSize:12, whiteSpace:'nowrap' }}>{formatDate(item.created_at)}</td>
                     <td>
                       <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:sc.bg, color:sc.color }}>
                         {STATUS_LABELS[item.status] || item.status}
                       </span>
                       {item.status !== 'pending' && item.reviewer_name && (
-                        <div style={{ fontSize:10, color:'#94a3b8', marginTop:2 }}>por {item.reviewer_name}</div>
+                        <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>por {item.reviewer_name}</div>
                       )}
                     </td>
                     <td>

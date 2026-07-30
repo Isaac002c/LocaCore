@@ -28,7 +28,7 @@ export default function ClientFinanceSection({ clientId }) {
       </div>
 
       {loading ? (
-        <p style={{ color: '#94a3b8', padding: '16px 0' }}>Carregando dados financeiros...</p>
+        <p style={{ color: 'var(--text-muted)', padding: '16px 0' }}>Carregando dados financeiros...</p>
       ) : !data ? null : (
         <>
           <div className="clients-summary" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', marginBottom: 16 }}>
@@ -45,8 +45,8 @@ export default function ClientFinanceSection({ clientId }) {
                 <tbody>
                   {data.billings.map((b) => (
                     <tr key={b.id}>
-                      <td style={{ color: '#475569' }}>{b.description || '—'}</td>
-                      <td style={{ color: '#475569' }}>{b.fine_number || '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{b.description || '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{b.fine_number || '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatBRL(b.final_amount)}</td>
                       <td style={{ textAlign: 'right', color: '#15803d' }}>{formatBRL(b.paid_amount)}</td>
                       <td><StatusBadge status={b.financial_status} label={BILLING_STATUS_LABELS[b.financial_status]} /></td>
@@ -100,7 +100,7 @@ export default function ClientFinanceSection({ clientId }) {
   );
 }
 
-function Tile({ label, value, color = '#0f172a' }) {
+function Tile({ label, value, color = 'var(--text-primary)' }) {
   return (
     <div className="clients-summary-card">
       <span className="summary-number" style={{ fontSize: 17, color }}>{value}</span>
@@ -111,11 +111,11 @@ function Tile({ label, value, color = '#0f172a' }) {
 function Block({ title, children }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      <h3 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: '10px 0' }}>{title.toUpperCase()}</h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', margin: '10px 0' }}>{title.toUpperCase()}</h3>
       <div className="clients-table-wrap">{children}</div>
     </div>
   );
 }
 function Empty() {
-  return <div className="empty-state" style={{ padding: '20px 0' }}><p style={{ color: '#94a3b8' }}>Nenhum registro</p></div>;
+  return <div className="empty-state" style={{ padding: '20px 0' }}><p style={{ color: 'var(--text-muted)' }}>Nenhum registro</p></div>;
 }

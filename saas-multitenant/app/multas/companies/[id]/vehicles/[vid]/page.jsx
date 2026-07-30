@@ -182,11 +182,11 @@ export default function VehicleDetail() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando veículo...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando veículo...</p>
     </div>
   );
   if (!vehicle) return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
       Veículo não encontrado. <button className="btn-secondary" onClick={() => router.push(`/multas/companies/${companyId}`)}>Voltar à empresa</button>
     </div>
   );
@@ -205,12 +205,12 @@ export default function VehicleDetail() {
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: 0, fontFamily: 'monospace' }}>{vehicle.plate || '—'}</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontFamily: 'monospace' }}>{vehicle.plate || '—'}</h1>
               <span className={`client-status-badge ${vehicle.status === 'inativo' ? 'negociacao' : 'fechado'}`}>
                 {vehicle.status === 'inativo' ? 'Inativo' : 'Ativo'}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 12, fontSize: 13, color: '#475569' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
               <div><strong>Condutor:</strong> {vehicle.driver_name || '—'}</div>
               <div><strong>RENAVAM:</strong> {vehicle.renavam || '—'}</div>
               {(vehicle.brand || vehicle.model) && <div><strong>Veículo:</strong> {[vehicle.brand, vehicle.model].filter(Boolean).join(' ')}</div>}
@@ -232,8 +232,8 @@ export default function VehicleDetail() {
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 10 }}>
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', margin: 0 }}>Processos / Multas</h2>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>{total} processo(s)</p>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Processos / Multas</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{total} processo(s)</p>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <select value={statusFilter} onChange={(e) => onFilterChange(e.target.value)} style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1px solid #e2e8f0' }}>
@@ -245,7 +245,7 @@ export default function VehicleDetail() {
         </div>
 
         {fines.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
             {loadingFines ? 'Carregando...' : 'Nenhum processo para este veículo.'}
           </div>
         ) : (
@@ -266,7 +266,7 @@ export default function VehicleDetail() {
                       <td>{f.organ || '—'}</td>
                       <td style={{ fontSize: 13, ...getPrazoStyle(f.due_date) }}>{formatDate(f.due_date)}</td>
                       <td><span className="service-status-badge" style={getStatusStyle(f.status)}>{getStatusLabel(f.status)}</span></td>
-                      <td style={{ color: '#64748b', fontSize: 13, maxWidth: 240 }} title={f.notes || ''}>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: 13, maxWidth: 240 }} title={f.notes || ''}>
                         <span style={{ display: 'block', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.notes ? f.notes : '—'}</span>
                       </td>
                       <td>
@@ -328,7 +328,7 @@ export default function VehicleDetail() {
         <div className="modal-overlay" onClick={() => setShowProcModal(false)}>
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{editingProc ? 'Editar Processo' : 'Novo Processo'}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{editingProc ? 'Editar Processo' : 'Novo Processo'}</h2>
               <button type="button" onClick={() => setShowProcModal(false)} className="btn-close">✕</button>
             </div>
             {modalError && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{modalError}</div>}
@@ -343,7 +343,7 @@ export default function VehicleDetail() {
                 <div className="form-group"><label>Nº Auto / Processo</label><input value={procForm.numero_multa} onChange={e => setProcForm(p => ({ ...p, numero_multa: e.target.value }))} /></div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label>Placa</label><input value={vehicle.plate || ''} readOnly disabled style={{ background: '#f8fafc', color: '#64748b' }} /></div>
+                <div className="form-group"><label>Placa</label><input value={vehicle.plate || ''} readOnly disabled style={{ background: '#f8fafc', color: 'var(--text-secondary)' }} /></div>
                 <div className="form-group">
                   <label>Prazo</label>
                   {/* Aceita colar/digitar dd/mm/aaaa, ddmmaaaa, yyyy-mm-dd; datepicker auxiliar à direita. */}

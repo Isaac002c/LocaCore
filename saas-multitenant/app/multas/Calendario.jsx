@@ -40,7 +40,7 @@ const urgencyOf = (v, overdue) => {
   if (overdue && d === 0)               return { color: '#ea580c', soft: '#ffedd5' }; // vence hoje
   if (overdue || (d != null && d < 0))  return { color: '#dc2626', soft: '#fee2e2' }; // vencido
   if (d != null && d <= 7)              return { color: '#d97706', soft: '#fef3c7' }; // até 7 dias
-  return { color: '#475569', soft: '#f1f5f9' };                                       // mais distante
+  return { color: 'var(--text-secondary)', soft: '#f1f5f9' };                                       // mais distante
 };
 
 // Abas por urgência (Vencido / Hoje / Até 7 dias / Mais distante)
@@ -48,7 +48,7 @@ const TABS = [
   { key: 'vencidos', label: 'Vencidos',      color: '#dc2626', soft: '#fee2e2' },
   { key: 'hoje',     label: 'Vence hoje',    color: '#ea580c', soft: '#ffedd5' },
   { key: 'ate7',     label: 'Até 7 dias',    color: '#d97706', soft: '#fef3c7' },
-  { key: 'distante', label: 'Mais distante', color: '#475569', soft: '#f1f5f9' },
+  { key: 'distante', label: 'Mais distante', color: 'var(--text-secondary)', soft: '#f1f5f9' },
 ];
 
 // ─── Item da agenda ─────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function Section({ title, color, soft, items, overdue, emptyText, onOpen }) {
       </div>
       {items.length === 0 ? (
         <div className="ag-empty">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
           {emptyText}
@@ -161,7 +161,7 @@ export default function MultasAgenda() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando prazos...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando prazos...</p>
     </div>
   );
 
@@ -197,9 +197,9 @@ export default function MultasAgenda() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 999,
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: '1px solid ' + (activeTab ? t.color : '#e2e8f0'),
+                border: '1px solid ' + (activeTab ? t.color : 'var(--border)'),
                 background: activeTab ? t.soft : '#fff',
-                color: activeTab ? t.color : '#64748b',
+                color: activeTab ? t.color : 'var(--text-secondary)',
               }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.color }} />
               {t.label}
@@ -219,7 +219,7 @@ export default function MultasAgenda() {
             </div>
             {buckets[tab].length === 0 ? (
               <div className="ag-empty">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Nenhum prazo nesta categoria.
               </div>
             ) : (
@@ -238,8 +238,8 @@ export default function MultasAgenda() {
             <ResumoRow label="Vencidos"      value={buckets.vencidos.length} color="#dc2626" />
             <ResumoRow label="Vence hoje"    value={buckets.hoje.length}     color="#ea580c" />
             <ResumoRow label="Até 7 dias"    value={buckets.ate7.length}     color="#d97706" />
-            <ResumoRow label="Mais distante" value={buckets.distante.length} color="#475569" />
-            <ResumoRow label="Total"         value={total}                   color="#0f172a" />
+            <ResumoRow label="Mais distante" value={buckets.distante.length} color="var(--text-secondary)" />
+            <ResumoRow label="Total"         value={total}                   color="var(--text-primary)" />
           </div>
           <div className="ag-aside-card">
             <div className="ag-aside-title">Legenda</div>
@@ -247,7 +247,7 @@ export default function MultasAgenda() {
               <strong style={{ color: '#dc2626' }}>Vermelho</strong> — vencido<br />
               <strong style={{ color: '#ea580c' }}>Laranja</strong> — vence hoje<br />
               <strong style={{ color: '#d97706' }}>Amarelo</strong> — vence em até 7 dias<br />
-              <strong style={{ color: '#475569' }}>Cinza</strong> — mais distante
+              <strong style={{ color: 'var(--text-secondary)' }}>Cinza</strong> — mais distante
             </p>
           </div>
         </aside>

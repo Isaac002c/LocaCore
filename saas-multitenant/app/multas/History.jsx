@@ -146,24 +146,24 @@ export default function MultasHistory() {
               </div>
               <div className="activity-content" style={{ flex: 1 }}>
                 <div className="activity-header" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 600, color: '#1e293b' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                     {contract.client_name || 'Cliente'}
                   </span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                     â€¢ {contract.service_name || '-'}
                   </span>
                   {contract.organ && (
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       â€¢ {contract.organ}
                     </span>
                   )}
                   {contract.numero_multa && (
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       â€¢ N {contract.numero_multa}
                     </span>
                   )}
                   {contract.vehicle_plate && (
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       â€¢ {contract.vehicle_plate}
                     </span>
                   )}

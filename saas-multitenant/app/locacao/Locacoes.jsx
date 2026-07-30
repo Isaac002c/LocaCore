@@ -18,6 +18,7 @@ import {
   RENTAL_STATUS, rentalStatusLabel, rentalStatusStyle,
   fmtMoney, fmtDate, toInputDate, daysBetween,
 } from './shared';
+import { PageLoading, InlineError } from '../components/states';
 
 const EMPTY_FORM = {
   client_id: '', vehicle_id: '', start_date: '', end_date: '',
@@ -354,12 +355,7 @@ export default function Locacoes() {
 
   const vehicleLabel = (v) => `${v.brand || ''} ${v.model || ''}${v.plate ? ` — ${v.plate}` : ''}`.trim();
 
-  if (loading && rentals.length === 0) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando locações...</p>
-    </div>
-  );
+  if (loading && rentals.length === 0) return <PageLoading label="Carregando locações..." />;
 
   return (
     <div className="clients-page">
@@ -382,16 +378,11 @@ export default function Locacoes() {
         </div>
       </div>
 
-      {error && (
-        <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <p style={{ margin: 0 }}>{error}</p>
-          <button onClick={() => setError(null)} className="btn-close">✕</button>
-        </div>
-      )}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       <div className="clients-toolbar">
         <div className="clients-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input type="text" placeholder="Buscar por nº, cliente ou placa..." value={searchTerm} onChange={handleSearch} className="clients-search-input" />
@@ -428,20 +419,20 @@ export default function Locacoes() {
               <tr>
                 <td colSpan="7">
                   <div className="empty-state" style={{ padding: '40px 0' }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 8 }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 8 }}>
                       <rect x="1" y="3" width="15" height="13" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
                     </svg>
-                    <p style={{ color: '#94a3b8' }}>{filterStatus ? `Nenhuma locação ${rentalStatusLabel(filterStatus).toLowerCase()}` : 'Nenhuma locação registrada'}</p>
+                    <p style={{ color: 'var(--text-muted)' }}>{filterStatus ? `Nenhuma locação ${rentalStatusLabel(filterStatus).toLowerCase()}` : 'Nenhuma locação registrada'}</p>
                   </div>
                 </td>
               </tr>
             ) : displayed.map((r) => (
               <tr key={r.id} onClick={() => openDrawer(r)} className="clickable-row">
-                <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap' }}>{r.rental_number || '—'}</td>
-                <td><strong style={{ color: '#0f172a' }}>{r.client_name || '—'}</strong></td>
-                <td style={{ color: '#475569' }}>{r.vehicle_brand ? `${r.vehicle_brand} ${r.vehicle_model || ''}` : '—'}{r.vehicle_plate ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.vehicle_plate}</span> : null}</td>
-                <td style={{ color: '#475569', whiteSpace: 'nowrap', fontSize: 13 }}>{fmtDate(r.start_date)} → {fmtDate(r.end_date)}</td>
-                <td style={{ color: '#0f172a', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMoney(r.total_amount)}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.rental_number || '—'}</td>
+                <td><strong style={{ color: 'var(--text-primary)' }}>{r.client_name || '—'}</strong></td>
+                <td style={{ color: 'var(--text-secondary)' }}>{r.vehicle_brand ? `${r.vehicle_brand} ${r.vehicle_model || ''}` : '—'}{r.vehicle_plate ? <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {r.vehicle_plate}</span> : null}</td>
+                <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: 13 }}>{fmtDate(r.start_date)} → {fmtDate(r.end_date)}</td>
+                <td style={{ color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMoney(r.total_amount)}</td>
                 <td><span className="client-status-badge" style={rentalStatusStyle(r.status)}>{rentalStatusLabel(r.status)}</span></td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <div className="actions-cell">
@@ -465,8 +456,8 @@ export default function Locacoes() {
           <div className="modal-content" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{editing ? `Editar Locação ${editing.rental_number || ''}` : 'Nova Locação'}</h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{editing ? 'Atualize os dados da locação' : 'Vincule cliente e veículo e defina o período'}</p>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{editing ? `Editar Locação ${editing.rental_number || ''}` : 'Nova Locação'}</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{editing ? 'Atualize os dados da locação' : 'Vincule cliente e veículo e defina o período'}</p>
               </div>
               <button type="button" onClick={closeModal} className="btn-close">✕</button>
             </div>
@@ -511,8 +502,8 @@ export default function Locacoes() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', margin: '4px 0 8px' }}>
-                <span style={{ fontSize: 13, color: '#64748b' }}>Total da locação</span>
-                <strong style={{ fontSize: 18, color: '#0f172a' }}>{fmtMoney(formTotals.total)}</strong>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total da locação</span>
+                <strong style={{ fontSize: 18, color: 'var(--text-primary)' }}>{fmtMoney(formTotals.total)}</strong>
               </div>
 
               <div className="form-group"><label>Observações</label><textarea value={formData.notes} onChange={set('notes')} rows={2} placeholder="Anotações sobre a locação..." /></div>
@@ -600,7 +591,7 @@ export default function Locacoes() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                     {extras.map((ex) => (
                       <div key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
-                        <span style={{ color: '#475569' }}>{ex.category || 'Extra'}{Number(ex.quantity) !== 1 ? ` · ${Number(ex.quantity)}×${fmtMoney(ex.unit_amount)}` : ''}{ex.description ? ` — ${ex.description}` : ''}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{ex.category || 'Extra'}{Number(ex.quantity) !== 1 ? ` · ${Number(ex.quantity)}×${fmtMoney(ex.unit_amount)}` : ''}{ex.description ? ` — ${ex.description}` : ''}</span>
                         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <strong>{fmtMoney(ex.total_amount)}</strong>
                           {selected.status !== 'finalizado' && <button className="btn-icon danger" title="Remover" disabled={drawerBusy} onClick={() => doDeleteExtra(ex.id)}>✕</button>}
@@ -638,13 +629,13 @@ export default function Locacoes() {
                 </span>
               </div>
               {!finance ? (
-                <p style={{ color: '#94a3b8', fontSize: 13 }}>Carregando…</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Carregando…</p>
               ) : finance.billings.length === 0 ? (
                 <EmptyState small title="Sem faturamento" description="Gere um faturamento para esta locação." />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {finance.summary && (
-                    <div style={{ display: 'flex', gap: 12, fontSize: 13, color: '#475569', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                       <span>Faturado: <strong>{fmtMoney(finance.summary.total_billed)}</strong></span>
                       <span>Recebido: <strong style={{ color: '#15803d' }}>{fmtMoney(finance.summary.total_paid)}</strong></span>
                       <span>Pendente: <strong style={{ color: '#b45309' }}>{fmtMoney(finance.summary.total_pending)}</strong></span>
@@ -652,11 +643,11 @@ export default function Locacoes() {
                   )}
                   {finance.billings.map((b) => (
                     <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
-                      <span style={{ color: '#475569' }}>{b.description || 'Faturamento'}</span>
-                      <span style={{ fontWeight: 600 }}>{fmtMoney(b.final_amount)} <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>({b.financial_status})</span></span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{b.description || 'Faturamento'}</span>
+                      <span style={{ fontWeight: 600 }}>{fmtMoney(b.final_amount)} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>({b.financial_status})</span></span>
                     </div>
                   ))}
-                  <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0 }}>Recebimentos são registrados no módulo Financeiro; o recibo é gerado aqui após o recebimento.</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: 0 }}>Recebimentos são registrados no módulo Financeiro; o recibo é gerado aqui após o recebimento.</p>
                 </div>
               )}
             </div>
@@ -688,7 +679,7 @@ export default function Locacoes() {
                   <input ref={fileRef} type="file" accept="application/pdf,image/*" disabled={uploading} onChange={doUploadDoc} />
                 </div>
               </div>
-              {uploading && <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Enviando arquivo…</p>}
+              {uploading && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Enviando arquivo…</p>}
             </div>
           </div>
         )}
@@ -714,8 +705,8 @@ export default function Locacoes() {
 function DetailRow({ label, value }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '5px 0', fontSize: 13.5, borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ color: '#94a3b8' }}>{label}</span>
-      <span style={{ color: '#0f172a', textAlign: 'right' }}>{value}</span>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>{value}</span>
     </div>
   );
 }

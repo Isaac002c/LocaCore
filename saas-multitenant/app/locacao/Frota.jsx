@@ -8,6 +8,7 @@ import { getOptions, createOption, updateOption } from '../lib/configOptionsAPI'
 import {
   VEHICLE_STATUS, vehicleStatusLabel, vehicleStatusStyle, fmtMoney, maskPlate,
 } from './shared';
+import { PageLoading, InlineError } from '../components/states';
 
 const EMPTY_FORM = {
   plate: '', brand: '', model: '', year: '', color: '', category: '',
@@ -148,12 +149,7 @@ export default function Frota() {
 
   const displayed = vehicles.filter((v) => !filterStatus || (v.status || 'disponivel') === filterStatus);
 
-  if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando frota...</p>
-    </div>
-  );
+  if (loading) return <PageLoading label="Carregando frota..." />;
 
   return (
     <div className="clients-page">
@@ -176,16 +172,11 @@ export default function Frota() {
         </div>
       </div>
 
-      {error && (
-        <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <p style={{ margin: 0 }}>{error}</p>
-          <button onClick={() => setError(null)} className="btn-close">✕</button>
-        </div>
-      )}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       <div className="clients-toolbar">
         <div className="clients-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input type="text" placeholder="Buscar por placa, marca, modelo ou categoria..." value={searchTerm} onChange={handleSearch} className="clients-search-input" />
@@ -227,10 +218,10 @@ export default function Frota() {
               <tr>
                 <td colSpan="7">
                   <div className="empty-state" style={{ padding: '40px 0' }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 8 }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 8 }}>
                       <path d="M5 17H3v-6l2-5h11l4 5h1a2 2 0 0 1 2 2v4h-2" /><circle cx="7.5" cy="17.5" r="1.5" /><circle cx="17.5" cy="17.5" r="1.5" />
                     </svg>
-                    <p style={{ color: '#94a3b8' }}>{filterStatus ? `Nenhum veículo ${vehicleStatusLabel(filterStatus).toLowerCase()}` : 'Nenhum veículo cadastrado'}</p>
+                    <p style={{ color: 'var(--text-muted)' }}>{filterStatus ? `Nenhum veículo ${vehicleStatusLabel(filterStatus).toLowerCase()}` : 'Nenhum veículo cadastrado'}</p>
                   </div>
                 </td>
               </tr>
@@ -242,15 +233,15 @@ export default function Frota() {
                       {(v.brand || '?').charAt(0).toUpperCase()}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <strong style={{ color: '#0f172a', display: 'block' }}>{v.brand} {v.model}</strong>
-                      {v.year && <span style={{ fontSize: 12, color: '#94a3b8' }}>{v.year}{v.color ? ` · ${v.color}` : ''}</span>}
+                      <strong style={{ color: 'var(--text-primary)', display: 'block' }}>{v.brand} {v.model}</strong>
+                      {v.year && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.year}{v.color ? ` · ${v.color}` : ''}</span>}
                     </div>
                   </div>
                 </td>
-                <td style={{ color: '#475569', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>{v.plate || '—'}</td>
-                <td style={{ color: '#475569' }}>{v.category || '—'}</td>
-                <td style={{ color: '#0f172a', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMoney(v.daily_rate)}</td>
-                <td style={{ color: '#475569', whiteSpace: 'nowrap' }}>{v.odometer != null ? Number(v.odometer).toLocaleString('pt-BR') : '—'}</td>
+                <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>{v.plate || '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{v.category || '—'}</td>
+                <td style={{ color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMoney(v.daily_rate)}</td>
+                <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{v.odometer != null ? Number(v.odometer).toLocaleString('pt-BR') : '—'}</td>
                 <td><span className="client-status-badge" style={vehicleStatusStyle(v.status)}>{vehicleStatusLabel(v.status)}</span></td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <div className="actions-cell">
@@ -278,8 +269,8 @@ export default function Frota() {
           <div className="modal-content" style={{ maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{editing ? 'Editar Veículo' : 'Novo Veículo'}</h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{editing ? 'Atualize os dados do veículo' : 'Cadastre um veículo na frota'}</p>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{editing ? 'Editar Veículo' : 'Novo Veículo'}</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{editing ? 'Atualize os dados do veículo' : 'Cadastre um veículo na frota'}</p>
               </div>
               <button type="button" onClick={closeModal} className="btn-close">✕</button>
             </div>
@@ -344,8 +335,8 @@ export default function Frota() {
           <div className="modal-content" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Categorias de veículo</h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Parametrizadas por empresa. Desativar preserva os veículos existentes.</p>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Categorias de veículo</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Parametrizadas por empresa. Desativar preserva os veículos existentes.</p>
               </div>
               <button type="button" onClick={() => setShowCatModal(false)} className="btn-close">✕</button>
             </div>
@@ -355,10 +346,10 @@ export default function Frota() {
               <button className="btn-primary" disabled={catBusy || !newCat.trim()} onClick={addCategory}>Adicionar</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
-              {categories.length === 0 && <p style={{ color: '#94a3b8', fontSize: 13 }}>Nenhuma categoria.</p>}
+              {categories.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhuma categoria.</p>}
               {categories.map((c) => (
                 <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13, opacity: c.active ? 1 : 0.55 }}>
-                  <span>{c.value}{!c.active && <em style={{ color: '#94a3b8' }}> (inativa)</em>}</span>
+                  <span>{c.value}{!c.active && <em style={{ color: 'var(--text-muted)' }}> (inativa)</em>}</span>
                   <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} disabled={catBusy} onClick={() => toggleCategory(c)}>
                     {c.active ? 'Desativar' : 'Ativar'}
                   </button>

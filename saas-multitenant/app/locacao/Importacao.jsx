@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { previewImport, commitImport } from '../lib/importAPI';
+import { InlineError } from '../components/states';
 
 const ENTITIES = [
   ['clientes', 'Clientes', 'name, cpf, cnh, phone, email, address, birth_date, status'],
@@ -42,7 +43,7 @@ export default function Importacao() {
 
   return (
     <div className="clients-page">
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} />
 
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 16 }}>
         <div className="form-row" style={{ alignItems: 'flex-end' }}>
@@ -53,7 +54,7 @@ export default function Importacao() {
           </div>
           <div className="form-group" style={{ flex: 1 }}><label>Arquivo CSV</label><input type="file" accept=".csv,text/csv" onChange={onFile} /></div>
         </div>
-        <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 8px' }}>Colunas reconhecidas: <code>{cols}</code>. Primeira linha = cabeçalho. Separador <code>;</code> ou <code>,</code>. O tenant é sempre o seu — nunca vem da planilha.</p>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 8px' }}>Colunas reconhecidas: <code>{cols}</code>. Primeira linha = cabeçalho. Separador <code>;</code> ou <code>,</code>. O tenant é sempre o seu — nunca vem da planilha.</p>
         <div className="form-group"><label>Ou cole o conteúdo CSV</label>
           <textarea rows={6} value={csv} onChange={(e) => { setCsv(e.target.value); setPreview(null); setResult(null); }} placeholder={entity === 'clientes' ? 'name;cpf;phone\nMaria Silva;12345678900;11999990000' : 'plate;brand;model;daily_rate\nABC1D23;Fiat;Argo;120'} style={{ fontFamily: 'monospace', fontSize: 13 }} />
         </div>
@@ -83,7 +84,7 @@ export default function Importacao() {
 
           {preview.sample?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Amostra ({preview.sample.length} de {preview.valid_count})</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>Amostra ({preview.sample.length} de {preview.valid_count})</div>
               <div className="clients-table-wrap" style={{ maxHeight: 220, overflow: 'auto' }}><table className="data-table">
                 <thead><tr>{Object.keys(preview.sample[0]).map((k) => <th key={k}>{k}</th>)}</tr></thead>
                 <tbody>{preview.sample.map((row, i) => <tr key={i}>{Object.keys(preview.sample[0]).map((k) => <td key={k}>{String(row[k] ?? '') || '—'}</td>)}</tr>)}</tbody>

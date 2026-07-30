@@ -149,11 +149,11 @@ export default function CompanyDetail() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando empresa...</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando empresa...</p>
     </div>
   );
   if (!company) return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
       Empresa não encontrada. <button className="btn-secondary" onClick={() => router.push('/dashboard?module=multas&tab=companies')}>Voltar</button>
     </div>
   );
@@ -172,13 +172,13 @@ export default function CompanyDetail() {
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: 0 }}>{company.razao_social}</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{company.razao_social}</h1>
               <span className={`client-status-badge ${company.status === 'inativo' ? 'negociacao' : 'fechado'}`}>
                 {company.status === 'inativo' ? 'Inativo' : 'Ativo'}
               </span>
             </div>
-            {company.nome_fantasia && <p style={{ color: '#64748b', fontSize: 13, margin: '2px 0 0' }}>{company.nome_fantasia}</p>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 12, fontSize: 13, color: '#475569' }}>
+            {company.nome_fantasia && <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '2px 0 0' }}>{company.nome_fantasia}</p>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
               <div><strong>CNPJ:</strong> {maskCnpj(company.cnpj) || '—'}</div>
               <div><strong>Responsável:</strong> {company.responsavel || '—'}</div>
               <div><strong>Telefone:</strong> {company.phone || '—'}</div>
@@ -202,13 +202,13 @@ export default function CompanyDetail() {
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9' }}>
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', margin: 0 }}>Veículos / Frota</h2>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>{vehicles.length} veículo(s) · clique na placa para ver os processos</p>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Veículos / Frota</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{vehicles.length} veículo(s) · clique na placa para ver os processos</p>
           </div>
           <button onClick={openVehicleNew} className="btn-primary">+ Veículo</button>
         </div>
         {vehicles.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Nenhum veículo cadastrado.</div>
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Nenhum veículo cadastrado.</div>
         ) : (
           <table className="data-table" style={{ border: 'none', borderRadius: 0 }}>
             <thead>
@@ -223,10 +223,10 @@ export default function CompanyDetail() {
                       {v.plate || '—'}
                     </button>
                   </td>
-                  <td style={{ color: '#475569' }}>{v.renavam || '—'}</td>
-                  <td style={{ color: '#475569' }}>{maskCpfCnpj(v.owner_document) || '—'}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{v.renavam || '—'}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{maskCpfCnpj(v.owner_document) || '—'}</td>
                   <td>
-                    <span style={{ display: 'inline-block', minWidth: 24, textAlign: 'center', background: '#f1f5f9', color: '#475569', borderRadius: 10, padding: '1px 9px', fontSize: 12, fontWeight: 600 }}>
+                    <span style={{ display: 'inline-block', minWidth: 24, textAlign: 'center', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, padding: '1px 9px', fontSize: 12, fontWeight: 600 }}>
                       {fineCounts[v.id] || 0}
                     </span>
                   </td>
@@ -262,17 +262,17 @@ export default function CompanyDetail() {
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
         <button onClick={toggleUnlinked} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer' }}>
           <div style={{ textAlign: 'left' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', margin: 0 }}>Processos sem veículo vinculado</h2>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>Processos da empresa sem placa cadastrada / sem vínculo formal — vincule manualmente</p>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Processos sem veículo vinculado</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>Processos da empresa sem placa cadastrada / sem vínculo formal — vincule manualmente</p>
           </div>
-          <span style={{ fontSize: 18, color: '#94a3b8' }}>{showUnlinked ? '▾' : '▸'}</span>
+          <span style={{ fontSize: 18, color: 'var(--text-muted)' }}>{showUnlinked ? '▾' : '▸'}</span>
         </button>
         {showUnlinked && (
           <div style={{ borderTop: '1px solid #f1f5f9' }}>
             {loadingUnlinked ? (
-              <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Carregando...</div>
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Carregando...</div>
             ) : unlinked.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Nenhum processo sem vínculo. 🎉</div>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Nenhum processo sem vínculo. 🎉</div>
             ) : (
               <table className="data-table" style={{ border: 'none', borderRadius: 0 }}>
                 <thead>
@@ -319,7 +319,7 @@ export default function CompanyDetail() {
         <div className="modal-overlay" onClick={() => setShowCompanyModal(false)}>
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Editar Empresa</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Editar Empresa</h2>
               <button type="button" onClick={() => setShowCompanyModal(false)} className="btn-close">✕</button>
             </div>
             {modalError && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{modalError}</div>}

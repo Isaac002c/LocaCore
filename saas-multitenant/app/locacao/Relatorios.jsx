@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getRevenue, getRentalsReport, getFleetUtilization, revenueCsvUrl, rentalsCsvUrl } from '../lib/reportsAPI';
 import { apiRequest } from '../lib/api';
 import { fmtMoney, fmtDate, RENTAL_STATUS, rentalStatusLabel } from './shared';
+import { InlineError, EmptyState } from '../components/states';
 
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().substring(0, 10); };
 const todayISO = () => new Date().toISOString().substring(0, 10);
@@ -51,7 +52,7 @@ export default function Relatorios() {
         {tab !== 'fleet' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="clients-search-input" style={{ width: 150 }} />
-            <span style={{ color: '#94a3b8' }}>até</span>
+            <span style={{ color: 'var(--text-muted)' }}>até</span>
             <input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} className="clients-search-input" style={{ width: 150 }} />
           </div>
         )}
@@ -65,10 +66,10 @@ export default function Relatorios() {
         {tab === 'rentals' && <button className="btn-secondary" style={{ marginLeft: 'auto' }} onClick={() => downloadCsv(rentalsCsvUrl({ ...range, status }), 'locacoes.csv')}>Exportar CSV</button>}
       </div>
 
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       {loading ? (
-        <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>Carregando...</div>
+        <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</div>
       ) : tab === 'revenue' ? (
         <RevenueTable data={data} />
       ) : tab === 'rentals' ? (
@@ -91,7 +92,10 @@ function RevenueTable({ data }) {
       <div className="clients-table-wrap"><table className="data-table">
         <thead><tr><th>Data</th><th>Locação</th><th>Cliente</th><th>Placa</th><th>Faturado</th><th>Recebido</th><th>Status</th></tr></thead>
         <tbody>
-          {(!data.rows || data.rows.length === 0) ? <tr><td colSpan="7"><div className="empty-state" style={{ padding: '40px 0' }}><p style={{ color: '#94a3b8' }}>Sem faturamento no período</p></div></td></tr>
+          {(!data.rows || data.rows.length === 0) ? <tr><td colSpan="7"><EmptyState
+              title="Sem faturamento no período"
+              description="Nenhuma locação foi faturada entre as datas selecionadas. Amplie o período ou fature uma locação em Locações."
+            /></td></tr>
             : data.rows.map((r) => (
               <tr key={r.id}><td>{fmtDate(r.data)}</td><td>{r.rental_number || '—'}</td><td>{r.client_name || '—'}</td><td>{r.vehicle_plate || '—'}</td><td>{fmtMoney(r.final_amount)}</td><td>{fmtMoney(r.paid_amount)}</td><td>{r.financial_status || '—'}</td></tr>
             ))}
@@ -112,7 +116,10 @@ function RentalsTable({ data }) {
       <div className="clients-table-wrap"><table className="data-table">
         <thead><tr><th>Locação</th><th>Status</th><th>Início</th><th>Fim</th><th>Cliente</th><th>Placa</th><th>Total</th></tr></thead>
         <tbody>
-          {(!data.rows || data.rows.length === 0) ? <tr><td colSpan="7"><div className="empty-state" style={{ padding: '40px 0' }}><p style={{ color: '#94a3b8' }}>Nenhuma locação no período</p></div></td></tr>
+          {(!data.rows || data.rows.length === 0) ? <tr><td colSpan="7"><EmptyState
+              title="Nenhuma locação no período"
+              description="Não há locações com início entre as datas selecionadas. Ajuste o período ou o filtro de status."
+            /></td></tr>
             : data.rows.map((r, i) => (
               <tr key={i}><td><strong>{r.rental_number || '—'}</strong></td><td>{rentalStatusLabel(r.status)}</td><td>{fmtDate(r.start_date)}</td><td>{fmtDate(r.end_date)}</td><td>{r.client_name || '—'}</td><td>{r.vehicle_plate || '—'}</td><td>{fmtMoney(r.total_amount)}</td></tr>
             ))}

@@ -21,11 +21,11 @@ export const TYPES = [
 export const LEGACY_TYPES = [
   { value: 'reuniao',  label: 'Reunião',  color: '#6366f1' },
   { value: 'prazo',    label: 'Prazo',    color: '#f59e0b' },
-  { value: 'outro',    label: 'Outro',    color: '#64748b' },
+  { value: 'outro',    label: 'Outro',    color: 'var(--text-secondary)' },
   { value: 'bloqueio', label: 'Bloqueio', color: '#dc2626' },
 ];
 export const ALL_TYPES = [...TYPES, ...LEGACY_TYPES];
-export const typeInfo = (t) => ALL_TYPES.find(x => x.value === t) || { value: t, label: t || 'Outro', color: '#64748b' };
+export const typeInfo = (t) => ALL_TYPES.find(x => x.value === t) || { value: t, label: t || 'Outro', color: 'var(--text-secondary)' };
 
 export const PAYMENT_METHODS = ['Pix', 'Cartão de crédito', 'Cartão de débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro'];
 
@@ -180,7 +180,7 @@ export default function EventFormModal({ event, initialData, heading, onClose, o
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{heading || (editing ? 'Editar Evento' : 'Novo Evento')}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{heading || (editing ? 'Editar Evento' : 'Novo Evento')}</h2>
           <button type="button" onClick={onClose} className="btn-close">✕</button>
         </div>
         {error && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{error}</div>}
@@ -246,7 +246,7 @@ export default function EventFormModal({ event, initialData, heading, onClose, o
             </div>
           </div>
           <div className="form-group"><label>Observações</label><textarea rows={2} value={form.description} onChange={set('description')} placeholder="Detalhes do evento..." /></div>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>Sem horário = dia inteiro. Consultor padrão: você (usuário logado).</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px' }}>Sem horário = dia inteiro. Consultor padrão: você (usuário logado).</p>
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : editing ? 'Salvar' : 'Criar evento'}</button>

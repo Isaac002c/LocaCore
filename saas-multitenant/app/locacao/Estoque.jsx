@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getItems, getInventoryDashboard, createItem, updateItem, deleteItem, createMovement, exportItemsUrl } from '../lib/inventoryAPI';
 import { fmtMoney } from './shared';
+import { PageLoading, InlineError, EmptyState } from '../components/states';
 
 const MOV_TYPES = [
   ['entrada', 'Entrada'], ['saida', 'Saída'], ['ajuste_pos', 'Ajuste +'], ['ajuste_neg', 'Ajuste −'],
@@ -45,7 +46,7 @@ export default function Estoque() {
 
   const displayed = items.filter((i) => !search || (i.name + ' ' + (i.code || '')).toLowerCase().includes(search.toLowerCase()));
 
-  if (loading && items.length === 0) return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}><div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} /><p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando estoque...</p></div>;
+  if (loading && items.length === 0) return <PageLoading label="Carregando estoque..." />;
 
   return (
     <div className="clients-page">
@@ -55,7 +56,7 @@ export default function Estoque() {
         <div className="clients-summary-card fechado"><span className="summary-number" style={{ fontSize: 20 }}>{fmtMoney(dash?.valor_estimado || 0)}</span><span className="summary-label">Valor estimado</span></div>
       </div>
 
-      {error && <div className="error-message" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}><span>{error}</span><button className="btn-close" onClick={() => setError(null)}>✕</button></div>}
+      <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
 
       <div className="clients-toolbar">
         <div className="clients-search"><input type="text" placeholder="Buscar item..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} className="clients-search-input" /></div>
@@ -66,13 +67,20 @@ export default function Estoque() {
       <div className="clients-table-wrap"><table className="data-table">
         <thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Custo unit.</th><th>Local</th><th style={{ width: 180 }}>Ações</th></tr></thead>
         <tbody>
-          {displayed.length === 0 ? <tr><td colSpan="7"><div className="empty-state" style={{ padding: '40px 0' }}><p style={{ color: '#94a3b8' }}>Nenhum item cadastrado</p></div></td></tr> : displayed.map((i) => {
+          {displayed.length === 0 ? <tr><td colSpan="7"><EmptyState
+              title={search ? 'Nenhum item encontrado' : 'Nenhum item no estoque'}
+              description={search
+                ? `Nenhum item corresponde a "${search}". Ajuste a busca.`
+                : 'Cadastre peças, pneus, óleo e materiais de consumo. Cada item passa a ter saldo, custo e alerta de mínimo.'}
+              actionLabel={search ? undefined : 'Novo item'}
+              onAction={search ? undefined : () => openNew()}
+            /></td></tr> : displayed.map((i) => {
             const low = Number(i.quantity) <= Number(i.min_quantity);
             return (
               <tr key={i.id}>
-                <td><strong>{i.name}</strong>{i.code && <span style={{ color: '#94a3b8', fontSize: 12 }}> · {i.code}</span>}{!i.active && <em style={{ color: '#94a3b8' }}> (inativo)</em>}</td>
+                <td><strong>{i.name}</strong>{i.code && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {i.code}</span>}{!i.active && <em style={{ color: 'var(--text-muted)' }}> (inativo)</em>}</td>
                 <td>{i.category || '—'}</td>
-                <td style={{ fontWeight: 600, color: low ? '#b91c1c' : '#0f172a' }}>{Number(i.quantity)} {i.unit}</td>
+                <td style={{ fontWeight: 600, color: low ? 'var(--danger)' : 'var(--text-primary)' }}>{Number(i.quantity)} {i.unit}</td>
                 <td>{Number(i.min_quantity)}</td>
                 <td>{fmtMoney(i.unit_cost)}</td>
                 <td>{i.location || '—'}</td>
@@ -106,7 +114,7 @@ export default function Estoque() {
                 <div className="form-group"><label>Estoque mínimo</label><input type="number" step="0.001" min="0" value={form.min_quantity} onChange={set('min_quantity')} /></div>
                 <div className="form-group"><label>Custo unit. (R$)</label><input type="number" step="0.01" min="0" value={form.unit_cost} onChange={set('unit_cost')} /></div>
               </div>
-              {editing && <p style={{ fontSize: 12, color: '#94a3b8' }}>A quantidade é alterada apenas por movimentações.</p>}
+              {editing && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>A quantidade é alterada apenas por movimentações.</p>}
               <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : editing ? 'Salvar' : 'Cadastrar'}</button></div>
             </form>
           </div>
@@ -116,7 +124,7 @@ export default function Estoque() {
       {movItem && (
         <div className="modal-overlay" onClick={() => setMovItem(null)}>
           <div className="modal-content" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><div><h2 style={{ fontSize: 18, fontWeight: 700 }}>Movimentar estoque</h2><p style={{ fontSize: 12, color: '#94a3b8' }}>{movItem.name} — saldo {Number(movItem.quantity)} {movItem.unit}</p></div><button className="btn-close" onClick={() => setMovItem(null)}>✕</button></div>
+            <div className="modal-header"><div><h2 style={{ fontSize: 18, fontWeight: 700 }}>Movimentar estoque</h2><p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movItem.name} — saldo {Number(movItem.quantity)} {movItem.unit}</p></div><button className="btn-close" onClick={() => setMovItem(null)}>✕</button></div>
             <form onSubmit={submitMov} className="modal-form">
               <div className="form-row">
                 <div className="form-group"><label>Tipo</label><select value={mov.type} onChange={setM('type')}>{MOV_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
