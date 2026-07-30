@@ -3,8 +3,12 @@
 // =============================================================================
 // smoke-locacore.js — Smoke E2E do LocaCore contra uma API já em execução.
 //
-//   node scripts/smoke-locacore.js [BASE_URL] [EMAIL] [SENHA]
+//   node scripts/smoke-locacore.js [BASE_URL] [EMAIL] [SENHA] [--read-only]
 //   BASE_URL padrão: http://localhost:5000
+//
+// --read-only: executa SOMENTE as verificações de leitura. Use sempre que o
+// alvo for um ambiente com dados reais — o modo completo cria veículo,
+// manutenção, locação, multa, item de estoque, evento, faturamento e recibo.
 //
 // Percorre o fluxo real do §22: login → painel → frota → manutenção (bloqueia e
 // libera o veículo) → locação → multa → estoque → agenda → relatórios/CSV →
@@ -14,12 +18,14 @@
 // token informado.
 // =============================================================================
 
-const BASE = process.argv[2] || process.env.SMOKE_BASE_URL || 'http://localhost:5000';
-const EMAIL = process.argv[3] || process.env.SMOKE_EMAIL || 'admin@demo.com';
-const SENHA = process.argv[4] || process.env.SMOKE_PASSWORD || 'demo123';
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const READ_ONLY = process.argv.includes('--read-only') || process.env.SMOKE_READ_ONLY === '1';
+const BASE = args[0] || process.env.SMOKE_BASE_URL || 'http://localhost:5000';
+const EMAIL = args[1] || process.env.SMOKE_EMAIL || 'admin@demo.com';
+const SENHA = args[2] || process.env.SMOKE_PASSWORD || 'demo123';
 
 let token = '';
-let ok = 0; const falhas = [];
+let ok = 0; let pulados = 0; const falhas = [];
 const marca = `SMOKE${Date.now().toString().slice(-6)}`;
 
 const cor = { ok: '\x1b[32m', err: '\x1b[31m', dim: '\x1b[90m', off: '\x1b[0m' };
@@ -35,6 +41,16 @@ async function req(method, path, body, { raw = false } = {}) {
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch { /* resposta não-JSON */ }
   return { status: res.status, body: json, text };
+}
+
+// Passo que CRIA/ALTERA dados. Em --read-only é pulado (não toca no ambiente).
+async function escreve(nome, fn) {
+  if (READ_ONLY) {
+    pulados += 1;
+    console.log(`${cor.dim} PULA ${nome} — modo somente leitura${cor.off}`);
+    return;
+  }
+  return passo(nome, fn);
 }
 
 async function passo(nome, fn) {
@@ -108,15 +124,20 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
   await passo('clientes: obter um locatário', async () => {
     const r = await req('GET', '/api/clients');
     precisa(r.status === 200, `HTTP ${r.status}`);
-    const lista = Array.isArray(r.body.data) ? r.body.data : r.body.data?.data;
-    precisa(lista?.length, 'nenhum cliente disponível para o smoke');
-    cliente = lista[0];
+    const lista = (Array.isArray(r.body.data) ? r.body.data : r.body.data?.data) || [];
+    cliente = lista[0] || null;
+    // Tenant recém-provisionado não tem clientes: isso não é falha. Os passos de
+    // escrita que dependem de um locatário são pulados adiante.
+    if (!cliente) {
+      precisa(READ_ONLY, 'nenhum cliente disponível — o modo completo precisa de ao menos um locatário');
+      return 'tenant vazio (0 clientes) — passos de escrita não se aplicam';
+    }
     return cliente.name;
   });
 
   // ── Frota ────────────────────────────────────────────────────────────────
   let veiculo;
-  await passo('frota: criar veículo', async () => {
+  await escreve('frota: criar veículo', async () => {
     const r = await req('POST', '/api/vehicles', {
       plate: marca.slice(0, 7), brand: 'Smoke', model: 'Teste', year: 2025,
       category: 'Hatch', daily_rate: 100, odometer: 1000, status: 'disponivel',
@@ -136,7 +157,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
 
   // ── Manutenção: bloqueia e libera o veículo (§8) ──────────────────────────
   let manutencao;
-  await passo('manutenção: criar em andamento bloqueia o veículo', async () => {
+  await escreve('manutenção: criar em andamento bloqueia o veículo', async () => {
     const r = await req('POST', '/api/maintenances', {
       vehicle_id: veiculo.id, type: 'Revisão', status: 'em_andamento',
       scheduled_date: new Date().toISOString().substring(0, 10),
@@ -149,7 +170,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return 'veículo em manutenção';
   });
 
-  await passo('manutenção: veículo bloqueado NÃO pode ser locado (409)', async () => {
+  await escreve('manutenção: veículo bloqueado NÃO pode ser locado (409)', async () => {
     const r = await req('POST', '/api/rentals', {
       client_id: cliente.id, vehicle_id: veiculo.id, status: 'reservado',
       start_date: '2027-01-10', end_date: '2027-01-15', daily_rate: 100,
@@ -158,7 +179,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return r.body?.error?.slice(0, 50);
   });
 
-  await passo('manutenção: concluir libera o veículo', async () => {
+  await escreve('manutenção: concluir libera o veículo', async () => {
     const r = await req('PATCH', `/api/maintenances/${manutencao.id}/status`, { status: 'concluida' });
     precisa(r.status === 200, `HTTP ${r.status}`);
     const v = await req('GET', `/api/vehicles/${veiculo.id}`);
@@ -166,7 +187,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return 'veículo disponível';
   });
 
-  await passo('manutenção: segunda manutenção aberta impede a liberação (§8)', async () => {
+  await escreve('manutenção: segunda manutenção aberta impede a liberação (§8)', async () => {
     const a = await req('POST', '/api/maintenances', { vehicle_id: veiculo.id, type: 'Pneus', status: 'em_andamento' });
     const b = await req('POST', '/api/maintenances', { vehicle_id: veiculo.id, type: 'Freios', status: 'em_andamento' });
     precisa(a.body?.data?.id && b.body?.data?.id, 'falha ao criar as manutenções');
@@ -182,7 +203,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
 
   // ── Locação ──────────────────────────────────────────────────────────────
   // (cliente já obtido acima)
-  await passo('locação: criar reserva', async () => {
+  await escreve('locação: criar reserva', async () => {
     const r = await req('POST', '/api/rentals', {
       client_id: cliente.id, vehicle_id: veiculo.id, status: 'reservado',
       start_date: '2027-02-10', end_date: '2027-02-15', daily_rate: 100, deposit_amount: 200,
@@ -193,7 +214,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return `${locacao.rental_number} · total ${locacao.total_amount}`;
   });
 
-  await passo('locação: período sobreposto é recusado (409)', async () => {
+  await escreve('locação: período sobreposto é recusado (409)', async () => {
     const r = await req('POST', '/api/rentals', {
       client_id: cliente.id, vehicle_id: veiculo.id, status: 'reservado',
       start_date: '2027-02-12', end_date: '2027-02-18', daily_rate: 100,
@@ -210,7 +231,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return `total=${r.body.pagination.total}`;
   });
 
-  await passo('locação: iniciar (em andamento) e devolver', async () => {
+  await escreve('locação: iniciar (em andamento) e devolver', async () => {
     const s = await req('PATCH', `/api/rentals/${locacao.id}/status`, { status: 'em_andamento' });
     precisa(s.status === 200, `iniciar: HTTP ${s.status} ${s.text?.slice(0, 120)}`);
     const d = await req('POST', `/api/rentals/${locacao.id}/return`, { return_odometer: 1500 });
@@ -221,7 +242,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
 
   // ── Financeiro ───────────────────────────────────────────────────────────
   let faturamento;
-  await passo('financeiro: faturar a locação', async () => {
+  await escreve('financeiro: faturar a locação', async () => {
     const r = await req('POST', `/api/rentals/${locacao.id}/faturar`, {});
     precisa(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.text?.slice(0, 160)}`);
     faturamento = r.body.data?.billing || r.body.data;
@@ -229,7 +250,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return `R$ ${faturamento.final_amount}`;
   });
 
-  await passo('financeiro: registrar pagamento', async () => {
+  await escreve('financeiro: registrar pagamento', async () => {
     const r = await req('POST', '/api/financial/payments', {
       billing_id: faturamento.id, amount: Number(faturamento.final_amount), payment_method: 'pix',
     });
@@ -237,7 +258,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
     return 'pagamento confirmado';
   });
 
-  await passo('financeiro: emitir recibo da locação', async () => {
+  await escreve('financeiro: emitir recibo da locação', async () => {
     const r = await req('POST', `/api/rentals/${locacao.id}/recibo`, {});
     precisa(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.text?.slice(0, 200)}`);
     precisa(r.body.data?.full_number, 'recibo sem número');
@@ -251,7 +272,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
   });
 
   // ── Multas ───────────────────────────────────────────────────────────────
-  await passo('multas: criar e listar', async () => {
+  await escreve('multas: criar e listar', async () => {
     const c = await req('POST', '/api/rental-fines', {
       vehicle_id: veiculo.id, rental_id: locacao.id, client_id: cliente.id,
       fine_number: `${marca}-AI`, organ: 'DETRAN', original_amount: 130, admin_fee: 20,
@@ -264,7 +285,7 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
   });
 
   // ── Estoque ──────────────────────────────────────────────────────────────
-  await passo('estoque: criar item, movimentar e bloquear saldo negativo', async () => {
+  await escreve('estoque: criar item, movimentar e bloquear saldo negativo', async () => {
     const i = await req('POST', '/api/inventory/items', { name: `Item ${marca}`, unit: 'un', quantity: 0, min_quantity: 2, unit_cost: 50 });
     precisa(i.status === 201 || i.status === 200, `criar item: HTTP ${i.status} ${i.text?.slice(0, 160)}`);
     const item = i.body.data;
@@ -276,15 +297,19 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
   });
 
   // ── Agenda ───────────────────────────────────────────────────────────────
-  await passo('agenda: eventos derivados + evento manual', async () => {
+  await passo('agenda: eventos derivados respondem', async () => {
     const a = await req('GET', '/api/calendar-events/agenda?from=2027-02-01&to=2027-02-28');
     precisa(a.status === 200, `agenda: HTTP ${a.status}`);
+    const lista = Array.isArray(a.body.data) ? a.body.data : (a.body.data?.events || []);
+    return `${lista.length} evento(s) no período`;
+  });
+
+  await escreve('agenda: criar evento manual', async () => {
     const c = await req('POST', '/api/calendar-events', {
       title: `Evento ${marca}`, event_date: '2027-02-12', type: 'outro',
     });
     precisa(c.status === 201 || c.status === 200, `criar evento: HTTP ${c.status} ${c.text?.slice(0, 160)}`);
-    const lista = Array.isArray(a.body.data) ? a.body.data : (a.body.data?.events || []);
-    return `${lista.length} evento(s) no período`;
+    return 'evento criado';
   });
 
   // ── Relatórios ───────────────────────────────────────────────────────────
@@ -353,7 +378,8 @@ const precisa = (cond, msg) => { if (!cond) throw new Error(msg); };
   // ── Resultado ────────────────────────────────────────────────────────────
   const total = ok + falhas.length;
   console.log(`${'─'.repeat(60)}`);
-  console.log(`${falhas.length ? cor.err : cor.ok}${ok}/${total} passos OK${cor.off}`);
+  console.log(`${falhas.length ? cor.err : cor.ok}${ok}/${total} passos OK${cor.off}`
+    + (pulados ? `${cor.dim} · ${pulados} pulado(s) (somente leitura)${cor.off}` : ''));
   if (falhas.length) {
     console.log('\nFalhas:');
     falhas.forEach((f) => console.log(`  · ${f.nome}: ${f.erro}`));
