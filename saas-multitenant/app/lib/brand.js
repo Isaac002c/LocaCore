@@ -36,12 +36,17 @@ export const BRAND = {
   // Parametrizáveis por env — não invente endereços que não existam.
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@telun.com.br',
   website:      process.env.NEXT_PUBLIC_PLATFORM_WEBSITE || '',
-  // Assets institucionais (ver public/brand/README.md para os arquivos oficiais).
-  logo:        '/brand/telun-logo.svg',
-  logoCompact: '/brand/telun-symbol.svg',
-  logoLight:   '/brand/telun-logo-light.svg',
-  logoDark:    '/brand/telun-logo-dark.svg',
-  favicon:     '/brand/favicon.svg',
+  // Assets institucionais OFICIAIS. Gerados de img/logo_telun.jpeg por
+  // scripts/gerar-icones-marca.js — rode-o de novo se a logo mudar.
+  // O símbolo é luminoso sobre fundo Cosmic: o fundo faz parte da arte.
+  logo:        '/brand/telun-logo.png',
+  logoCompact: '/brand/telun-symbol.png',
+  favicon:     '/brand/favicon-32.png',
+  faviconSmall:'/brand/favicon-16.png',
+  faviconLarge:'/brand/favicon-48.png',
+  appleIcon:   '/brand/apple-touch-icon.png',
+  icon192:     '/brand/icon-192.png',
+  icon512:     '/brand/icon-512.png',
   ogImage:     '/brand/og-locacore.png',
   colors: TELUN_COLORS,
 };

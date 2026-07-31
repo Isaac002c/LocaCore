@@ -52,9 +52,19 @@ export default function Login() {
     }
   };
 
+  // Logo oficial da TELUN. O símbolo é luminoso sobre fundo Cosmic — o fundo faz
+  // parte da arte, por isso o recorte é redondo em vez de recortar transparência.
   const Logo = ({ compact = false }) => (
     <div className="tl-login__logo">
-      <span className="tl-login__logo-mark" aria-hidden="true">T</span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={BRAND.logoCompact}
+        alt=""
+        aria-hidden="true"
+        className="tl-login__logo-mark"
+        width={compact ? 34 : 38}
+        height={compact ? 34 : 38}
+      />
       <span className="tl-login__logo-text" style={compact ? { fontSize: 17 } : undefined}>
         {BRAND.companyName}
       </span>

@@ -2,28 +2,42 @@
 
 > **EMPRESA:** TELUN · **PRODUTO:** LocaCore · **ASSINATURA:** *Um produto TELUN*
 
-Os arquivos `.svg` presentes aqui são **PLACEHOLDERS tipográficos neutros**
-(apenas a palavra/letra em tipografia padrão com a paleta oficial). **Não são a
-logo oficial** — nenhuma marca foi inventada. Substitua-os pelos arquivos
-originais quando a identidade visual da TELUN estiver disponível.
+A **logo oficial da TELUN** está aplicada. O original fica em `img/logo_telun.jpeg`
+(fora de `public/`, para não ser servido) e uma cópia em
+`public/brand/telun-logo-original.jpeg`.
+
+Todos os PNGs abaixo são **gerados** a partir dela:
+
+```bash
+node scripts/gerar-icones-marca.js
+```
+
+Rode esse comando sempre que a logo oficial mudar — não edite os PNGs à mão.
+
+> O símbolo é luminoso sobre fundo **Cosmic (#0B0B12)**: o fundo é parte da arte.
+> Por isso os ícones são gerados COM fundo, sem tentar recortar transparência
+> (o recorte destruiria o brilho das trilhas).
+
+Os `.svg` que restaram são placeholders tipográficos do período anterior e não
+são mais referenciados pelo app.
 
 ## Caminhos exatos que devem receber os arquivos oficiais
 
 | Caminho | Uso | Formato | Estado |
 | --- | --- | --- | --- |
-| `public/brand/telun-logo.svg` | Logo principal (assinatura, login, PDFs) | SVG | ⚠️ placeholder |
-| `public/brand/telun-symbol.svg` | Logo reduzida / símbolo (sidebar recolhida, avatar) | SVG | ⚠️ placeholder |
-| `public/brand/telun-logo-light.svg` | Logo para fundo claro | SVG | ❌ pendente |
-| `public/brand/telun-logo-dark.svg` | Logo para fundo escuro | SVG | ❌ pendente |
-| `public/brand/favicon.svg` | Favicon do navegador | SVG | ⚠️ placeholder |
-| `public/brand/apple-touch-icon.png` | Ícone iOS | PNG 180×180 | ❌ pendente |
-| `public/brand/icon-192.png` | PWA | PNG 192×192 | ❌ pendente |
-| `public/brand/icon-512.png` | PWA (maskable) | PNG 512×512 | ❌ pendente |
-| `public/brand/og-locacore.png` | Open Graph / redes sociais | PNG 1200×630 | ❌ pendente |
+| `telun-logo-original.jpeg` | Arte oficial (fonte de tudo) | JPEG 1254×1254 | ✅ oficial |
+| `telun-logo.png` | Logo principal | PNG 512×512 | ✅ gerado |
+| `telun-symbol.png` | Símbolo (login, assinatura da sidebar) | PNG 256×256 | ✅ gerado |
+| `favicon-16.png` / `favicon-32.png` / `favicon-48.png` | Aba do navegador | PNG | ✅ gerado |
+| `apple-touch-icon.png` | Ícone iOS | PNG 180×180 | ✅ gerado |
+| `icon-192.png` | PWA | PNG 192×192 | ✅ gerado |
+| `icon-512.png` | PWA (any + maskable) | PNG 512×512 | ✅ gerado |
+| `og-locacore.png` | Open Graph / redes sociais | PNG 1200×630 | ✅ gerado |
 
-> Enquanto os PNGs estiverem pendentes, o `manifest.webmanifest` e o `layout.jsx`
-> referenciam **apenas o SVG** — nada aponta para arquivo inexistente.
-> Ao adicionar os PNGs, inclua-os no manifest e nos `icons` do layout.
+Os caminhos são consumidos por `app/lib/brand.js` (`BRAND.favicon`,
+`BRAND.logoCompact`, `BRAND.appleIcon`, ...), e é dali que `layout.jsx`,
+`manifest.webmanifest`, o login e a sidebar leem. **Não referencie o caminho do
+arquivo direto nos componentes** — use sempre `BRAND.*`.
 
 ## Paleta oficial
 

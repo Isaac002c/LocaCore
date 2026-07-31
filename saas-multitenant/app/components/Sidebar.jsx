@@ -1,6 +1,6 @@
 'use client';
 
-import { PRODUCT_TAGLINE, PRODUCT_BRAND_COLOR, SUPPORT_EMAIL } from '../lib/brand';
+import { PRODUCT_TAGLINE, PRODUCT_BRAND_COLOR, SUPPORT_EMAIL, PRODUCT_SIGNATURE, BRAND } from '../lib/brand';
 import { NAV_MODULES, NAV_ITEMS, getVisibleItems, getDefaultTab } from '../lib/navigation';
 
 const Icons = {
@@ -343,6 +343,12 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
             <a href={`mailto:${SUPPORT_EMAIL}`} className="sidebar-footer-email">
               {SUPPORT_EMAIL}
             </a>
+            {/* Assinatura do fornecedor: a marca aparece COM a logo. */}
+            <span className="sidebar-footer-signature">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={BRAND.logoCompact} alt="" aria-hidden="true" width={16} height={16} />
+              {PRODUCT_SIGNATURE}
+            </span>
           </div>
         )}
         <button

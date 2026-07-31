@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TELUN">
-  <!-- PLACEHOLDER tipográfico neutro — substituir pelo ícone oficial da TELUN.
-       Paleta: Cosmic (fundo) + Electric Lilac (marca). Ver public/brand/README.md -->
-  <rect width="64" height="64" rx="14" fill="#0B0B12"/>
-  <text x="32" y="43" text-anchor="middle"
-        font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="700" fill="#A56BFF">T</text>
-</svg>

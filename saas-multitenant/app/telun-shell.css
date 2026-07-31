@@ -32,8 +32,10 @@
 .tl-login__brandside > * { position: relative; z-index: 1; }
 .tl-login__logo { display: flex; align-items: center; gap: 12px; }
 .tl-login__logo-mark {
-  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
-  background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 19px;
+  width: 38px; height: 38px; border-radius: 10px;
+  object-fit: cover; display: block; flex-shrink: 0;
+  /* A logo é luminosa sobre fundo Cosmic; o anel só assenta a arte no layout. */
+  box-shadow: 0 0 0 1px rgba(165, 107, 255, .22);
 }
 .tl-login__logo-text { font-size: 19px; font-weight: 700; letter-spacing: 3px; color: var(--text-primary); }
 .tl-login__center { max-width: 560px; }
@@ -612,3 +614,12 @@
 }
 .nx-tag-suporte { background: var(--primary-soft); color: var(--primary); }
 .nx-tag-pendente { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+
+/* Assinatura do fornecedor na sidebar — a marca aparece COM a logo. */
+.sidebar-footer-signature {
+  display: flex; align-items: center; gap: 7px; margin-top: 10px;
+  font-size: 11px; color: var(--text-muted); letter-spacing: .2px;
+}
+.sidebar-footer-signature img {
+  width: 16px; height: 16px; border-radius: 4px; object-fit: cover; flex-shrink: 0;
+}
