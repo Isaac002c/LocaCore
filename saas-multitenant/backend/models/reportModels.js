@@ -17,16 +17,14 @@ const q = async (sql, params, dflt) => {
   }
 };
 const num = (v) => Number(v) || 0;
-const today = () => new Date().toISOString().substring(0, 10);
-// DATE → 'YYYY-MM-DD'. O driver `pg` devolve DATE como objeto Date (o pg-mem
-// devolve string): String(date).substring(0,10) daria "Wed Jul 29" e quebraria
-// agrupamentos e cálculos de atraso. Getters LOCAIS para não deslocar o dia.
-const iso = (v) => {
-  if (v === '' || v === undefined || v === null) return '';
-  if (v instanceof Date) {
-    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
-  }
-  return String(v).substring(0, 10);
+// Coerção de DATE centralizada em utils/date.js: os drivers materializam a
+// coluna de formas diferentes (meia-noite local no `pg`, meia-noite UTC no
+// pg-mem) e ler com o getter errado desloca o dia.
+const { toISODate: iso } = require('../utils/date');
+// "Hoje" no fuso LOCAL do servidor (a operação é no Brasil).
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 const shift = (base, days) => {
   const d = new Date(`${iso(base)}T00:00:00Z`);
@@ -179,6 +177,128 @@ const overview = async (tenant_id, periodo = {}) => {
   };
 };
 
+// =============================================================================
+// ALERTAS OPERACIONAIS (§5) — lista ORDENADA por prioridade, calculada no
+// backend. Itens com contagem zero NÃO entram: o Painel só mostra o que exige
+// ação, em vez de uma parede de cards zerados.
+//
+// severidade: 'critico' | 'atencao' | 'info'
+// Cada alerta traz `tab` (+ `params`) para o Painel abrir a tela já filtrada.
+// =============================================================================
+const ORDEM_SEVERIDADE = { critico: 0, atencao: 1, info: 2 };
+
+const alerts = async (tenant_id) => {
+  const t = today();
+  const em7 = shift(t, 7);
+  const em3 = shift(t, 3);
+
+  const n = async (sql, params) => {
+    const r = await q(sql, params, [{ n: 0 }]);
+    return num(r[0]?.n);
+  };
+
+  const [
+    atrasadas, manutVencidas, vencidos, deadLetter,
+    devolucoesHoje, manutProximas, multasPrazo, estoqueBaixo, veiculoBloqueadoAlocado,
+    retiradasHoje, reservasFuturas, fiscaisPendentes,
+  ] = await Promise.all([
+    n(`SELECT COUNT(*)::int AS n FROM rentals WHERE tenant_id=$1 AND status='atrasado'`, [tenant_id]),
+    n(`SELECT COUNT(*)::int AS n FROM vehicle_maintenances WHERE tenant_id=$1
+        AND status IN ('agendada','em_andamento') AND scheduled_date IS NOT NULL AND scheduled_date < $2`, [tenant_id, t]),
+    n(`SELECT COUNT(*)::int AS n FROM service_billings WHERE tenant_id=$1
+        AND due_date IS NOT NULL AND due_date < $2 AND final_amount > paid_amount
+        AND financial_status NOT IN ('cancelado','pago')`, [tenant_id, t]),
+    n(`SELECT COUNT(*)::int AS n FROM message_outbox WHERE tenant_id=$1
+        AND (status='dead' OR (status='failed' AND attempts >= max_attempts))`, [tenant_id]),
+
+    n(`SELECT COUNT(*)::int AS n FROM rentals WHERE tenant_id=$1 AND end_date=$2
+        AND status IN ('em_andamento','atrasado')`, [tenant_id, t]),
+    n(`SELECT COUNT(*)::int AS n FROM vehicle_maintenances WHERE tenant_id=$1
+        AND status IN ('agendada','em_andamento') AND scheduled_date IS NOT NULL
+        AND scheduled_date >= $2 AND scheduled_date <= $3`, [tenant_id, t, em7]),
+    n(`SELECT COUNT(*)::int AS n FROM rental_fines WHERE tenant_id=$1
+        AND status NOT IN ('paga','cancelada','encerrada')
+        AND due_date IS NOT NULL AND due_date >= $2 AND due_date <= $3`, [tenant_id, t, em7]),
+    n(`SELECT COUNT(*)::int AS n FROM inventory_items WHERE tenant_id=$1
+        AND active = true AND quantity <= min_quantity`, [tenant_id]),
+    // Inconsistência real: veículo em manutenção/inativo com locação em curso.
+    n(`SELECT COUNT(*)::int AS n FROM rentals r JOIN vehicles v ON v.id=r.vehicle_id AND v.tenant_id=r.tenant_id
+        WHERE r.tenant_id=$1 AND r.status IN ('em_andamento','atrasado')
+          AND v.status IN ('manutencao','inativo')`, [tenant_id]),
+
+    n(`SELECT COUNT(*)::int AS n FROM rentals WHERE tenant_id=$1 AND start_date=$2
+        AND status IN ('reservado','em_andamento')`, [tenant_id, t]),
+    n(`SELECT COUNT(*)::int AS n FROM rentals WHERE tenant_id=$1 AND status='reservado'
+        AND start_date IS NOT NULL AND start_date > $2 AND start_date <= $3`, [tenant_id, t, em7]),
+    n(`SELECT COUNT(*)::int AS n FROM fiscal_documents WHERE tenant_id=$1
+        AND status IN ('pending','processing','error')`, [tenant_id]),
+  ]);
+
+  const candidatos = [
+    // ── CRÍTICO ────────────────────────────────────────────────────────────
+    { key: 'locacoes_atrasadas', severidade: 'critico', total: atrasadas,
+      titulo: 'Locação atrasada', descricao: 'Devolução vencida e veículo ainda não retornou.',
+      tab: 'locacoes', params: { status: 'atrasado' } },
+    { key: 'veiculo_bloqueado_alocado', severidade: 'critico', total: veiculoBloqueadoAlocado,
+      titulo: 'Veículo indisponível em locação', descricao: 'Carro em manutenção ou inativo com locação em curso.',
+      tab: 'frota' },
+    { key: 'manutencoes_vencidas', severidade: 'critico', total: manutVencidas,
+      titulo: 'Manutenção vencida', descricao: 'A data prevista já passou.',
+      tab: 'manutencoes' },
+    { key: 'pagamentos_vencidos', severidade: 'critico', total: vencidos,
+      titulo: 'Pagamento vencido', descricao: 'Cobrança com saldo em aberto após o vencimento.',
+      tab: 'relatorios' },
+    { key: 'automacao_dead_letter', severidade: 'critico', total: deadLetter,
+      titulo: 'Falha persistente de automação', descricao: 'Mensagens que esgotaram as tentativas.',
+      tab: 'automacoes' },
+
+    // ── ATENÇÃO ────────────────────────────────────────────────────────────
+    { key: 'devolucoes_hoje', severidade: 'atencao', total: devolucoesHoje,
+      titulo: 'Devolução hoje', descricao: 'Prevista para encerrar hoje.',
+      tab: 'agenda' },
+    { key: 'manutencoes_proximas', severidade: 'atencao', total: manutProximas,
+      titulo: 'Manutenção nos próximos 7 dias', descricao: 'Programe a parada do veículo.',
+      tab: 'manutencoes' },
+    { key: 'multas_prazo', severidade: 'atencao', total: multasPrazo,
+      titulo: 'Multa perto do prazo', descricao: 'Vence nos próximos 7 dias.',
+      tab: 'multas' },
+    { key: 'estoque_baixo', severidade: 'atencao', total: estoqueBaixo,
+      titulo: 'Estoque abaixo do mínimo', descricao: 'Itens a repor.',
+      tab: 'estoque' },
+    { key: 'fiscais_pendentes', severidade: 'atencao', total: fiscaisPendentes,
+      titulo: 'Documento fiscal pendente', descricao: 'Aguardando emissão ou com erro.',
+      tab: 'automacoes' },
+
+    // ── INFORMATIVO ────────────────────────────────────────────────────────
+    { key: 'retiradas_hoje', severidade: 'info', total: retiradasHoje,
+      titulo: 'Retirada programada hoje', descricao: 'Prepare o veículo e o contrato.',
+      tab: 'agenda' },
+    { key: 'reservas_futuras', severidade: 'info', total: reservasFuturas,
+      titulo: 'Reserva nos próximos 7 dias', descricao: 'Confirme a disponibilidade.',
+      tab: 'locacoes', params: { status: 'reservado' } },
+  ];
+
+  // Só entra o que exige ação: zero não ocupa espaço no Painel.
+  const lista = candidatos
+    .filter((a) => a.total > 0)
+    .sort((a, b) => ORDEM_SEVERIDADE[a.severidade] - ORDEM_SEVERIDADE[b.severidade] || b.total - a.total);
+
+  return {
+    alertas: lista,
+    resumo: {
+      critico: lista.filter((a) => a.severidade === 'critico').length,
+      atencao: lista.filter((a) => a.severidade === 'atencao').length,
+      info: lista.filter((a) => a.severidade === 'info').length,
+      total: lista.length,
+    },
+    // O Painel usa isto para mostrar "Operação em dia" em vez de uma lista vazia.
+    operacao_em_dia: lista.filter((a) => a.severidade !== 'info').length === 0,
+    gerado_em: new Date().toISOString(),
+    // `em3` fica disponível para futuras faixas de urgência sem nova query.
+    janelas: { hoje: t, em3, em7 },
+  };
+};
+
 // Séries para os gráficos do Painel. Tudo calculado no backend, por tenant.
 const dashboardSeries = async (tenant_id, periodo = {}) => {
   const t = today();
@@ -321,4 +441,79 @@ const fleetUtilization = async (tenant_id) => {
   return { rows, total, taxa_ocupacao: total ? Math.round((alugados / total) * 100) : 0 };
 };
 
-module.exports = { overview, dashboardSeries, revenue, rentalsReport, fleetUtilization, resolvePeriod };
+// =============================================================================
+// PRÓXIMOS MOVIMENTOS (§3) — o que a operação precisa fazer nos próximos dias:
+// retiradas, devoluções e reservas, em ordem cronológica. Derivado das locações
+// (sem duplicar nada no banco), com o registro relacionado para abrir na tela.
+// =============================================================================
+const upcomingMovements = async (tenant_id, { days = 7, limit = 12 } = {}) => {
+  const t = today();
+  const ate = shift(t, Math.max(parseInt(days, 10) || 7, 1));
+
+  const rows = await q(
+    `SELECT r.id, r.rental_number, r.status, r.start_date, r.end_date,
+            c.name AS client_name, v.plate AS vehicle_plate, v.brand, v.model
+       FROM rentals r
+       LEFT JOIN clients  c ON c.id = r.client_id  AND c.tenant_id = r.tenant_id
+       LEFT JOIN vehicles v ON v.id = r.vehicle_id AND v.tenant_id = r.tenant_id
+      WHERE r.tenant_id = $1
+        AND r.status IN ('reservado','em_andamento','atrasado')
+        AND (
+          (r.start_date IS NOT NULL AND r.start_date >= $2 AND r.start_date <= $3)
+          OR
+          (r.end_date IS NOT NULL AND r.end_date >= $2 AND r.end_date <= $3)
+        )`,
+    [tenant_id, t, ate], []);
+
+  const movimentos = [];
+  for (const r of rows) {
+    const veiculo = [r.vehicle_plate, [r.brand, r.model].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+    const inicio = iso(r.start_date);
+    const fim = iso(r.end_date);
+
+    if (inicio && inicio >= t && inicio <= ate) {
+      movimentos.push({
+        tipo: r.status === 'reservado' ? 'reserva' : 'retirada',
+        data: inicio, rental_id: r.id, rental_number: r.rental_number,
+        cliente: r.client_name || 'Cliente', veiculo: veiculo || 'Veículo', status: r.status,
+        hoje: inicio === t,
+      });
+    }
+    if (fim && fim >= t && fim <= ate) {
+      movimentos.push({
+        tipo: 'devolucao',
+        data: fim, rental_id: r.id, rental_number: r.rental_number,
+        cliente: r.client_name || 'Cliente', veiculo: veiculo || 'Veículo', status: r.status,
+        hoje: fim === t,
+      });
+    }
+  }
+
+  // Eventos manuais da agenda no mesmo intervalo entram no mesmo feed.
+  const eventos = await q(
+    `SELECT id, title, event_date, type, status FROM calendar_events
+      WHERE tenant_id = $1 AND event_date >= $2 AND event_date <= $3
+        AND status NOT IN ('cancelado','concluido')`,
+    [tenant_id, t, ate], []);
+  for (const e of eventos) {
+    movimentos.push({
+      tipo: 'evento', data: iso(e.event_date), event_id: e.id,
+      cliente: e.title || 'Compromisso', veiculo: '', status: e.status, hoje: iso(e.event_date) === t,
+    });
+  }
+
+  const ORDEM_TIPO = { devolucao: 0, retirada: 1, reserva: 2, evento: 3 };
+  movimentos.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : ORDEM_TIPO[a.tipo] - ORDEM_TIPO[b.tipo]));
+
+  return {
+    de: t, ate,
+    total: movimentos.length,
+    hoje: movimentos.filter((m) => m.hoje).length,
+    movimentos: movimentos.slice(0, Math.max(parseInt(limit, 10) || 12, 1)),
+  };
+};
+
+module.exports = {
+  overview, dashboardSeries, alerts, upcomingMovements,
+  revenue, rentalsReport, fleetUtilization, resolvePeriod,
+};

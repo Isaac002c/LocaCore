@@ -5,6 +5,7 @@ import {
   getAutomationStatus, getSettings, updateSettings, getRuns,
   runBilling, runDunning, runOutbox, runFiscalBatch,
   getMessages, retryMessage, getFiscalDocs, retryFiscal, getCosts,
+  getConsole, getDeadLetter, cancelDeadLetter, manualDeadLetter,
 } from '../lib/automationsAPI';
 import { MetricCard, PageHead, EmptyState } from '../components/ui';
 import { fmtMoney, fmtDate } from './shared';
@@ -13,11 +14,32 @@ import { PageLoading, InlineError } from '../components/states';
 const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const TABS = [
   { key: 'painel', label: 'Painel' },
-  { key: 'config', label: 'Configurações' },
+  { key: 'execucoes', label: 'Execuções' },
   { key: 'mensagens', label: 'Mensagens' },
+  { key: 'deadletter', label: 'Dead-letter' },
   { key: 'fiscal', label: 'Notas Fiscais' },
   { key: 'custos', label: 'Custos' },
+  { key: 'config', label: 'Configurações' },
 ];
+
+// Intervalo declarado do job -> texto legível ("a cada 5 min").
+const fmtIntervalo = (ms) => {
+  const min = Math.round((Number(ms) || 0) / 60000);
+  if (min < 60) return `a cada ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 24 ? `a cada ${h}h` : `a cada ${Math.round(h / 24)}d`;
+};
+const fmtDataHora = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+};
+const fmtDuracao = (ini, fim) => {
+  if (!ini || !fim) return '—';
+  const ms = new Date(fim).getTime() - new Date(ini).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+};
 const fmtCost = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(Number(v) || 0);
 
 export default function Automacoes() {
@@ -34,15 +56,31 @@ export default function Automacoes() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [msgFilter, setMsgFilter] = useState('');
+  const [consoleData, setConsoleData] = useState(null);
+  const [dead, setDead] = useState([]);
 
   useEffect(() => { loadPanel(); }, []);
 
   const loadPanel = async () => {
     try {
       setLoading(true); setError(null);
-      const [s, r] = await Promise.all([getAutomationStatus(), getRuns().catch(() => [])]);
-      setStatus(s); setSettings(s.settings); setRuns(r);
+      // O console traz tudo numa chamada; o status legado fica de reserva.
+      const [c, s, r] = await Promise.all([
+        getConsole().catch(() => null),
+        getAutomationStatus(),
+        getRuns().catch(() => []),
+      ]);
+      setConsoleData(c); setStatus(s); setSettings(c?.settings || s.settings); setRuns(c?.ultimas_execucoes || r);
+      if (c?.fiscal_validation) setValidation(c.fiscal_validation);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+  const loadDead = async () => {
+    try { setError(null); setDead((await getDeadLetter({ limit: 100 })) || []); }
+    catch (err) { setError(err.message); }
+  };
+  const acaoDead = async (fn, id, msg) => {
+    try { setNotice(null); setError(null); await fn(id); setNotice(msg); await loadDead(); await loadPanel(); }
+    catch (err) { setError(err.message); }
   };
   const loadConfig = async () => {
     try { const d = await getSettings(); setSettings(d.settings); setValidation(d.fiscal_validation); } catch (err) { setError(err.message); }
@@ -58,6 +96,8 @@ export default function Automacoes() {
     if (k === 'fiscal') loadFiscal();
     if (k === 'custos') loadCosts();
     if (k === 'painel') loadPanel();
+    if (k === 'execucoes') loadPanel();
+    if (k === 'deadletter') loadDead();
   };
 
   const doRun = async (fn, label) => {
@@ -87,32 +127,173 @@ export default function Automacoes() {
       <InlineError message={error} onDismiss={() => setError(null)} onRetry={loadPanel} />
       {notice && <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between', wordBreak: 'break-word' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
 
-      {/* ── PAINEL ─────────────────────────────────────────────── */}
-      {tab === 'painel' && status && (
+      {/* ── PAINEL: console operacional (§8) ────────────────────── */}
+      {tab === 'painel' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
-            <MetricCard title="Mensagens pendentes" value={status.messages.pending} />
-            <MetricCard title="Enviadas" value={status.messages.sent} />
-            <MetricCard title="Falhas" value={status.messages.failed} direction="down" />
-            <MetricCard title="Custo externo (total)" value={fmtCost(status.cost?.total)} subtitle="WhatsApp + fiscal" />
+          {/* Serviços: worker e scheduler estão vivos? */}
+          <div className="nx-section-label">Serviços</div>
+          <div className="nx-kpi-grid nx-kpi-grid--4">
+            <MetricCard
+              title="Worker"
+              value={consoleData?.servicos?.worker?.ativo ? 'Ativo' : 'Parado'}
+              direction={consoleData?.servicos?.worker?.ativo ? undefined : 'down'}
+              subtitle={consoleData?.servicos?.worker?.age_seconds != null
+                ? `heartbeat há ${consoleData.servicos.worker.age_seconds}s` : 'sem heartbeat'}
+              tooltip="Processa a fila de mensagens"
+            />
+            <MetricCard
+              title="Scheduler"
+              value={consoleData?.servicos?.scheduler?.ativo ? 'Ativo' : 'Parado'}
+              direction={consoleData?.servicos?.scheduler?.ativo ? undefined : 'down'}
+              subtitle={consoleData?.servicos?.scheduler?.age_seconds != null
+                ? `heartbeat há ${consoleData.servicos.scheduler.age_seconds}s` : 'sem heartbeat'}
+              tooltip="Dispara os jobs no horário"
+            />
+            <MetricCard
+              title="Fila pendente"
+              value={consoleData?.fila?.pendentes ?? status?.messages?.pending ?? 0}
+              subtitle={`${consoleData?.fila?.processando ?? 0} processando`}
+              tooltip="Mensagens aguardando envio"
+            />
+            <MetricCard
+              title="Dead-letter"
+              value={consoleData?.fila?.dead_letter ?? 0}
+              direction={consoleData?.fila?.dead_letter ? 'down' : undefined}
+              subtitle="Esgotaram as tentativas"
+              onClick={() => onTab('deadletter')}
+              tooltip="Exigem ação humana"
+            />
           </div>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+          {/* Fila detalhada */}
+          <div className="nx-section-label">Fila de mensagens</div>
+          <div className="nx-kpi-grid">
+            <MetricCard title="Concluídas" value={consoleData?.fila?.concluidas ?? 0} subtitle="Enviadas + entregues" />
+            <MetricCard title="Falhas (com retry)" value={consoleData?.fila?.falhas ?? 0} direction={consoleData?.fila?.falhas ? 'down' : undefined} subtitle="Ainda serão reprocessadas" />
+            <MetricCard title="Retries acumulados" value={consoleData?.fila?.retries ?? 0} subtitle="Reentregas totais" tooltip="Mede a instabilidade do provedor" />
+            <MetricCard title="Bloqueadas" value={consoleData?.fila?.bloqueadas ?? 0} subtitle="Fora da janela ou desativadas" />
+          </div>
+
+          {/* Cobrança, conciliação e fiscal */}
+          <div className="nx-section-label">Cobrança e fiscal</div>
+          <div className="nx-kpi-grid">
+            <MetricCard title="Cobranças criadas" value={consoleData?.contadores?.cobrancas_criadas ?? 0} />
+            <MetricCard title="Pagamentos conciliados" value={consoleData?.contadores?.pagamentos_conciliados ?? 0} subtitle="Confirmados pelo provedor" />
+            <MetricCard title="Fiscais pendentes" value={consoleData?.contadores?.fiscais_pendentes ?? 0} subtitle="Aguardando emissão" onClick={() => onTab('fiscal')} />
+            <MetricCard title="Fiscais com erro" value={consoleData?.contadores?.fiscais_erro ?? 0} direction={consoleData?.contadores?.fiscais_erro ? 'down' : undefined} onClick={() => onTab('fiscal')} />
+            <MetricCard title="Custo do período" value={fmtCost(consoleData?.custos?.total ?? status?.cost?.total)} subtitle="WhatsApp + fiscal" onClick={() => onTab('custos')} />
+          </div>
+
+          {/* Jobs do scheduler */}
+          <div className="nx-section-label">Jobs agendados</div>
+          <div className="clients-table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Job</th><th>Intervalo</th><th>Última execução</th><th>Status</th><th>Próxima (estimada)</th></tr></thead>
+              <tbody>
+                {(consoleData?.jobs || []).length === 0 ? (
+                  <tr><td colSpan="5"><EmptyState small title="Sem jobs" description="O scheduler não reportou jobs." /></td></tr>
+                ) : consoleData.jobs.map((j) => (
+                  <tr key={j.name}>
+                    <td><strong style={{ color: 'var(--text-primary)' }}>{j.label}</strong><span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · {j.name}</span></td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{fmtIntervalo(j.every_ms)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDataHora(j.ultima_execucao)}</td>
+                    <td>{j.ultimo_status || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtDataHora(j.proxima_execucao)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0' }}>
             <button className="btn-primary" disabled={busy} onClick={() => doRun(runBilling, 'Cobrança semanal')}>Executar cobrança semanal</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runOutbox, 'Processar fila')}>Processar mensagens</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runDunning, 'Régua')}>Rodar inadimplência</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runFiscalBatch, 'Lote fiscal')}>Lote fiscal</button>
+            <button className="btn-secondary" disabled={loading} onClick={loadPanel}>{loading ? 'Atualizando...' : 'Atualizar'}</button>
           </div>
+        </div>
+      )}
 
-          <div className="nx-form-section">
-            <div className="nx-form-section-title">Últimas execuções</div>
-            {runs.length === 0 ? <EmptyState small title="Sem execuções" description="Dispare uma cobrança ou aguarde o agendamento." /> : (
-              <table className="data-table"><thead><tr><th>Tipo</th><th>Período</th><th>Status</th><th>Locações</th><th>Cobranças</th><th>Mensagens</th><th>Início</th></tr></thead>
-                <tbody>{runs.map((r) => (
-                  <tr key={r.id}><td>{r.run_type}</td><td>{fmtDate(r.period_start)}–{fmtDate(r.period_end)}</td><td>{r.status}</td><td>{r.rentals_processed}</td><td>{r.charges_created}</td><td>{r.messages_enqueued}</td><td>{fmtDate(r.started_at)}</td></tr>
-                ))}</tbody>
-              </table>
-            )}
+      {/* ── EXECUÇÕES ──────────────────────────────────────────── */}
+      {tab === 'execucoes' && (
+        <div>
+          <p className="nx-cfg-hint">Cada execução do scheduler, com duração, registros processados e resultado.</p>
+          <div className="clients-table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Job</th><th>Período</th><th>Início</th><th>Término</th><th>Duração</th><th>Locações</th><th>Cobranças</th><th>Mensagens</th><th>Status</th></tr></thead>
+              <tbody>
+                {runs.length === 0 ? (
+                  <tr><td colSpan="9"><EmptyState
+                    title="Nenhuma execução registrada"
+                    description="O scheduler grava aqui cada rodada de cobrança, régua, fila e fiscal. Dispare uma execução manual no Painel ou aguarde o horário agendado."
+                  /></td></tr>
+                ) : runs.map((r) => (
+                  <tr key={r.id}>
+                    <td><strong style={{ color: 'var(--text-primary)' }}>{r.run_type}</strong></td>
+                    <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtDate(r.period_start)}–{fmtDate(r.period_end)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDataHora(r.started_at)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDataHora(r.finished_at)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDuracao(r.started_at, r.finished_at)}</td>
+                    <td>{r.rentals_processed ?? 0}</td>
+                    <td>{r.charges_created ?? 0}</td>
+                    <td>{r.messages_enqueued ?? 0}</td>
+                    <td>
+                      <span className="client-status-badge" style={(r.status === 'success' || r.status === 'ok')
+                        ? { background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: 'var(--success)' }
+                        : (r.status === 'error' || r.status === 'failed')
+                          ? { background: 'color-mix(in srgb, var(--danger) 16%, transparent)', color: 'var(--danger)' }
+                          : { background: 'var(--surface-secondary)', color: 'var(--text-secondary)' }}>
+                        {r.status}
+                      </span>
+                      {r.details?.error && <div style={{ fontSize: 11.5, color: 'var(--danger)', marginTop: 3 }}>{String(r.details.error).slice(0, 90)}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── DEAD-LETTER ────────────────────────────────────────── */}
+      {tab === 'deadletter' && (
+        <div>
+          <p className="nx-cfg-hint">
+            Mensagens que esgotaram as tentativas automáticas. Elas <strong>não</strong> voltam sozinhas —
+            exigem decisão de alguém. O telefone aparece mascarado e nenhum token ou assinatura é exibido.
+          </p>
+          <div className="clients-table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Template</th><th>Destino</th><th>Tentativas</th><th>Provedor</th><th>Erro</th><th>Última tentativa</th><th style={{ width: 260 }}>Ações</th></tr></thead>
+              <tbody>
+                {dead.length === 0 ? (
+                  <tr><td colSpan="7"><EmptyState
+                    title="Nenhuma mensagem em dead-letter"
+                    description="Tudo que entrou na fila foi entregue ou ainda está sendo reprocessado automaticamente."
+                  /></td></tr>
+                ) : dead.map((m) => (
+                  <tr key={m.id}>
+                    <td><strong style={{ color: 'var(--text-primary)' }}>{m.template_kind}</strong></td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{m.to_number || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{m.attempts}/{m.max_attempts}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{m.provider || '—'}</td>
+                    <td style={{ color: 'var(--danger)', fontSize: 12, maxWidth: 280 }}>{m.error || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDataHora(m.updated_at || m.created_at)}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }}
+                          onClick={() => acaoDead(retryMessage, m.id, 'Mensagem recolocada na fila.')}>Reprocessar</button>
+                        <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }}
+                          onClick={() => acaoDead(manualDeadLetter, m.id, 'Encaminhada para atendimento manual.')}>Atendimento manual</button>
+                        <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }}
+                          onClick={() => acaoDead(cancelDeadLetter, m.id, 'Mensagem cancelada.')}>Cancelar</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

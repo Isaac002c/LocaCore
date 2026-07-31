@@ -33,6 +33,22 @@ router.get('/overview', checkPermission('reports:read'), async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// GET /api/reports/alerts — alertas operacionais ordenados por prioridade.
+// Itens zerados não entram na resposta (§5).
+router.get('/alerts', checkPermission('reports:read'), async (req, res) => {
+  try {
+    res.json({ success: true, data: await reports.alerts(req.tenantId) });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// GET /api/reports/upcoming?days=&limit= — próximos movimentos da operação.
+router.get('/upcoming', checkPermission('reports:read'), async (req, res) => {
+  try {
+    const data = await reports.upcomingMovements(req.tenantId, { days: req.query.days, limit: req.query.limit });
+    res.json({ success: true, data });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 // GET /api/reports/dashboard-series?from=&to= — séries dos gráficos do Painel.
 router.get('/dashboard-series', checkPermission('reports:read'), async (req, res) => {
   try {

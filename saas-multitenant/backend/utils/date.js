@@ -13,11 +13,26 @@
 // Usa getters LOCAIS (não toISOString) para não deslocar o dia por fuso.
 // =============================================================================
 
-/** DATE → 'YYYY-MM-DD' (string vazia quando não há valor). */
+/**
+ * DATE → 'YYYY-MM-DD' (string vazia quando não há valor).
+ *
+ * Os dois drivers discordam ao materializar uma coluna DATE:
+ *   · node-postgres  → Date à MEIA-NOITE LOCAL  (new Date(2026, 6, 30));
+ *   · pg-mem         → Date à MEIA-NOITE UTC    (2026-07-30T00:00:00.000Z).
+ *
+ * Ler sempre com getters locais erra no pg-mem (em UTC-3 volta um dia); ler
+ * sempre em UTC erra no driver real (adianta um dia em fusos positivos). Por
+ * isso detectamos o caso "data pura em UTC" e só nele usamos os getters UTC.
+ */
 const toISODate = (v) => {
   if (v === '' || v === undefined || v === null) return '';
   if (v instanceof Date) {
     if (Number.isNaN(v.getTime())) return '';
+    const meiaNoiteUTC = v.getUTCHours() === 0 && v.getUTCMinutes() === 0
+      && v.getUTCSeconds() === 0 && v.getUTCMilliseconds() === 0;
+    if (meiaNoiteUTC) {
+      return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, '0')}-${String(v.getUTCDate()).padStart(2, '0')}`;
+    }
     return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
   }
   return String(v).substring(0, 10);

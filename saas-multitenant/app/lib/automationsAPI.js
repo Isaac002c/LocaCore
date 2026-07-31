@@ -32,3 +32,24 @@ export const getCosts = async () => (await apiRequest(`${BASE}/costs`)).data;
 
 export const getTemplates = async () => (await apiRequest(`${BASE}/templates`)).data;
 export const saveTemplate = async (t) => (await apiRequest(`${BASE}/templates`, { method: 'PUT', body: t })).data;
+
+// ── Console operacional (§8) ────────────────────────────────────────────────
+// Uma chamada com worker, scheduler, jobs, fila, dead-letter, retries,
+// cobranças, pagamentos conciliados, fiscais e custos.
+export const getConsole = async ({ from = '', to = '' } = {}) => {
+  const qs = new URLSearchParams();
+  if (from) qs.set('from', from);
+  if (to) qs.set('to', to);
+  const s = qs.toString();
+  return (await apiRequest(`${BASE}/console${s ? `?${s}` : ''}`)).data;
+};
+
+// Mensagens que esgotaram as tentativas (payload já sanitizado pelo backend).
+export const getDeadLetter = async ({ limit = 100 } = {}) =>
+  (await apiRequest(`${BASE}/dead-letter?limit=${limit}`)).data;
+
+export const cancelDeadLetter = async (id, reason) =>
+  (await apiRequest(`${BASE}/dead-letter/${id}/cancel`, { method: 'POST', body: { reason } })).data;
+
+export const manualDeadLetter = async (id, reason) =>
+  (await apiRequest(`${BASE}/dead-letter/${id}/manual`, { method: 'POST', body: { reason } })).data;

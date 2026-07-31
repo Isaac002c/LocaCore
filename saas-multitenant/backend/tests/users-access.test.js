@@ -25,6 +25,10 @@ before(async () => {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT NOT NULL,
       name TEXT, email TEXT, password_hash TEXT, role TEXT DEFAULT 'viewer',
       is_active BOOLEAN DEFAULT TRUE, sessions_valid_after TIMESTAMPTZ,
+      -- Colunas do ciclo 6 (conta protegida do fornecedor + higiene de senha).
+      is_protected BOOLEAN NOT NULL DEFAULT FALSE,
+      must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
+      last_login_at TIMESTAMPTZ, password_changed_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);

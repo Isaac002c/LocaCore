@@ -294,6 +294,104 @@ const registerWebhookEvent = async ({ tenant_id, provider, kind, external_event_
   return res.created; // TRUE = novo; FALSE = já processado
 };
 
+
+// =============================================================================
+// CONSOLE OPERACIONAL (§8) — números da fila, dead-letter e retries.
+//
+// "Dead-letter" = mensagem que ESGOTOU as tentativas (attempts >= max_attempts)
+// ou foi marcada como `dead`. Ela não é reprocessada sozinha: exige ação humana.
+// =============================================================================
+
+// Contagem da fila por estado, num único SELECT por estado (compatível com
+// pg-mem: sem FILTER, sem CASE agregado).
+const outboxCounters = async (tenant_id) => {
+  const um = async (sql, params) => {
+    try { const r = await pool.query(sql, params); return Number(r.rows[0]?.n) || 0; }
+    catch (_) { return 0; }
+  };
+  const base = 'SELECT COUNT(*)::int AS n FROM message_outbox WHERE tenant_id=$1';
+  const [pendentes, processando, enviadas, entregues, falhas, bloqueadas, dead, retries] = await Promise.all([
+    um(`${base} AND status='pending'`, [tenant_id]),
+    um(`${base} AND status='processing'`, [tenant_id]),
+    um(`${base} AND status='sent'`, [tenant_id]),
+    um(`${base} AND status='delivered'`, [tenant_id]),
+    um(`${base} AND status='failed' AND attempts < max_attempts`, [tenant_id]),
+    um(`${base} AND status='skipped'`, [tenant_id]),
+    um(`${base} AND (status='dead' OR (status='failed' AND attempts >= max_attempts))`, [tenant_id]),
+    // Total de reentregas acumuladas (mede o quanto o provedor está instável).
+    (async () => {
+      try {
+        const r = await pool.query('SELECT COALESCE(SUM(attempts),0)::int AS n FROM message_outbox WHERE tenant_id=$1 AND attempts > 0', [tenant_id]);
+        return Number(r.rows[0]?.n) || 0;
+      } catch (_) { return 0; }
+    })(),
+  ]);
+  return {
+    pendentes, processando, enviadas, entregues,
+    falhas, bloqueadas, dead_letter: dead, retries,
+    concluidas: enviadas + entregues,
+  };
+};
+
+// Mensagens que exigem ação humana (dead-letter), com o erro e o contexto.
+const listDeadLetter = async (tenant_id, { limit = 100 } = {}) => {
+  try {
+    const r = await pool.query(
+      `SELECT o.id, o.template_kind, o.to_number, o.status, o.attempts, o.max_attempts,
+              o.provider, o.error, o.created_at, o.updated_at, o.next_attempt_at,
+              o.charge_id, o.rental_id, o.client_id
+         FROM message_outbox o
+        WHERE o.tenant_id = $1
+          AND (o.status = 'dead' OR (o.status = 'failed' AND o.attempts >= o.max_attempts))
+        ORDER BY o.updated_at DESC NULLS LAST, o.created_at DESC
+        LIMIT $2`,
+      [tenant_id, Math.min(limit, 500)],
+    );
+    return r.rows;
+  } catch (_) { return []; }
+};
+
+// Contadores de cobrança/pagamento/fiscal para o painel.
+const consoleCounters = async (tenant_id) => {
+  const um = async (sql, params) => {
+    try { const r = await pool.query(sql, params); return Number(r.rows[0]?.n) || 0; }
+    catch (_) { return 0; }
+  };
+  const [cobrancasCriadas, cobrancasPagas, fiscaisPendentes, fiscaisEmitidos, fiscaisErro] = await Promise.all([
+    um('SELECT COUNT(*)::int AS n FROM charges WHERE tenant_id=$1', [tenant_id]),
+    um(`SELECT COUNT(*)::int AS n FROM charges WHERE tenant_id=$1 AND status IN ('paid','received','confirmed')`, [tenant_id]),
+    um(`SELECT COUNT(*)::int AS n FROM fiscal_documents WHERE tenant_id=$1 AND status IN ('pending','pending_configuration','processing')`, [tenant_id]),
+    um(`SELECT COUNT(*)::int AS n FROM fiscal_documents WHERE tenant_id=$1 AND status IN ('issued','authorized')`, [tenant_id]),
+    um(`SELECT COUNT(*)::int AS n FROM fiscal_documents WHERE tenant_id=$1 AND status='error'`, [tenant_id]),
+  ]);
+  return {
+    cobrancas_criadas: cobrancasCriadas,
+    pagamentos_conciliados: cobrancasPagas,
+    fiscais_pendentes: fiscaisPendentes,
+    fiscais_emitidos: fiscaisEmitidos,
+    fiscais_erro: fiscaisErro,
+  };
+};
+
+// Heartbeat de worker/scheduler + o que cada um registrou por último.
+const serviceHeartbeats = async () => {
+  try {
+    const r = await pool.query("SELECT service, last_beat, meta FROM system_heartbeats WHERE service IN ('worker','scheduler')");
+    const out = {};
+    for (const row of r.rows) {
+      const idade = row.last_beat ? Math.round((Date.now() - new Date(row.last_beat).getTime()) / 1000) : null;
+      out[row.service] = {
+        last_beat: row.last_beat,
+        age_seconds: idade,
+        // 180s é a mesma janela usada pelo /health/ready.
+        ativo: idade !== null && idade < 180,
+        meta: row.meta || {},
+      };
+    }
+    return out;
+  } catch (_) { return {}; }
+};
+
 module.exports = {
   getSettings, ensureSettings, updateSettings,
   listTemplates, getActiveTemplate, upsertTemplate, ensureDefaultTemplates,
@@ -301,6 +399,7 @@ module.exports = {
   insertOutbox, claimPendingOutbox, updateOutbox, cancelRemindersForCharge, countRemindersForCharge, listOutbox, getOutboxByExternal,
   getFiscalByIdemp, insertFiscal, updateFiscal, listFiscal,
   startRun, finishRun, listRuns,
+  outboxCounters, listDeadLetter, consoleCounters, serviceHeartbeats,
   recordCost, costReport,
   registerWebhookEvent,
 };

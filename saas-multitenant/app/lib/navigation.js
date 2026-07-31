@@ -56,6 +56,8 @@ export const NAV_ITEMS = {
       title: 'Usuários',    subtitle: 'Acessos, perfis e permissões da equipe.' },
     { key: 'history',     tab: 'history',     label: 'Histórico',   icon: 'Clock',    roles: ['admin'],
       title: 'Histórico',   subtitle: 'Registro completo de atividades e alterações.' },
+    { key: 'configuracoes', tab: 'configuracoes', label: 'Configurações', icon: 'Settings', roles: ['admin'],
+      title: 'Configurações', subtitle: 'Empresa, equipe, catálogos, contratos, financeiro e integrações.' },
   ],
 
   // ── Despachantes (operação: processos, clientes, agenda, leads) ──────────

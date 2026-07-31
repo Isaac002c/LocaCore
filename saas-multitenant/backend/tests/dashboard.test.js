@@ -33,13 +33,13 @@ before(async () => {
     CREATE TABLE vehicles ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, plate TEXT, brand TEXT, model TEXT, status TEXT DEFAULT 'disponivel' );
     CREATE TABLE clients ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, name TEXT );
     CREATE TABLE rentals ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, rental_number TEXT, client_id UUID, vehicle_id UUID, status TEXT DEFAULT 'em_andamento', start_date DATE, end_date DATE, total_amount NUMERIC(15,2) DEFAULT 0, deposit_amount NUMERIC(15,2) DEFAULT 0 );
-    CREATE TABLE rental_fines ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, total_amount NUMERIC(15,2) DEFAULT 0, status TEXT DEFAULT 'identificada' );
+    CREATE TABLE rental_fines ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, total_amount NUMERIC(15,2) DEFAULT 0, status TEXT DEFAULT 'identificada', due_date DATE );
     CREATE TABLE inventory_items ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, active BOOLEAN DEFAULT TRUE, quantity NUMERIC(15,3) DEFAULT 0, min_quantity NUMERIC(15,3) DEFAULT 0 );
     CREATE TABLE service_billings ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, client_id UUID, rental_id UUID, description TEXT, final_amount NUMERIC(15,2) DEFAULT 0, paid_amount NUMERIC(15,2) DEFAULT 0, due_date DATE, financial_status TEXT DEFAULT 'faturado', created_at TIMESTAMPTZ DEFAULT NOW() );
     CREATE TABLE vehicle_maintenances ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, vehicle_id UUID, status TEXT DEFAULT 'agendada', scheduled_date DATE );
-    CREATE TABLE message_outbox ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, status TEXT DEFAULT 'pending' );
+    CREATE TABLE message_outbox ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, status TEXT DEFAULT 'pending', attempts INT DEFAULT 0, max_attempts INT DEFAULT 5 );
     CREATE TABLE fiscal_documents ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, status TEXT DEFAULT 'pending_configuration' );
-    CREATE TABLE calendar_events ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, event_date DATE, status TEXT DEFAULT 'agendado' );
+    CREATE TABLE calendar_events ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, title TEXT, type TEXT DEFAULT 'outro', event_date DATE, status TEXT DEFAULT 'agendado' );
   `);
   pool = new (db.adapters.createPg().Pool)();
   const dbId = require.resolve('../config/db');
@@ -85,7 +85,7 @@ before(async () => {
   await pool.query(`INSERT INTO vehicle_maintenances (tenant_id,vehicle_id,status,scheduled_date) VALUES ($1,$2,'agendada',$3)`, [T, alugado.id, shift(-4)]);
   await pool.query(`INSERT INTO message_outbox (tenant_id,status) VALUES ($1,'failed'),($1,'dead'),($1,'pending'),($1,'sent')`, [T]);
   await pool.query(`INSERT INTO fiscal_documents (tenant_id,status) VALUES ($1,'pending_configuration'),($1,'issued')`, [T]);
-  await pool.query(`INSERT INTO calendar_events (tenant_id,event_date,status) VALUES ($1,$2,'agendado')`, [T, hoje()]);
+  await pool.query(`INSERT INTO calendar_events (tenant_id,title,type,event_date,status) VALUES ($1,'Vistoria do Argo','vistoria',$2,'agendado')`, [T, hoje()]);
 
   // ── Ruído de OUTRO tenant (não pode vazar em nenhum indicador) ────────────
   await pool.query(`INSERT INTO vehicles (tenant_id,plate,status) VALUES ($1,'ZZZ9Z99','alugado')`, [OUTRO]);
@@ -245,4 +245,140 @@ test('séries: isolamento por tenant', async () => {
   const s = await reports.dashboardSeries(OUTRO);
   assert.equal(s.ocupacao_frota.reduce((a, x) => a + x.total, 0), 1);
   assert.equal(s.receita_por_veiculo.length, 0, 'o faturamento do outro tenant não tem veículo vinculado');
+});
+
+// =============================================================================
+// ALERTAS OPERACIONAIS (§5) — lista priorizada. A regra de produto é que
+// alerta ZERADO não ocupa espaço: o backend simplesmente não o devolve.
+// =============================================================================
+test('alertas: só retorna o que exige ação (zerados não entram)', async () => {
+  const a = await reports.alerts(T);
+  const chaves = a.alertas.map((x) => x.key);
+  assert.ok(a.alertas.length > 0, 'o tenant de teste tem pendências');
+  for (const alerta of a.alertas) {
+    assert.ok(alerta.total > 0, `alerta "${alerta.key}" veio com total ${alerta.total}`);
+  }
+  // Não há veículo bloqueado em locação neste cenário → não pode aparecer.
+  assert.ok(!chaves.includes('veiculo_bloqueado_alocado'), 'alerta sem ocorrência não deve vir');
+});
+
+test('alertas: ordenados por severidade (crítico antes de atenção antes de info)', async () => {
+  const a = await reports.alerts(T);
+  const peso = { critico: 0, atencao: 1, info: 2 };
+  const pesos = a.alertas.map((x) => peso[x.severidade]);
+  const ordenado = [...pesos].sort((x, y) => x - y);
+  assert.deepEqual(pesos, ordenado, 'a lista precisa vir ordenada por prioridade');
+});
+
+test('alertas: detecta locação atrasada, manutenção vencida e pagamento vencido', async () => {
+  const a = await reports.alerts(T);
+  const byKey = Object.fromEntries(a.alertas.map((x) => [x.key, x]));
+  assert.equal(byKey.locacoes_atrasadas?.total, 1);
+  assert.equal(byKey.locacoes_atrasadas?.severidade, 'critico');
+  assert.equal(byKey.manutencoes_vencidas?.total, 1);
+  assert.equal(byKey.pagamentos_vencidos?.total, 1);
+  assert.ok(a.resumo.critico >= 3);
+});
+
+test('alertas: cada item leva para a tela correspondente', async () => {
+  const a = await reports.alerts(T);
+  const telasValidas = ['locacoes', 'frota', 'manutencoes', 'multas', 'estoque', 'agenda', 'relatorios', 'automacoes'];
+  for (const alerta of a.alertas) {
+    assert.ok(telasValidas.includes(alerta.tab), `alerta "${alerta.key}" aponta para tela inválida: ${alerta.tab}`);
+    assert.ok(alerta.titulo && alerta.descricao, `alerta "${alerta.key}" sem texto`);
+    assert.ok(['critico', 'atencao', 'info'].includes(alerta.severidade));
+  }
+});
+
+test('alertas: tenant sem pendências devolve "operação em dia"', async () => {
+  const a = await reports.alerts('tenant-sem-nada');
+  assert.deepEqual(a.alertas, []);
+  assert.equal(a.resumo.total, 0);
+  assert.equal(a.operacao_em_dia, true);
+});
+
+test('alertas: informativo não impede "operação em dia"', async () => {
+  // operacao_em_dia considera só crítico/atenção — uma retirada programada
+  // é informação, não pendência.
+  const a = await reports.alerts(T);
+  const soInfo = a.alertas.every((x) => x.severidade === 'info');
+  assert.equal(a.operacao_em_dia, soInfo);
+});
+
+test('alertas: isolamento por tenant', async () => {
+  const a = await reports.alerts(OUTRO);
+  const byKey = Object.fromEntries(a.alertas.map((x) => [x.key, x]));
+  assert.equal(byKey.locacoes_atrasadas?.total, 1, 'o vizinho tem a própria locação atrasada');
+  assert.ok(!byKey.manutencoes_vencidas, 'não enxerga a manutenção vencida do tenant A');
+});
+
+// =============================================================================
+// PRÓXIMOS MOVIMENTOS (§3)
+// =============================================================================
+test('próximos movimentos: retiradas, devoluções e reservas em ordem cronológica', async () => {
+  const u = await reports.upcomingMovements(T, { days: 7 });
+  assert.ok(u.movimentos.length > 0);
+  const datas = u.movimentos.map((m) => m.data);
+  assert.deepEqual(datas, [...datas].sort(), 'movimentos precisam vir em ordem de data');
+  for (const m of u.movimentos) {
+    assert.match(m.data, /^\d{4}-\d{2}-\d{2}$/, `data inválida: ${m.data}`);
+    assert.ok(['retirada', 'devolucao', 'reserva', 'evento'].includes(m.tipo));
+    assert.ok(m.cliente, 'movimento sem cliente/título');
+  }
+});
+
+test('próximos movimentos: marca o que é de hoje', async () => {
+  const u = await reports.upcomingMovements(T, { days: 7 });
+  const deHoje = u.movimentos.filter((m) => m.hoje);
+  assert.equal(u.hoje, deHoje.length);
+  const hojeISO = new Date().toISOString().substring(0, 10);
+  for (const m of deHoje) assert.equal(m.data, hojeISO);
+});
+
+test('próximos movimentos: respeita a janela de dias e o limite', async () => {
+  const curto = await reports.upcomingMovements(T, { days: 1 });
+  const longo = await reports.upcomingMovements(T, { days: 30 });
+  assert.ok(curto.movimentos.length <= longo.movimentos.length, 'janela menor não pode trazer mais');
+  const limitado = await reports.upcomingMovements(T, { days: 30, limit: 1 });
+  assert.ok(limitado.movimentos.length <= 1);
+});
+
+test('próximos movimentos: tenant vazio devolve lista vazia sem quebrar', async () => {
+  const u = await reports.upcomingMovements('tenant-sem-nada');
+  assert.deepEqual(u.movimentos, []);
+  assert.equal(u.total, 0);
+  assert.equal(u.hoje, 0);
+});
+
+test('próximos movimentos: isolamento por tenant', async () => {
+  const u = await reports.upcomingMovements(OUTRO, { days: 30 });
+  for (const m of u.movimentos) {
+    assert.notEqual(m.rental_number, 'LOC-1', 'não pode vazar locação do tenant A');
+  }
+});
+
+test('próximos movimentos: eventos manuais da agenda entram no mesmo feed', async () => {
+  const u = await reports.upcomingMovements(T, { days: 7, limit: 50 });
+  const evento = u.movimentos.find((m) => m.tipo === 'evento');
+  assert.ok(evento, 'evento manual da agenda deve aparecer nos próximos movimentos');
+  assert.equal(evento.cliente, 'Vistoria do Argo', 'usa o título do evento');
+  assert.equal(evento.hoje, true);
+  assert.ok(evento.event_id, 'traz o id para abrir o registro');
+});
+
+test('regressão: "hoje" usa o fuso LOCAL, não UTC', () => {
+  // Em UTC-3, toISOString() vira o dia às 21h: uma devolução de hoje passaria a
+  // contar como amanhã no fim da tarde, e `iso()` (local) discordaria de
+  // `today()` (UTC) — foi o que fez o evento de hoje não ser marcado.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'models', 'reportModels.js'), 'utf8');
+  assert.match(src, /const today = \(\) => \{[\s\S]*?getFullYear\(\)/, 'today() precisa usar getters locais');
+  assert.doesNotMatch(src, /const today = \(\) => new Date\(\)\.toISOString\(\)/, 'today() não pode voltar a usar UTC');
+
+  // E o valor precisa bater com a data local de verdade.
+  const d = new Date();
+  const localHoje = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const periodo = reports.resolvePeriod({});
+  assert.equal(periodo.to, localHoje, 'o período padrão termina HOJE no fuso local');
 });

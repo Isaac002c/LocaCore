@@ -388,3 +388,227 @@
   .nx-barlist-row { grid-template-columns: minmax(70px, 40%) 1fr auto; }
   .nx-section-label { margin: 18px 0 8px; }
 }
+
+/* =============================================================================
+   PAINEL — hierarquia (§2–§5): grades fixas na primeira dobra, abas internas,
+   split conteúdo/lateral, feed de movimentos e alertas priorizados.
+   ============================================================================= */
+
+/* Primeira dobra: número FIXO de colunas, para os 4 KPIs terem o mesmo peso. */
+.nx-kpi-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.nx-kpi-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.nx-kpi-grid--4 .nx-kpi-value { font-size: 26px; }
+
+/* Abas internas do Painel */
+.nx-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin: 22px 0 18px;
+}
+.nx-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: transparent; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-secondary); cursor: pointer;
+  font-size: 13.5px; font-weight: 600; padding: 9px 14px;
+  margin-bottom: -1px; transition: color .15s, border-color .15s;
+}
+.nx-tab:hover { color: var(--text-primary); }
+.nx-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.nx-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); border-radius: 6px; }
+.nx-tab-badge {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* Conteúdo principal + lateral de alertas */
+.nx-split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.nx-split-main, .nx-split-side {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--nx-radius, 12px); padding: 16px 18px; min-width: 0;
+}
+.nx-block-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.nx-block-sub { font-size: 12.5px; color: var(--text-muted); margin: 2px 0 12px; }
+
+.nx-link-btn {
+  background: none; border: none; color: var(--primary); cursor: pointer;
+  font-size: 12.5px; font-weight: 600; padding: 10px 0 0; text-align: left;
+}
+.nx-link-btn:hover { text-decoration: underline; }
+
+/* Estado "sem pendências" */
+.nx-ok-state {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 4px; padding: 26px 12px; color: var(--text-secondary);
+}
+.nx-ok-state strong { color: var(--text-primary); font-size: 14px; margin-top: 6px; }
+.nx-ok-state span { font-size: 12.5px; }
+
+/* Alertas priorizados */
+.nx-alertas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.nx-alerta {
+  width: 100%; display: flex; align-items: stretch; gap: 10px; text-align: left;
+  background: var(--surface-secondary); border: 1px solid var(--border);
+  border-radius: 9px; padding: 9px 11px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.nx-alerta:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.nx-alerta:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.nx-alerta-marca { width: 3px; border-radius: 3px; flex-shrink: 0; }
+.nx-alerta-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nx-alerta-topo { display: flex; align-items: center; gap: 8px; }
+.nx-alerta-topo strong { font-size: 13px; color: var(--text-primary); font-weight: 600; }
+.nx-alerta-total {
+  min-width: 20px; padding: 0 6px; height: 18px; border-radius: 999px;
+  background: var(--surface-hover); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 11.5px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.nx-alerta-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.45; }
+.nx-alerta-sev { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; align-self: center; flex-shrink: 0; }
+.nx-alerta--critico { border-left: 0; }
+
+/* Feed de próximos movimentos */
+.nx-movimentos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.nx-movimentos li + li { border-top: 1px solid var(--border); }
+.nx-movimento {
+  width: 100%; display: grid; grid-template-columns: 54px 92px minmax(0, 1fr) auto;
+  align-items: center; gap: 10px; text-align: left;
+  background: transparent; border: none; padding: 10px 4px; cursor: pointer;
+  color: var(--text-secondary); font-size: 13px;
+}
+.nx-movimento:hover:not(:disabled) { background: var(--surface-hover); }
+.nx-movimento:disabled { cursor: default; }
+.nx-movimento:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); border-radius: 7px; }
+.nx-mov-data strong { font-size: 12.5px; color: var(--text-primary); }
+.nx-movimento.is-hoje .nx-mov-data strong { color: var(--primary); }
+.nx-mov-tipo { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+.nx-mov-info { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nx-mov-info strong { color: var(--text-primary); font-weight: 600; }
+.nx-mov-num { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .nx-split { grid-template-columns: 1fr; }
+  .nx-kpi-grid--4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .nx-kpi-grid--4, .nx-kpi-grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .nx-movimento { grid-template-columns: 48px minmax(0, 1fr); row-gap: 2px; }
+  .nx-mov-tipo, .nx-mov-num { grid-column: 2; }
+  .nx-tab { padding: 9px 10px; font-size: 13px; }
+}
+
+/* =============================================================================
+   CENTRAL DE CONFIGURAÇÕES (§7) — navegação lateral + painel da aba.
+   ============================================================================= */
+.nx-cfg-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+.nx-cfg-nav {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--nx-radius, 12px); padding: 8px;
+  position: sticky; top: 8px;
+}
+.nx-cfg-nav-item {
+  text-align: left; background: transparent; border: none; border-radius: 8px;
+  color: var(--text-secondary); cursor: pointer;
+  font-size: 13.5px; font-weight: 500; padding: 9px 11px; transition: background .15s, color .15s;
+}
+.nx-cfg-nav-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+.nx-cfg-nav-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.nx-cfg-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+
+.nx-cfg-painel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--nx-radius, 12px); padding: 20px 22px; min-width: 0;
+}
+.nx-cfg-form { max-width: 720px; }
+.nx-cfg-hint { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 14px; }
+.nx-cfg-form .form-group small.nx-cfg-hint { margin: 6px 0 0; display: block; }
+
+.nx-cfg-inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.nx-cfg-inline-form input { flex: 1 1 240px; }
+
+.nx-aviso-ok {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; margin-bottom: 14px; border-radius: 9px; font-size: 13.5px;
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 38%, transparent);
+  color: var(--text-primary);
+}
+
+.nx-check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 8px; }
+.nx-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-secondary); cursor: pointer; }
+.nx-check input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+/* ── Prontidão das integrações ────────────────────────────────────────────── */
+.nx-integracao {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 14px; background: var(--surface-secondary);
+}
+.nx-integracao-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.nx-integracao-head strong { display: block; font-size: 14px; color: var(--text-primary); }
+.nx-integracao-fim { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.nx-integracao-status {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  border: 1px solid; border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.nx-integracao-aviso {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+  border-left: 3px solid var(--warning); padding-left: 10px; margin-top: 10px;
+}
+
+.nx-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nx-checklist li { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; }
+.nx-checklist-marca { flex-shrink: 0; width: 16px; text-align: center; font-weight: 700; }
+.nx-checklist li.ok .nx-checklist-marca { color: var(--success); }
+.nx-checklist li.pendente .nx-checklist-marca { color: var(--text-muted); }
+.nx-checklist-corpo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.nx-checklist-label { color: var(--text-primary); }
+.nx-checklist li.pendente .nx-checklist-label { color: var(--text-secondary); }
+.nx-checklist-detalhe { font-size: 11.5px; color: var(--text-muted); }
+.nx-checklist-env { font-size: 11.5px; color: var(--warning); }
+.nx-checklist-env code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; }
+.nx-checklist-depende { font-size: 11.5px; color: var(--info); }
+
+@media (max-width: 900px) {
+  .nx-cfg-layout { grid-template-columns: 1fr; }
+  .nx-cfg-nav { position: static; flex-direction: row; overflow-x: auto; }
+  .nx-cfg-nav-item { white-space: nowrap; }
+}
+
+/* =============================================================================
+   TROCA OBRIGATÓRIA DE SENHA (§11) — bloqueia o sistema até a senha inicial
+   (entregue por mensagem, portanto exposta) ser substituída.
+   ============================================================================= */
+.nx-force-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: var(--background);
+}
+.nx-force-card {
+  width: 100%; max-width: 420px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 26px; box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+.nx-force-title { font-size: 21px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+.nx-force-sub { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 20px; }
+.nx-force-regras { font-size: 12.5px; color: var(--warning); margin: 0 0 12px; line-height: 1.5; }
+.nx-force-card .form-group { margin-bottom: 14px; }
+.nx-force-card .nx-field-error { font-size: 12px; color: var(--danger); margin-top: 5px; }
+
+/* Assentos de usuário e marcadores da tela de Usuários (§11) */
+.nx-seats {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--surface-secondary); border: 1px solid var(--border);
+  border-radius: 9px; padding: 9px 14px; margin-bottom: 14px;
+}
+.nx-seats-num { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+.nx-seats-txt { font-size: 12.5px; color: var(--text-secondary); }
+.nx-tag-suporte, .nx-tag-pendente {
+  display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+  vertical-align: middle;
+}
+.nx-tag-suporte { background: var(--primary-soft); color: var(--primary); }
+.nx-tag-pendente { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }

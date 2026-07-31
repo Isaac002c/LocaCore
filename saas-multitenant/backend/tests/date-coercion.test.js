@@ -123,12 +123,19 @@ test('regressão: relatório CSV, recibo e provedor de cobrança usam o helper',
   }
 });
 
-test('reportModels: agrupamento por dia não devolve "Wed Jul 29"', () => {
+test('reportModels usa o helper compartilhado (sem cópia local do iso)', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'models', 'reportModels.js'), 'utf8');
-  const m = src.match(/const iso = \(v\) => \{[\s\S]*?\n\};/);
-  assert.ok(m, 'reportModels deve ter o helper iso() tolerante a Date');
-  // eslint-disable-next-line no-new-func
-  const isoFn = new Function(`${m[0]}; return iso;`)();
-  assert.equal(isoFn(new Date(2026, 6, 29)), '2026-07-29');
-  assert.equal(isoFn('2026-07-29'), '2026-07-29');
+  assert.match(src, /toISODate: iso \} = require\('\.\.\/utils\/date'\)/, 'reportModels deve importar utils/date');
+  assert.doesNotMatch(src, /^const iso = \(v\) => \{/m, 'não pode manter uma cópia local do helper');
+});
+
+test('utils/date: normaliza DATE dos DOIS drivers (local no pg, UTC no pg-mem)', () => {
+  // node-postgres materializa DATE à meia-noite LOCAL.
+  assert.equal(toISODate(new Date(2026, 6, 30)), '2026-07-30');
+  // pg-mem materializa à meia-noite UTC: ler com getter local voltaria um dia
+  // em fusos negativos — era o bug do evento "de hoje" não ser marcado.
+  assert.equal(toISODate(new Date('2026-07-30T00:00:00.000Z')), '2026-07-30');
+  // Timestamp real (não é data pura) continua lido no fuso local.
+  assert.equal(toISODate(new Date(2026, 6, 30, 12, 0, 0)), '2026-07-30');
+  assert.equal(toISODate(new Date(2026, 0, 1, 0, 0, 0)), '2026-01-01', 'virada de ano local');
 });

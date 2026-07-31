@@ -18,6 +18,13 @@ export const getOverview = async ({ from = '', to = '' } = {}) =>
 export const getDashboardSeries = async ({ from = '', to = '' } = {}) =>
   (await apiRequest(`${BASE}/dashboard-series${qs({ from, to })}`)).data;
 
+// Alertas operacionais já ordenados por prioridade (itens zerados não vêm).
+export const getAlerts = async () => (await apiRequest(`${BASE}/alerts`)).data;
+
+// Retiradas, devoluções, reservas e compromissos dos próximos dias.
+export const getUpcoming = async ({ days = 7, limit = 12 } = {}) =>
+  (await apiRequest(`${BASE}/upcoming${qs({ days, limit })}`)).data;
+
 export const getRevenue = async ({ from = '', to = '' } = {}) =>
   (await apiRequest(`${BASE}/revenue${qs({ from, to })}`)).data;
 

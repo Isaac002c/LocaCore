@@ -7,10 +7,13 @@ const pool = require('../config/db');
 // READ - Listar usuários do tenant com informações de role
 const getUsersWithRoles = async (tenant_id) => {
   const result = await pool.query(
-    `SELECT id, name, email, role, COALESCE(is_active, true) as is_active, created_at, updated_at 
-     FROM users 
-     WHERE tenant_id = $1 
-     ORDER BY name`,
+    `SELECT id, name, email, role, COALESCE(is_active, true) AS is_active,
+            COALESCE(is_protected, FALSE) AS is_protected,
+            COALESCE(must_change_password, FALSE) AS must_change_password,
+            last_login_at, password_changed_at, created_at, updated_at
+       FROM users
+      WHERE tenant_id = $1
+      ORDER BY COALESCE(is_protected, FALSE) ASC, name`,
     [tenant_id]
   );
   return result.rows;
@@ -18,27 +21,36 @@ const getUsersWithRoles = async (tenant_id) => {
 
 // READ - Buscar usuário por ID
 const getUserById = async (id, tenant_id) => {
+  // is_protected acompanha o registro: as rotas decidem por ele se a conta pode
+  // ser editada/excluída pelo tenant (services/userSeats.js).
   const result = await pool.query(
-    `SELECT id, name, email, role, COALESCE(is_active, true) as is_active, created_at, updated_at 
-     FROM users 
-     WHERE id = $1 AND tenant_id = $2`,
+    `SELECT id, name, email, role, COALESCE(is_active, true) AS is_active,
+            COALESCE(is_protected, FALSE) AS is_protected,
+            COALESCE(must_change_password, FALSE) AS must_change_password,
+            last_login_at, password_changed_at, created_at, updated_at
+       FROM users
+      WHERE id = $1 AND tenant_id = $2`,
     [id, tenant_id]
   );
   return result.rows[0];
 };
 
 // CREATE - Criar novo usuário
-const createUser = async ({ 
-  tenant_id, name, email, password, role = 'viewer' 
+// A senha inicial é definida por um administrador e entregue por mensagem —
+// portanto nasce PROVISÓRIA (`must_change_password`): quem recebe é obrigado a
+// definir a própria antes de usar o sistema.
+const createUser = async ({
+  tenant_id, name, email, password, role = 'viewer', must_change_password = true,
 }) => {
   const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash(password, 10);
-  
+
   const result = await pool.query(
-    `INSERT INTO users (tenant_id, name, email, password_hash, role, is_active)
-     VALUES ($1, $2, $3, $4, $5, true)
-     RETURNING id, name, email, role, is_active, created_at`,
-    [tenant_id, name, email, hashedPassword, role]
+    `INSERT INTO users (tenant_id, name, email, password_hash, role, is_active,
+                        must_change_password, password_changed_at)
+     VALUES ($1, $2, $3, $4, $5, true, $6, NOW())
+     RETURNING id, name, email, role, is_active, must_change_password, created_at`,
+    [tenant_id, name, email, hashedPassword, role, !!must_change_password]
   );
   return result.rows[0];
 };
@@ -93,16 +105,33 @@ const updateUser = async (id, { name, email, role, is_active }, tenant_id) => {
 
 // UPDATE - Atualizar senha. Invalida TODAS as sessões anteriores (§10):
 // sessions_valid_after = NOW() → tokens emitidos antes deixam de valer.
-const updateUserPassword = async (id, password, tenant_id) => {
+// Definir senha: invalida as sessões existentes, limpa a exigência de troca e
+// registra quando a senha passou a valer. `forceChange` marca a NOVA senha como
+// provisória (admin redefinindo a senha de outra pessoa).
+const updateUserPassword = async (id, password, tenant_id, { forceChange = false } = {}) => {
   const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const result = await pool.query(
     `UPDATE users
-     SET password_hash = $1, sessions_valid_after = NOW(), updated_at = NOW()
-     WHERE id = $2 AND tenant_id = $3
-     RETURNING id`,
-    [hashedPassword, id, tenant_id]
+        SET password_hash = $1,
+            sessions_valid_after = NOW(),
+            must_change_password = $4,
+            password_changed_at = NOW(),
+            updated_at = NOW()
+      WHERE id = $2 AND tenant_id = $3
+      RETURNING id`,
+    [hashedPassword, id, tenant_id, !!forceChange]
+  );
+  return result.rows[0];
+};
+
+// Marca/desmarca a exigência de troca de senha sem alterar a senha em si.
+const setMustChangePassword = async (id, must, tenant_id) => {
+  const result = await pool.query(
+    `UPDATE users SET must_change_password = $1, updated_at = NOW()
+      WHERE id = $2 AND tenant_id = $3 RETURNING id, must_change_password`,
+    [!!must, id, tenant_id]
   );
   return result.rows[0];
 };
@@ -187,6 +216,7 @@ module.exports = {
   createUser,
   updateUser,
   updateUserPassword,
+  setMustChangePassword,
   setUserActive,
   getUserAuthState,
   deleteUser,

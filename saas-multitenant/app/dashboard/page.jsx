@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import PageHeader from '../components/PageHeader';
+import ForcePasswordChange from '../components/ForcePasswordChange';
 import {
   ErrorBoundary, PageLoading, ScreenNotFound, PermissionDenied, ModuleUnavailable,
 } from '../components/states';
@@ -45,6 +46,7 @@ import Usuarios        from '../locacao/Usuarios';
 import Relatorios      from '../locacao/Relatorios';
 import Importacao      from '../locacao/Importacao';
 import Automacoes      from '../locacao/Automacoes';
+import ConfiguracoesLocacao from '../locacao/Configuracoes';
 
 // Financeiro
 import dynamic from 'next/dynamic';
@@ -99,6 +101,7 @@ const modulePages = {
       clients:   MultasClients,  // reutiliza o módulo de clientes (locatários)
       automacoes: Automacoes,
       history:   MultasHistory,  // reutiliza o histórico/auditoria
+      configuracoes: ConfiguracoesLocacao,
     },
   },
   // ── Despachantes (operação: processos, clientes, agenda, leads) ────────
@@ -270,6 +273,19 @@ function DashboardContent() {
 
   if (loading) {
     return <PageLoading label="Carregando LocaCore..." />;
+  }
+
+  // Senha inicial é considerada EXPOSTA (foi entregue por mensagem): o sistema
+  // fica bloqueado até a pessoa definir a própria (§11). Trocar a senha invalida
+  // as sessões antigas no backend, então em seguida pedimos login de novo.
+  if (user?.must_change_password) {
+    return (
+      <ForcePasswordChange
+        user={user}
+        onConcluido={handleLogout}
+        onSair={handleLogout}
+      />
+    );
   }
 
   // Gating de módulo por tenant: se o tenant tem `modules` e a área não está

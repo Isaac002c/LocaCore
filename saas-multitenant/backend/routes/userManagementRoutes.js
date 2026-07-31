@@ -3,13 +3,25 @@ const router = express.Router();
 const permissionModel = require('../models/permissionModels');
 const { checkPermission, requireAdminOrManager, getAllRoles } = require('../middlewares/checkPermission');
 const saasModel = require('../models/saasModels');
+const seats = require('../services/userSeats');
+
+// Traduz SeatError (assento esgotado / conta protegida) em resposta HTTP.
+const seatErr = (res, err) => {
+  if (err && err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+  return null;
+};
 
 // GET /api/users/management - Listar usuários do tenant
 router.get('/', checkPermission('users:read'), async (req, res) => {
   try {
     const tenantId = req.tenantId;
-    const users = await permissionModel.getUsersWithRoles(tenantId);
-    res.json({ success: true, data: users });
+    const [users, usage] = await Promise.all([
+      permissionModel.getUsersWithRoles(tenantId),
+      seats.getSeatUsage(tenantId),
+    ]);
+    // `seats` acompanha a lista para a UI saber quantas vagas restam e quais
+    // contas são do suporte (imutáveis) sem precisar de outra chamada.
+    res.json({ success: true, data: users, seats: usage });
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -86,6 +98,11 @@ router.post('/', requireAdminOrManager, async (req, res) => {
       });
     }
     
+    // Assentos: o tenant tem um número contratado de usuários (contas de
+    // suporte do fornecedor não ocupam vaga).
+    try { await seats.assertCanCreateUser(tenantId); }
+    catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
+
     // Verificar se email já existe
     const emailExists = await permissionModel.checkEmailExists(email, tenantId);
     if (emailExists) {
@@ -143,6 +160,10 @@ router.put('/:id', checkPermission('users:update'), async (req, res) => {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
     }
     
+    // Conta de suporte do fornecedor é imutável para o tenant.
+    try { seats.assertNotProtected(existingUser, 'editar'); }
+    catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
+
     // Se não for admin, não pode mudar role de outros usuários
     if (currentUserRole !== 'admin' && req.userId !== id && role) {
       return res.status(403).json({ 
@@ -198,7 +219,18 @@ router.patch('/:id/password', async (req, res) => {
       });
     }
     
-    await permissionModel.updateUserPassword(id, password, tenantId);
+    const alvo = await permissionModel.getUserById(id, tenantId);
+    if (!alvo) return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    // Só o próprio dono da conta de suporte pode trocar a senha dela.
+    if (seats.isProtectedUser(alvo) && req.userId !== id) {
+      try { seats.assertNotProtected(alvo, 'alterar'); }
+      catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
+    }
+
+    // Se um admin redefine a senha de OUTRA pessoa, a senha nasce provisória:
+    // quem recebe é obrigado a definir a própria no primeiro acesso.
+    const redefinidaPorTerceiro = req.userId !== id;
+    await permissionModel.updateUserPassword(id, password, tenantId, { forceChange: redefinidaPorTerceiro });
     
     // Log de atividade
     await saasModel.createActivityLog({
@@ -230,6 +262,8 @@ router.patch('/:id/active', requireAdminOrManager, async (req, res) => {
     }
     const existing = await permissionModel.getUserById(id, tenantId);
     if (!existing) return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    try { seats.assertNotProtected(existing, isActive ? 'reativar' : 'desativar'); }
+    catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
 
     const user = await permissionModel.setUserActive(id, isActive, tenantId);
     await saasModel.createActivityLog({
@@ -264,6 +298,9 @@ router.delete('/:id', requireAdminOrManager, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
     }
     
+    try { seats.assertNotProtected(existingUser, 'excluir'); }
+    catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
+
     await permissionModel.deleteUser(id, tenantId);
     
     // Log de atividade

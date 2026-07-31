@@ -98,6 +98,7 @@ router.post('/login',
       const result = await client.query(
         `SELECT u.id, u.name, u.email, u.password_hash, u.tenant_id, u.role,
                 COALESCE(u.is_active, true) as is_active,
+                COALESCE(u.must_change_password, false) as must_change_password,
                 t.name as tenant_name, t.slug as tenant_slug, t.status as tenant_status,
                 t.logo_url as tenant_logo_url, t.brand_color as tenant_brand_color,
                 t.brand_color_dark as tenant_brand_color_dark, t.tagline as tenant_tagline
@@ -152,8 +153,10 @@ router.post('/login',
         { expiresIn: '30d' }
       );
 
-      // Último acesso (não bloqueia o login se falhar)
+      // Último acesso (não bloqueia o login se falhar). `last_login` é a coluna
+      // legada; `last_login_at` veio no ciclo 6 e é a usada na tela de Usuários.
       await client.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]).catch(() => {});
+      await client.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {});
 
       const cookieOptions = {
         httpOnly: true,
@@ -181,7 +184,10 @@ router.post('/login',
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role || 'admin'
+          role: user.role || 'admin',
+          // Senha inicial é entregue por mensagem => considerada exposta. O
+          // frontend obriga a definir uma nova antes de liberar o sistema.
+          must_change_password: user.must_change_password === true
         },
         tenant: {
           id: user.tenant_id,
