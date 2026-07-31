@@ -221,9 +221,9 @@ export default function CalendarioEventos() {
               {SCOPES.map(s => (
                 <button key={s.key} onClick={() => setScope(s.key)}
                   style={{ padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : '#e2e8f0'),
+                    border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : 'var(--border)'),
                     background: scope === s.key ? 'var(--nx-primary-light, rgba(165, 107, 255, 0.10))' : '#fff',
-                    color: scope === s.key ? 'var(--nx-primary)' : '#64748b' }}>
+                    color: scope === s.key ? 'var(--nx-primary)' : 'var(--text-secondary)' }}>
                   {s.label}
                 </button>
               ))}
@@ -251,9 +251,9 @@ export default function CalendarioEventos() {
                 {SCOPES.map(s => (
                   <button key={s.key} onClick={() => setScope(s.key)}
                     style={{ textAlign: 'left', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : '#e2e8f0'),
+                      border: '1px solid ' + (scope === s.key ? 'var(--nx-primary)' : 'var(--border)'),
                       background: scope === s.key ? 'var(--nx-primary-light, rgba(165, 107, 255, 0.10))' : '#fff',
-                      color: scope === s.key ? 'var(--nx-primary)' : '#475569' }}>
+                      color: scope === s.key ? 'var(--nx-primary)' : 'var(--text-secondary)' }}>
                     {s.label}
                   </button>
                 ))}
@@ -346,7 +346,7 @@ export default function CalendarioEventos() {
                   <h2 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{ev.title}</h2>
                   <div style={{ display: 'flex', gap: 7, marginTop: 7, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: ti.color, background: `${ti.color}18`, padding: '3px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{ti.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: cancelled ? '#94a3b8' : ti.color, background: cancelled ? '#f1f5f9' : `${ti.color}18`, padding: '3px 10px', borderRadius: 999 }}>{STATUS_LABEL[ev.status] || 'Agendado'}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: cancelled ? 'var(--text-muted)' : ti.color, background: cancelled ? 'var(--surface-secondary)' : `${ti.color}18`, padding: '3px 10px', borderRadius: 999 }}>{STATUS_LABEL[ev.status] || 'Agendado'}</span>
                   </div>
                 </div>
                 <button type="button" onClick={() => setViewEvent(null)} className="btn-close">✕</button>
@@ -422,9 +422,9 @@ export default function CalendarioEventos() {
                   {[{ k: 'dia', l: 'Dia inteiro' }, { k: 'manha', l: 'Manhã' }, { k: 'tarde', l: 'Tarde' }, { k: 'custom', l: 'Personalizado' }].map(o => (
                     <button key={o.k} type="button" onClick={() => setBlockMode(o.k)}
                       style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                        border: '1px solid ' + (blockModal.mode === o.k ? '#dc2626' : '#e2e8f0'),
-                        background: blockModal.mode === o.k ? '#fee2e2' : '#fff',
-                        color: blockModal.mode === o.k ? '#b91c1c' : '#64748b' }}>
+                        border: '1px solid ' + (blockModal.mode === o.k ? 'var(--danger)' : 'var(--border)'),
+                        background: blockModal.mode === o.k ? 'color-mix(in srgb, var(--danger) 16%, transparent)' : 'var(--surface)',
+                        color: blockModal.mode === o.k ? '#b91c1c' : 'var(--text-secondary)' }}>
                       {o.l}
                     </button>
                   ))}

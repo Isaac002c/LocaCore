@@ -189,8 +189,8 @@ export default function Tarefas() {
               <div>
                 <h3 className="lead-panel-name">{selectedLead.name}</h3>
                 <span className="lead-panel-status" style={{
-                  background: COLUMNS.find(c=>c.key===selectedLead.status)?.bg||'#f1f5f9',
-                  color: COLUMNS.find(c=>c.key===selectedLead.status)?.color||'#475569',
+                  background: COLUMNS.find(c=>c.key===selectedLead.status)?.bg||'var(--surface-secondary)',
+                  color: COLUMNS.find(c=>c.key===selectedLead.status)?.color||'var(--text-secondary)',
                 }}>
                   {COLUMNS.find(c=>c.key===selectedLead.status)?.label||selectedLead.status}
                 </span>

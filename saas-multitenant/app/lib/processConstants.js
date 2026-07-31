@@ -30,7 +30,7 @@ const STATUS_COLORS = {
 };
 export const getStatusStyle = (s) => {
   const c = STATUS_COLORS[s];
-  return c ? { background: c.bg, color: c.text } : { background: '#ede9fe', color: '#6366f1' };
+  return c ? { background: c.bg, color: c.text } : { background: 'var(--primary-soft)', color: 'var(--primary)' };
 };
 export const getStatusLabel = (s) => STATUS_OPTIONS.find(o => o.value === s)?.label || s || '—';
 
@@ -60,7 +60,7 @@ export const getPrazoStyle = (due) => {
   const diff = Math.ceil((prazo - new Date()) / 86400000);
   if (diff < 0)  return { color: '#ef4444', fontWeight: 600 };
   if (diff <= 7) return { color: '#f59e0b', fontWeight: 600 };
-  return { color: '#334155' };
+  return { color: 'var(--text-secondary)' };
 };
 
 // ── Máscaras e validações de documentos (validam só quando preenchidos) ──────

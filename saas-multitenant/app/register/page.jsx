@@ -64,11 +64,11 @@ export default function Register() {
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--text-primary) 100%)',
       padding: '20px'
     }}>
       <div style={{
-        background: '#1e293b',
+        background: 'var(--text-primary)',
         padding: '40px',
         borderRadius: '12px',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',

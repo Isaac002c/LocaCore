@@ -175,8 +175,8 @@ export default function MultasHistory() {
                     borderRadius: 4,
                     fontSize: 11,
                     fontWeight: 600,
-                    background: STATUS_COLORS[contract.status] ? `${STATUS_COLORS[contract.status]}20` : '#f1f5f9',
-                    color: STATUS_COLORS[contract.status] || '#475569',
+                    background: STATUS_COLORS[contract.status] ? `${STATUS_COLORS[contract.status]}20` : 'var(--surface-secondary)',
+                    color: STATUS_COLORS[contract.status] || 'var(--text-secondary)',
                   }}>
                     {contract.status || '-'}
                   </span>

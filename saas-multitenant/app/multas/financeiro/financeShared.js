@@ -59,14 +59,14 @@ export function toInputDate(value) {
 
 export const STATUS_COLORS = {
   // lançamentos
-  previsto:  { bg: 'rgba(100,116,139,.12)', fg: '#475569' },
+  previsto:  { bg: 'rgba(100,116,139,.12)', fg: 'var(--text-secondary)' },
   pendente:  { bg: 'rgba(245,158,11,.14)',  fg: '#b45309' },
   pago:      { bg: 'rgba(21,128,61,.14)',   fg: '#15803d' },
   recebido:  { bg: 'rgba(21,128,61,.14)',   fg: '#15803d' },
   vencido:   { bg: 'rgba(220,38,38,.14)',   fg: '#b91c1c' },
-  cancelado: { bg: 'rgba(100,116,139,.14)', fg: '#64748b' },
+  cancelado: { bg: 'rgba(100,116,139,.14)', fg: 'var(--text-secondary)' },
   // faturamento
-  nao_faturado:      { bg: 'rgba(100,116,139,.12)', fg: '#475569' },
+  nao_faturado:      { bg: 'rgba(100,116,139,.12)', fg: 'var(--text-secondary)' },
   faturado:          { bg: 'rgba(59,130,246,.14)',  fg: 'var(--nx-primary-hover)' },
   parcialmente_pago: { bg: 'rgba(245,158,11,.14)',  fg: '#b45309' },
   // recibos
@@ -74,7 +74,7 @@ export const STATUS_COLORS = {
 };
 
 export function StatusBadge({ status, label }) {
-  const c = STATUS_COLORS[status] || { bg: 'rgba(100,116,139,.12)', fg: '#475569' };
+  const c = STATUS_COLORS[status] || { bg: 'rgba(100,116,139,.12)', fg: 'var(--text-secondary)' };
   return (
     <span style={{
       display: 'inline-block', padding: '3px 10px', borderRadius: 999,
@@ -94,7 +94,7 @@ export function isAdmin() {
 export function AccessDenied() {
   return (
     <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" style={{ marginBottom: 12 }}>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 12 }}>
         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
       <h3 style={{ color: 'var(--text-primary)', marginBottom: 6 }}>Acesso restrito</h3>
@@ -106,7 +106,7 @@ export function AccessDenied() {
 export function Spinner({ label = 'Carregando...' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: BRAND }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: BRAND }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{label}</p>
     </div>
   );

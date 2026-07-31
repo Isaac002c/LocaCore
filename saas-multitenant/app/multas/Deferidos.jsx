@@ -73,7 +73,7 @@ export default function Deferidos() {
       )}
 
       <div className="ag-card">
-        <div className="ag-card-head" style={{ '--accent': GREEN, '--accent-soft': '#dcfce7' }}>
+        <div className="ag-card-head" style={{ '--accent': GREEN, '--accent-soft': 'color-mix(in srgb, var(--success) 16%, transparent)' }}>
           <span className="ag-card-dot" />
           <span className="ag-card-title">Processos deferidos</span>
           <span className="ag-card-count">{filtered.length}</span>

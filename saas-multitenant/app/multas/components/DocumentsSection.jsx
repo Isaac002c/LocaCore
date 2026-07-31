@@ -89,7 +89,7 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
           <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{subtitle || `${visibleDocs.length} documento(s)`}</p>
         </div>
-        <button onClick={() => { setError(null); setShow(true); }} className="btn-primary" style={{ background: '#475569', borderColor: '#475569' }}>+ Documento</button>
+        <button onClick={() => { setError(null); setShow(true); }} className="btn-primary" style={{ background: 'var(--text-secondary)', borderColor: 'var(--text-secondary)' }}>+ Documento</button>
       </div>
 
       {error && <div className="error-message" style={{ margin: '12px 18px 0', fontSize: 13 }}>{error}</div>}

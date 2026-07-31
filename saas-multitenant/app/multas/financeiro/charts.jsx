@@ -22,10 +22,10 @@ export const CHART_COLORS = {
   amber: '#d97706',
   red: '#b91c1c',
   cyan: '#0891b2',
-  gray: '#64748b',
+  gray: 'var(--text-secondary)',
   navy: '#16324f',
   grid: '#eef1f5',
-  axis: '#94a3b8',
+  axis: 'var(--text-muted)',
 };
 
 export const STATUS_CHART_COLORS = {

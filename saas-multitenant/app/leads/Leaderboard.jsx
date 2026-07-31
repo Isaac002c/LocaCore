@@ -78,7 +78,7 @@ export default function Leaderboard() {
     if (position === 1) return '#FFD700';
     if (position === 2) return '#C0C0C0';
     if (position === 3) return '#CD7F32';
-    return '#64748b';
+    return 'var(--text-secondary)';
   };
 
   const getPositionEmoji = (position) => {

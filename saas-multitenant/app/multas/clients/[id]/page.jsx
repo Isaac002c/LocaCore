@@ -832,7 +832,7 @@ export default function ClientDetail() {
             <h2 className="cd-services-title">Documentos do Cliente</h2>
             <p className="cd-services-sub">{clientDocs.length} documento{clientDocs.length !== 1 ? 's' : ''} anexado{clientDocs.length !== 1 ? 's' : ''}</p>
           </div>
-          <button onClick={() => setShowDocModal(true)} className="btn-primary cd-add-service-btn" style={{ background: '#475569', borderColor: '#475569' }}>
+          <button onClick={() => setShowDocModal(true)} className="btn-primary cd-add-service-btn" style={{ background: 'var(--text-secondary)', borderColor: 'var(--text-secondary)' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
@@ -1184,19 +1184,19 @@ export default function ClientDetail() {
             <form onSubmit={saveClientDoc} className="modal-form">
               <div className="form-group">
                 <label>Arquivo *</label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-secondary)', border: docFile ? '1px solid #bbf7d0' : '1px dashed #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-secondary)', border: docFile ? '1px solid #bbf7d0' : '1px dashed var(--text-muted)', borderRadius: 8, cursor: 'pointer' }}>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     style={{ display: 'none' }}
                     onChange={e => { setDocFile(e.target.files[0] || null); if (e.target.files[0] && !docForm.name) setDocForm(prev => ({ ...prev, name: e.target.files[0].name })); }}
                   />
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={docFile ? '#16a34a' : '#94a3b8'} strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={docFile ? '#16a34a' : 'var(--text-muted)'} strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="17 8 12 3 7 8"/>
                     <line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
-                  <span style={{ fontSize: 13, color: docFile ? '#16a34a' : '#94a3b8' }}>
+                  <span style={{ fontSize: 13, color: docFile ? '#16a34a' : 'var(--text-muted)' }}>
                     {docFile ? docFile.name : 'Selecionar PDF, JPG ou PNG (máx. 10 MB)'}
                   </span>
                 </label>

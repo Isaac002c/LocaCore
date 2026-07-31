@@ -381,8 +381,8 @@ export default function MultasLeads() {
               <div>
                 <h3 className="lead-panel-name">{selectedLead.name}</h3>
                 <span className="lead-panel-status" style={{
-                  background: COLUMNS.find(c => c.key === selectedLead.status)?.bg || '#f1f5f9',
-                  color: COLUMNS.find(c => c.key === selectedLead.status)?.color || '#475569',
+                  background: COLUMNS.find(c => c.key === selectedLead.status)?.bg || 'var(--surface-secondary)',
+                  color: COLUMNS.find(c => c.key === selectedLead.status)?.color || 'var(--text-secondary)',
                 }}>
                   {COLUMNS.find(c => c.key === selectedLead.status)?.label || selectedLead.status}
                 </span>
@@ -539,7 +539,7 @@ export default function MultasLeads() {
                 </select>
               </div>
               {BLOCKED_STATUSES.includes(formData.status) && (
-                <div className="form-group" style={{ background: COLUMNS.find(c=>c.key===formData.status)?.bg || '#f8fafc', borderRadius: 8, padding: '10px 12px', border: `1px solid ${COLUMNS.find(c=>c.key===formData.status)?.color || '#e2e8f0'}33` }}>
+                <div className="form-group" style={{ background: COLUMNS.find(c=>c.key===formData.status)?.bg || 'var(--surface-secondary)', borderRadius: 8, padding: '10px 12px', border: `1px solid ${COLUMNS.find(c=>c.key===formData.status)?.color || 'var(--border)'}33` }}>
                   <label style={{ color: COLUMNS.find(c=>c.key===formData.status)?.color }}>
                     {MOTIVO_LABELS[formData.status]} *
                   </label>

@@ -15,7 +15,7 @@ const WINE = 'var(--nx-primary)';
 function Stat({ label, value, color }) {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, borderTop: `3px solid ${color}`, padding: '16px 18px', flex: 1, minWidth: 150 }}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value ?? '—'}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{value ?? '—'}</div>
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 6 }}>{label}</div>
     </div>
   );
@@ -204,13 +204,13 @@ export default function MasterPanel() {
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 22 }}>
               <Stat label="Empresas (tenants)" value={overview?.total_tenants} color={WINE} />
               <Stat label="Ativas"   value={overview?.active_tenants}   color="#15803d" />
-              <Stat label="Inativas" value={overview?.inactive_tenants} color="#94a3b8" />
+              <Stat label="Inativas" value={overview?.inactive_tenants} color="var(--text-muted)" />
               <Stat label="Usuários" value={overview?.total_users}      color="var(--nx-primary)" />
             </div>
 
             {/* Tenants */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: 0 }}>Empresas</h2>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Empresas</h2>
               <button className="btn-primary" onClick={openCreate}>+ Nova empresa</button>
             </div>
 
@@ -224,7 +224,7 @@ export default function MasterPanel() {
                     <tr><td colSpan="7"><div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma empresa cadastrada.</div></td></tr>
                   ) : tenants.map(t => (
                     <tr key={t.id}>
-                      <td><strong style={{ color: '#0f172a' }}>{t.name}</strong></td>
+                      <td><strong style={{ color: 'var(--text-primary)' }}>{t.name}</strong></td>
                       <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 13 }}>{t.slug || '—'}</td>
                       <td><span className={`client-status-badge ${t.status === 'inativo' ? 'negociacao' : 'fechado'}`}>{t.status === 'inativo' ? 'Inativa' : 'Ativa'}</span></td>
                       <td style={{ color: 'var(--text-secondary)' }}>{t.users_count ?? 0}</td>
@@ -241,7 +241,7 @@ export default function MasterPanel() {
                             className="btn-secondary"
                             disabled={t.status !== 'inativo'}
                             title={t.status !== 'inativo' ? 'Inative a empresa antes de apagar' : 'Apagar empresa permanentemente'}
-                            style={{ padding: '5px 10px', fontSize: 12, color: t.status === 'inativo' ? '#b91c1c' : '#cbd5e1', borderColor: t.status === 'inativo' ? '#fecaca' : '#e2e8f0', cursor: t.status === 'inativo' ? 'pointer' : 'not-allowed' }}
+                            style={{ padding: '5px 10px', fontSize: 12, color: t.status === 'inativo' ? 'var(--danger)' : 'var(--text-muted)', borderColor: t.status === 'inativo' ? 'color-mix(in srgb, var(--danger) 38%, transparent)' : 'var(--border)', cursor: t.status === 'inativo' ? 'pointer' : 'not-allowed' }}
                             onClick={() => openDelTenant(t)}
                           >
                             Apagar
@@ -263,7 +263,7 @@ export default function MasterPanel() {
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Nova Empresa (Tenant)</h2>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Nova Empresa (Tenant)</h2>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Cria a empresa e o usuário administrador dela.</p>
               </div>
               <button type="button" onClick={() => setShowCreate(false)} className="btn-close">✕</button>
@@ -302,7 +302,7 @@ export default function MasterPanel() {
         <div className="modal-overlay" onClick={() => setUsersDrawer(null)}>
           <div className="modal-content" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Usuários — {usersDrawer.tenant?.name}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Usuários — {usersDrawer.tenant?.name}</h2>
               <button type="button" onClick={() => setUsersDrawer(null)} className="btn-close">✕</button>
             </div>
 
@@ -360,7 +360,7 @@ export default function MasterPanel() {
         <div className="modal-overlay" onClick={() => setEditTenant(null)}>
           <div className="modal-content" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Editar Empresa</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Editar Empresa</h2>
               <button type="button" onClick={() => setEditTenant(null)} className="btn-close">✕</button>
             </div>
             {editError && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{editError}</div>}
@@ -423,7 +423,7 @@ export default function MasterPanel() {
         <div className="modal-overlay" onClick={() => setEditUser(null)}>
           <div className="modal-content" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Editar Usuário</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Editar Usuário</h2>
               <button type="button" onClick={() => setEditUser(null)} className="btn-close">✕</button>
             </div>
             {editUserError && <div className="error-message" style={{ margin: '0 0 12px', fontSize: 13 }}>{editUserError}</div>}

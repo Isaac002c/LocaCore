@@ -38,17 +38,17 @@ const prazoLabel = (v) => {
 const urgencyOf = (v, overdue) => {
   const d = diffDays(v);
   if (overdue && d === 0)               return { color: '#ea580c', soft: '#ffedd5' }; // vence hoje
-  if (overdue || (d != null && d < 0))  return { color: 'var(--danger)', soft: '#fee2e2' }; // vencido
-  if (d != null && d <= 7)              return { color: 'var(--warning)', soft: '#fef3c7' }; // até 7 dias
-  return { color: 'var(--text-secondary)', soft: '#f1f5f9' };                                       // mais distante
+  if (overdue || (d != null && d < 0))  return { color: 'var(--danger)', soft: 'color-mix(in srgb, var(--danger) 16%, transparent)' }; // vencido
+  if (d != null && d <= 7)              return { color: 'var(--warning)', soft: 'color-mix(in srgb, var(--warning) 16%, transparent)' }; // até 7 dias
+  return { color: 'var(--text-secondary)', soft: 'var(--surface-secondary)' };                                       // mais distante
 };
 
 // Abas por urgência (Vencido / Hoje / Até 7 dias / Mais distante)
 const TABS = [
-  { key: 'vencidos', label: 'Vencidos',      color: 'var(--danger)', soft: '#fee2e2' },
+  { key: 'vencidos', label: 'Vencidos',      color: 'var(--danger)', soft: 'color-mix(in srgb, var(--danger) 16%, transparent)' },
   { key: 'hoje',     label: 'Vence hoje',    color: '#ea580c', soft: '#ffedd5' },
-  { key: 'ate7',     label: 'Até 7 dias',    color: 'var(--warning)', soft: '#fef3c7' },
-  { key: 'distante', label: 'Mais distante', color: 'var(--text-secondary)', soft: '#f1f5f9' },
+  { key: 'ate7',     label: 'Até 7 dias',    color: 'var(--warning)', soft: 'color-mix(in srgb, var(--warning) 16%, transparent)' },
+  { key: 'distante', label: 'Mais distante', color: 'var(--text-secondary)', soft: 'var(--surface-secondary)' },
 ];
 
 // ─── Item da agenda ─────────────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ export default function MultasAgenda() {
               }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.color }} />
               {t.label}
-              <span style={{ fontSize: 11, fontWeight: 700, background: activeTab ? '#fff' : '#f1f5f9', color: t.color, padding: '1px 8px', borderRadius: 999 }}>{n}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, background: activeTab ? '#fff' : 'var(--surface-secondary)', color: t.color, padding: '1px 8px', borderRadius: 999 }}>{n}</span>
             </button>
           );
         })}

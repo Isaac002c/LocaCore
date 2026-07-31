@@ -251,7 +251,7 @@ export default function LeadsAcquisition() {
                   {channel.source || 'Sem origem'}
                   {isBest && ' 🏆'}
                 </div>
-                <div className="rate-value" style={{ color: isBest ? '#22c55e' : '#1e293b' }}>
+                <div className="rate-value" style={{ color: isBest ? '#22c55e' : 'var(--text-primary)' }}>
                   {channel.conversionRate}%
                 </div>
                 <div className="rate-bar">
