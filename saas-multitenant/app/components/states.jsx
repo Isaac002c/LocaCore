@@ -104,7 +104,9 @@ export function PermissionDenied({
 }
 
 // ── Módulo não habilitado para o tenant ──────────────────────────────────────
-export function ModuleUnavailable({ moduleLabel = 'Este módulo' }) {
+// SEMPRE oferece um caminho de volta: chegar aqui por um link antigo não pode
+// deixar o usuário preso numa tela sem saída.
+export function ModuleUnavailable({ moduleLabel = 'Este módulo', onGoHome, homeLabel = 'Voltar ao início' }) {
   return (
     <div className="nx-state nx-state--denied" role="alert">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
@@ -112,6 +114,11 @@ export function ModuleUnavailable({ moduleLabel = 'Este módulo' }) {
       </svg>
       <h4>Módulo não habilitado</h4>
       <p>{moduleLabel} não está habilitado para a sua empresa. Fale com o suporte para contratar ou ativar este módulo.</p>
+      {typeof onGoHome === 'function' && (
+        <div className="nx-state-actions">
+          <button type="button" className="btn-primary" onClick={onGoHome}>{homeLabel}</button>
+        </div>
+      )}
     </div>
   );
 }

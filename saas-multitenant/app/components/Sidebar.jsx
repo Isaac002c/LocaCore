@@ -263,11 +263,17 @@ export default function Sidebar({ currentModule, currentTab, onNavigate, collaps
     (!enabledModules || enabledModules.includes(m.key))
   );
 
-  // Módulo efetivo do MENU: quando a área atual não tem menu próprio (ex.:
-  // 'settings'), mostra o menu da primeira área habilitada do tenant — nunca
-  // um menu de área que o tenant não contratou.
+  // Módulo efetivo do MENU. Cai no fallback quando a área atual:
+  //   · não tem menu próprio (ex.: 'settings'), ou
+  //   · NÃO foi contratada pelo tenant.
+  // Sem a segunda regra, um link antigo para uma área não contratada deixava o
+  // usuário preso: o conteúdo mostrava "módulo não habilitado" e a sidebar
+  // exibia o menu justamente dessa área, sem caminho de volta.
   const fallbackModule = visibleModules[0]?.key || 'multas';
-  const moduleKey = NAV_ITEMS[currentModule] && currentModule !== 'settings' ? currentModule : fallbackModule;
+  const areaContratada = !enabledModules || enabledModules.includes(currentModule);
+  const moduleKey = (NAV_ITEMS[currentModule] && currentModule !== 'settings' && areaContratada)
+    ? currentModule
+    : fallbackModule;
   const sectionLabel = MODULE_SECTION_LABEL[moduleKey] || 'Menu';
 
   // Itens visíveis para a role atual (restrições vêm de roles[] em navigation.js).

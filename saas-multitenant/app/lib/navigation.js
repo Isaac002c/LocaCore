@@ -191,3 +191,51 @@ export const canAccessTab = (moduleKey, tab, role) => {
   const item = getModuleItems(moduleKey).find((i) => i.tab === tab);
   return !!item && canSeeItem(item, role);
 };
+
+// =============================================================================
+// ÁREAS CONTRATADAS PELO TENANT
+//
+// `tenant.modules` lista as áreas que a empresa contratou. Ausente/vazio =
+// todas habilitadas (compatível com os tenants antigos).
+//
+// Existe porque telas COMPARTILHADAS entre áreas (clientes, empresas, veículos)
+// moram em rotas próprias fora do shell e voltavam com `?module=multas` fixo.
+// Num tenant que só tem Locação, isso caía em "módulo não habilitado" — o
+// usuário criava um cliente, entrava nele e não conseguia mais voltar.
+// =============================================================================
+
+/** Áreas habilitadas para o tenant, ou `null` quando todas valem. */
+export const enabledModulesOf = (tenant) => {
+  const mods = tenant?.modules;
+  return Array.isArray(mods) && mods.length ? mods : null;
+};
+
+/** A área está habilitada para o tenant? (settings é interna: sempre sim) */
+export const isModuleEnabled = (moduleKey, tenant) => {
+  if (moduleKey === 'settings') return true;
+  const enabled = enabledModulesOf(tenant);
+  return !enabled || enabled.includes(moduleKey);
+};
+
+/** Primeira área contratada que a role enxerga — o "início" do tenant. */
+export const getHomeModule = (tenant, role) => {
+  const enabled = enabledModulesOf(tenant);
+  const visiveis = NAV_MODULES.filter(
+    (m) => (!m.roles || m.roles.includes(role)) && (!enabled || enabled.includes(m.key)),
+  );
+  return visiveis[0]?.key || (enabled ? enabled[0] : 'multas');
+};
+
+/**
+ * Em qual área abrir uma TELA COMPARTILHADA (ex.: `clients`)?
+ * Prioriza a área de origem quando ela é válida e contratada; senão, a primeira
+ * área contratada que tenha essa tela. Nunca devolve uma área não contratada.
+ */
+export const resolveModuleForTab = (tab, { preferred, tenant, role } = {}) => {
+  const candidatos = Object.keys(NAV_ITEMS).filter((m) => tabExists(m, tab));
+  if (preferred && candidatos.includes(preferred) && isModuleEnabled(preferred, tenant)) {
+    return preferred;
+  }
+  const habilitado = candidatos.find((m) => isModuleEnabled(m, tenant));
+  return habilitado || getHomeModule(tenant, role);
+};

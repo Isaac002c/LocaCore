@@ -129,3 +129,34 @@ describe('identidade do tenant', () => {
     expect(screen.getByTitle('Locações')).toBeInTheDocument();
   });
 });
+
+describe('área NÃO contratada (regressão: usuário preso)', () => {
+  // Chegar em ?module=multas num tenant que só tem Locação mostrava o conteúdo
+  // bloqueado E o menu de Processos — sem caminho de volta.
+  const soLocacao = { name: 'Rental Log', slug: 'rental-log', modules: ['locacao', 'financeiro'] };
+
+  it('mostra o menu da área CONTRATADA, não o da área bloqueada', () => {
+    render(<Sidebar {...props({ currentModule: 'multas', currentTab: 'clients', tenant: soLocacao })} />);
+    const menu = within(screen.getByRole('navigation', { name: /navegação principal/i }));
+    // Telas exclusivas da Locação aparecem...
+    expect(menu.getByText('Frota')).toBeInTheDocument();
+    expect(menu.getByText('Locações')).toBeInTheDocument();
+    // ...e as exclusivas de Processos, não.
+    expect(menu.queryByText('Deferidos')).toBeNull();
+    expect(menu.queryByText('Aprovações')).toBeNull();
+  });
+
+  it('o seletor de área continua sem oferecer a área não contratada', () => {
+    render(<Sidebar {...props({ currentModule: 'multas', tenant: soLocacao })} />);
+    expect(screen.queryByRole('button', { name: 'Processos' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Locação' })).toBeInTheDocument();
+  });
+
+  it('clicar em qualquer item leva para a área contratada', async () => {
+    render(<Sidebar {...props({ currentModule: 'multas', tenant: soLocacao })} />);
+    const menu = within(screen.getByRole('navigation', { name: /navegação principal/i }));
+    await userEvent.click(menu.getByText('Frota'));
+    const [moduleKey] = onNavigate.mock.calls[0];
+    expect(moduleKey).toBe('locacao');
+  });
+});

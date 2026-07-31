@@ -11,6 +11,7 @@ import { uploadFile } from '../../../lib/uploadsAPI';
 import { listByFine, createProtocol, updateProtocol, deleteProtocol, sendProtocolEmail } from '../../../lib/fineProtocolsAPI';
 import { requestDeletion } from '../../../lib/approvalsAPI';
 import ClientFinanceSection from '../../financeiro/ClientFinanceSection';
+import { urlDeVolta, origemDaUrl } from '../../../lib/voltar';
 
 // ─── Constantes de negócio ────────────────────────────
 
@@ -572,7 +573,7 @@ export default function ClientDetail() {
 
       {/* Breadcrumb */}
       <div className="cd-breadcrumb">
-        <button onClick={() => router.push('/dashboard?module=multas&tab=clients')} className="cd-back-btn">
+        <button onClick={() => router.push(urlDeVolta('clients', origemDaUrl()))} className="cd-back-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>

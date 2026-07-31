@@ -9,7 +9,7 @@ import {
   ErrorBoundary, PageLoading, ScreenNotFound, PermissionDenied, ModuleUnavailable,
 } from '../components/states';
 import {
-  resolveModule, resolveTab, getDefaultTab, canAccessTab, getModuleItems,
+  resolveModule, resolveTab, getDefaultTab, canAccessTab, getModuleItems, getHomeModule,
 } from '../lib/navigation';
 
 // Leads
@@ -174,7 +174,7 @@ function CachedTabs({ moduleKey, activeTab, role, onGoHome, onNavigate }) {
   const navItem = getModuleItems(moduleKey).find((i) => i.tab === activeTab);
 
   if (!moduleData) {
-    return <ModuleUnavailable moduleLabel={MODULE_LABELS[moduleKey] || 'Este módulo'} />;
+    return <ModuleUnavailable moduleLabel={MODULE_LABELS[moduleKey] || 'Este módulo'} onGoHome={onGoHome} />;
   }
 
   if (!known) {
@@ -267,9 +267,12 @@ function DashboardContent() {
     router.push(`/dashboard?module=${moduleKey}&tab=${tabKey}`);
   }, [router]);
 
+  // "Início" = primeira área CONTRATADA que a role enxerga. Voltar para a área
+  // atual não serviria quando é justamente ela que está bloqueada.
   const goHome = useCallback(() => {
-    handleNavigate(currentModule, getDefaultTab(currentModule, role));
-  }, [handleNavigate, currentModule, role]);
+    const destino = getHomeModule(tenant, role);
+    handleNavigate(destino, getDefaultTab(destino, role));
+  }, [handleNavigate, tenant, role]);
 
   if (loading) {
     return <PageLoading label="Carregando LocaCore..." />;
@@ -325,7 +328,10 @@ function DashboardContent() {
         />
         <div className="shell-content">
           {moduleBlocked ? (
-            <ModuleUnavailable moduleLabel={MODULE_LABELS[currentModule] || 'Este módulo'} />
+            <ModuleUnavailable
+              moduleLabel={MODULE_LABELS[currentModule] || 'Este módulo'}
+              onGoHome={goHome}
+            />
           ) : (
             <CachedTabs
               moduleKey={currentModule}

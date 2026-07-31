@@ -12,6 +12,7 @@ import {
 } from '../../../lib/processConstants';
 import DocumentsSection from '../../components/DocumentsSection';
 import VehicleFormModal from '../../components/VehicleFormModal';
+import { urlDeVolta, origemDaUrl } from '../../../lib/voltar';
 
 // ─── Helpers locais ───────────────────────────────────────────────────────────
 const maskPhone = (value) => {
@@ -154,7 +155,7 @@ export default function CompanyDetail() {
   );
   if (!company) return (
     <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-      Empresa não encontrada. <button className="btn-secondary" onClick={() => router.push('/dashboard?module=multas&tab=companies')}>Voltar</button>
+      Empresa não encontrada. <button className="btn-secondary" onClick={() => router.push(urlDeVolta('companies', origemDaUrl()))}>Voltar</button>
     </div>
   );
 
@@ -163,7 +164,7 @@ export default function CompanyDetail() {
 
       {/* Voltar + cabeçalho */}
       <div>
-        <button onClick={() => router.push('/dashboard?module=multas&tab=companies')} className="btn-secondary" style={{ marginBottom: 14 }}>
+        <button onClick={() => router.push(urlDeVolta('companies', origemDaUrl()))} className="btn-secondary" style={{ marginBottom: 14 }}>
           ← Empresas
         </button>
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
