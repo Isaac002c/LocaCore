@@ -91,20 +91,20 @@ const getOrganOptions = (current) =>
   current && !ORGANS.includes(current) ? [current, ...ORGANS] : ORGANS;
 
 const STATUS_COLORS = {
-  'APRS DEFESA PREVIA':      { bg: '#ede9fe', text: '#6366f1' },
-  'DEFESA PREVIA - ANALISE': { bg: '#ede9fe', text: '#8b5cf6' },
-  'APRS 1 INSTANCIA':        { bg: '#fef3c7', text: '#d97706' },
+  'APRS DEFESA PREVIA':      { bg: 'var(--primary-soft)', text: '#6366f1' },
+  'DEFESA PREVIA - ANALISE': { bg: 'var(--primary-soft)', text: '#8b5cf6' },
+  'APRS 1 INSTANCIA':        { bg: 'color-mix(in srgb, var(--warning) 16%, transparent)', text: 'var(--warning)' },
   '1 INSTANCIA - ANALISE':   { bg: '#ffedd5', text: '#ea580c' },
-  'APRS 2 INSTANCIA':        { bg: '#fee2e2', text: '#dc2626' },
-  '2 INSTANCIA - ANALISE':   { bg: '#fee2e2', text: '#b91c1c' },
+  'APRS 2 INSTANCIA':        { bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
+  '2 INSTANCIA - ANALISE':   { bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
   'MANDATORIA':               { bg: '#fdf2f8', text: '#c026d3' },
   'EXCESSO DE PONTOS':        { bg: '#fdf4ff', text: '#a21caf' },
-  'PROTOCOLADO':              { bg: '#f0fdf4', text: '#16a34a' },
-  'DEFERIDO':                 { bg: '#dcfce7', text: '#15803d' },
-  'INDEFERIDO':               { bg: '#fee2e2', text: '#991b1b' },
-  'TRANSITO EM JULGADO':      { bg: '#f0fdf4', text: '#166534' },
-  'FINALIZADO':               { bg: '#f1f5f9', text: '#475569' },
-  'CANCELADO':                { bg: '#f1f5f9', text: '#94a3b8' },
+  'PROTOCOLADO':              { bg: 'color-mix(in srgb, var(--success) 12%, transparent)', text: 'var(--success)' },
+  'DEFERIDO':                 { bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' },
+  'INDEFERIDO':               { bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
+  'TRANSITO EM JULGADO':      { bg: 'color-mix(in srgb, var(--success) 12%, transparent)', text: 'var(--success)' },
+  'FINALIZADO':               { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
+  'CANCELADO':                { bg: 'var(--surface-hover)', text: 'var(--text-muted)' },
   'EM ANDAMENTO':             { bg: '#eff6ff', text: 'var(--nx-primary)' },
 };
 
@@ -118,7 +118,7 @@ const getStatusOptions = (serviceValue) => {
 
 const getStatusStyle = (status) => {
   const c = STATUS_COLORS[status];
-  return c ? { background: c.bg, color: c.text } : { background: '#f1f5f9', color: 'var(--text-secondary)' };
+  return c ? { background: c.bg, color: c.text } : { background: 'var(--surface-secondary)', color: 'var(--text-secondary)' };
 };
 
 const getStatusLabel = (status) => {
@@ -137,7 +137,7 @@ const getPrazoStyle = (due_date) => {
   const diffDays = Math.ceil((prazo - new Date()) / 86400000);
   if (diffDays < 0)  return { color: '#ef4444', fontWeight: 600 };
   if (diffDays <= 7) return { color: '#f59e0b', fontWeight: 600 };
-  return { color: '#16a34a' };
+  return { color: 'var(--success)' };
 };
 
 // ─── Helpers ─────────────────────────────────────────
@@ -554,7 +554,7 @@ export default function ClientDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando cliente...</p>
     </div>
   );
@@ -840,10 +840,10 @@ export default function ClientDetail() {
           </button>
         </div>
 
-        {renameDocOk && <div style={{ margin: '0 0 12px', fontSize: 13, color: '#15803d', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px' }}>Documento renomeado com sucesso.</div>}
+        {renameDocOk && <div style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--success)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px' }}>Documento renomeado com sucesso.</div>}
 
         {clientDocs.length === 0 ? (
-          <div className="cd-empty-services" style={{ background: '#fff', border: '1px dashed #e2e8f0' }}>
+          <div className="cd-empty-services" style={{ background: 'var(--surface)', border: '1px dashed var(--border)' }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
@@ -1184,7 +1184,7 @@ export default function ClientDetail() {
             <form onSubmit={saveClientDoc} className="modal-form">
               <div className="form-group">
                 <label>Arquivo *</label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f8fafc', border: docFile ? '1px solid #bbf7d0' : '1px dashed #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-secondary)', border: docFile ? '1px solid #bbf7d0' : '1px dashed #cbd5e1', borderRadius: 8, cursor: 'pointer' }}>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
@@ -1300,36 +1300,36 @@ export default function ClientDetail() {
 // ─── Formulário de item de protocolo (fora do ProtocolPanel para evitar remount) ─
 function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploadingId, uploadError, handleFileUpload }) {
   return (
-    <div style={{ padding:'12px', background:'#f8fafc', borderRadius:8, border:'1px solid #e2e8f0', marginBottom:8 }}>
+    <div style={{ padding:'12px', background:'var(--surface-secondary)', borderRadius:8, border:'1px solid var(--border)', marginBottom:8 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:8 }}>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Número</label>
-          <input type="text" value={form.protocol_number||''} onChange={e=>setForm(p=>({...p,protocol_number:e.target.value}))} placeholder="Ex.: 2024/00123" style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
+          <input type="text" value={form.protocol_number||''} onChange={e=>setForm(p=>({...p,protocol_number:e.target.value}))} placeholder="Ex.: 2024/00123" style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
         </div>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Data</label>
           <div style={{ display:'flex', gap:4 }}>
-            <input type="text" value={isoToDisplay(form.protocol_date||'')} onChange={e=>setForm(p=>({...p,protocol_date:normalizeDate(e.target.value)}))} placeholder="dd/mm/aaaa" inputMode="numeric" style={{ flex:1, padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
-            <input type="date" value={displayToIso(form.protocol_date)||''} onChange={e=>setForm(p=>({...p,protocol_date: e.target.value? isoToDisplay(e.target.value):''}))} title="Calendário" aria-label="Escolher data" style={{ width:32, flexShrink:0, padding:0, border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
+            <input type="text" value={isoToDisplay(form.protocol_date||'')} onChange={e=>setForm(p=>({...p,protocol_date:normalizeDate(e.target.value)}))} placeholder="dd/mm/aaaa" inputMode="numeric" style={{ flex:1, padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
+            <input type="date" value={displayToIso(form.protocol_date)||''} onChange={e=>setForm(p=>({...p,protocol_date: e.target.value? isoToDisplay(e.target.value):''}))} title="Calendário" aria-label="Escolher data" style={{ width:32, flexShrink:0, padding:0, border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
           </div>
         </div>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Status</label>
-          <select value={form.protocol_status||'protocolado'} onChange={e=>setForm(p=>({...p,protocol_status:e.target.value}))} style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12, background:'#fff' }}>
+          <select value={form.protocol_status||'protocolado'} onChange={e=>setForm(p=>({...p,protocol_status:e.target.value}))} style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12, background:'var(--surface)' }}>
             {PROTOCOL_STATUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
       </div>
       <div style={{ marginBottom:8 }}>
         <label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Observações</label>
-        <textarea value={form.protocol_notes||''} onChange={e=>setForm(p=>({...p,protocol_notes:e.target.value}))} rows={2} placeholder="Observações..." style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12, resize:'vertical' }} />
+        <textarea value={form.protocol_notes||''} onChange={e=>setForm(p=>({...p,protocol_notes:e.target.value}))} rows={2} placeholder="Observações..." style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12, resize:'vertical' }} />
       </div>
       <div style={{ marginBottom:8 }}>
         <label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Anexo</label>
         {form.protocol_file_url ? (
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:6 }}>
-            <a href={form.protocol_file_url} target="_blank" rel="noreferrer" style={{ color:'#16a34a', fontSize:12, flex:1 }}>Abrir / Baixar</a>
+            <a href={form.protocol_file_url} target="_blank" rel="noreferrer" style={{ color:'var(--success)', fontSize:12, flex:1 }}>Abrir / Baixar</a>
             <button type="button" onClick={()=>setForm(p=>({...p,protocol_file_url:''}))} style={{ border:'none', background:'none', cursor:'pointer', color:'#ef4444', fontSize:11 }}>Remover</button>
           </div>
         ) : (
-          <label style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'#fff', border:'1px dashed #cbd5e1', borderRadius:6, cursor:'pointer' }}>
+          <label style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'var(--surface)', border:'1px dashed var(--border-strong)', borderRadius:6, cursor:'pointer' }}>
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:'none' }} onChange={e=>handleFileUpload(e, setForm)} disabled={uploadingId==='uploading'} />
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style={{ fontSize:11, color:'var(--text-muted)' }}>{uploadingId==='uploading'?'Enviando...':'Anexar PDF, JPG ou PNG (máx. 10 MB)'}</span>
@@ -1338,7 +1338,7 @@ function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploa
       </div>
       {uploadError && <p style={{ color:'#ef4444', fontSize:11, margin:'4px 0' }}>{uploadError}</p>}
       <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
-        {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#fff', border:'1px solid #e2e8f0', color:'var(--text-secondary)', cursor:'pointer' }}>Cancelar</button>}
+        {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'var(--surface)', border:'1px solid var(--border)', color:'var(--text-secondary)', cursor:'pointer' }}>Cancelar</button>}
         <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'var(--nx-primary)', border:'none', color:'#fff', cursor:'pointer' }}>
           {submitting?'Salvando...':'Salvar'}
         </button>
@@ -1439,7 +1439,7 @@ function ProtocolPanel({ contract, onSave, onClose }) {
             <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
           </svg>
           <span className="cd-protocol-title">Protocolos</span>
-          <span style={{ fontSize:11, color:'var(--text-muted)', background:'#f1f5f9', borderRadius:10, padding:'1px 7px' }}>
+          <span style={{ fontSize:11, color:'var(--text-muted)', background:'var(--surface-secondary)', borderRadius:10, padding:'1px 7px' }}>
             {protocols.length + (hasLegacy ? 1 : 0)}
           </span>
         </div>
@@ -1468,10 +1468,10 @@ function ProtocolPanel({ contract, onSave, onClose }) {
 
             {/* Protocolo legado (fines.protocol_*) — somente leitura */}
             {hasLegacy && (
-              <div style={{ padding:'10px 12px', background:'#fffbeb', border:'1px solid #fde68a', borderRadius:8, marginBottom:8 }}>
+              <div style={{ padding:'10px 12px', background:'color-mix(in srgb, var(--warning) 12%, transparent)', border:'1px solid color-mix(in srgb, var(--warning) 38%, transparent)', borderRadius:8, marginBottom:8 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                  <span style={{ fontSize:11, fontWeight:600, color:'#92400e' }}>Protocolo legado</span>
-                  <span style={{ fontSize:10, color:'#b45309' }}>somente leitura</span>
+                  <span style={{ fontSize:11, fontWeight:600, color:'var(--warning)' }}>Protocolo legado</span>
+                  <span style={{ fontSize:10, color:'var(--warning)' }}>somente leitura</span>
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, fontSize:12, color:'var(--text-secondary)' }}>
                   <div><strong>Nº:</strong> {contract.protocol_number||'—'}</div>
@@ -1480,14 +1480,14 @@ function ProtocolPanel({ contract, onSave, onClose }) {
                 </div>
                 {contract.protocol_notes && <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{contract.protocol_notes}</div>}
                 {contract.protocol_file_url && (
-                  <a href={contract.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#92400e', display:'block', marginTop:4 }}>Abrir anexo legado</a>
+                  <a href={contract.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--warning)', display:'block', marginTop:4 }}>Abrir anexo legado</a>
                 )}
               </div>
             )}
 
             {/* Lista de protocolos novos */}
             {protocols.map(proto => (
-              <div key={proto.id} style={{ padding:'10px 12px', background:'#fff', border:'1px solid #e2e8f0', borderRadius:8, marginBottom:8 }}>
+              <div key={proto.id} style={{ padding:'10px 12px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, marginBottom:8 }}>
                 {editingId === proto.id ? (
                   <ProtocolItemForm
                     form={proto}
@@ -1519,16 +1519,16 @@ function ProtocolPanel({ contract, onSave, onClose }) {
                     </div>
                     {proto.protocol_notes && <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:6 }}>{proto.protocol_notes}</div>}
                     {proto.protocol_file_url && (
-                      <a href={proto.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#16a34a', display:'block', marginBottom:6 }}>Abrir / Baixar anexo</a>
+                      <a href={proto.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--success)', display:'block', marginBottom:6 }}>Abrir / Baixar anexo</a>
                     )}
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                      <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#f1f5f9', border:'none', color:'var(--text-secondary)', cursor:'pointer' }}>Editar</button>
+                      <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'var(--surface-secondary)', border:'none', color:'var(--text-secondary)', cursor:'pointer' }}>Editar</button>
                       {proto.protocol_file_url && (
                         <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'var(--nx-primary)', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
                           {emailingId===proto.id ? 'Enviando...' : 'Enviar por e-mail'}
                         </button>
                       )}
-                      <button type="button" onClick={()=>handleDeleteItem(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#fee2e2', border:'none', color:'#991b1b', cursor:'pointer' }}>Excluir</button>
+                      <button type="button" onClick={()=>handleDeleteItem(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'color-mix(in srgb, var(--danger) 16%, transparent)', border:'none', color:'var(--danger)', cursor:'pointer' }}>Excluir</button>
                     </div>
                     {emailFeedback?.id===proto.id && (
                       <div style={{ marginTop:6, fontSize:11, fontWeight:600, color: emailFeedback.type==='success' ? '#15803d' : '#b91c1c' }}>

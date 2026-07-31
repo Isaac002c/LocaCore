@@ -47,7 +47,7 @@ export default function Deferidos() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando deferidos...</p>
     </div>
   );
@@ -64,12 +64,12 @@ export default function Deferidos() {
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input type="text" placeholder="Buscar cliente, auto, placa..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft: 34, paddingRight: 12, height: 38, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff', width: 240, color: 'var(--text-primary)' }} />
+            style={{ paddingLeft: 34, paddingRight: 12, height: 38, border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, outline: 'none', background: 'var(--surface)', width: 240, color: 'var(--text-primary)' }} />
         </div>
       </div>
 
       {error && (
-        <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>
+        <div style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)', color: 'var(--danger)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>
       )}
 
       <div className="ag-card">
@@ -89,7 +89,7 @@ export default function Deferidos() {
           <div className="ag-list">
             {filtered.map((it) => (
               <div key={it.id} className="ag-item" onClick={() => setSelected(it)} role="button" tabIndex={0}>
-                <div className="ag-ava" style={{ background: '#dcfce7', color: GREEN }}>
+                <div className="ag-ava" style={{ background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: GREEN }}>
                   {(it.client_name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="ag-itembody">
@@ -98,7 +98,7 @@ export default function Deferidos() {
                 </div>
                 <div className="ag-right">
                   <span className="ag-date">{fmtDate(it.due_date)}</span>
-                  <span className="ag-pill" style={{ background: '#dcfce7', color: GREEN }}>Deferido</span>
+                  <span className="ag-pill" style={{ background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: GREEN }}>Deferido</span>
                 </div>
               </div>
             ))}
@@ -113,7 +113,7 @@ export default function Deferidos() {
             <div className="modal-header">
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{selected.client_name || 'Processo'}</h2>
-                <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 700, background: '#dcfce7', color: GREEN, padding: '2px 10px', borderRadius: 999 }}>
+                <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 700, background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: GREEN, padding: '2px 10px', borderRadius: 999 }}>
                   DEFERIDO · somente leitura
                 </span>
               </div>

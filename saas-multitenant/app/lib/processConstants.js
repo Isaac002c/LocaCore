@@ -21,12 +21,12 @@ export const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS = {
-  'DEFERIDO':            { bg: '#dcfce7', text: '#15803d' },
-  'INDEFERIDO':          { bg: '#fee2e2', text: '#991b1b' },
-  'PROTOCOLADO':         { bg: '#f0fdf4', text: '#16a34a' },
-  'CANCELADO':           { bg: '#f1f5f9', text: '#94a3b8' },
-  'FINALIZADO':          { bg: '#f1f5f9', text: '#475569' },
-  'TROCA REAL INFRATOR': { bg: '#cffafe', text: '#0e7490' },
+  'DEFERIDO':            { bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' },
+  'INDEFERIDO':          { bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
+  'PROTOCOLADO':         { bg: 'color-mix(in srgb, var(--success) 12%, transparent)', text: 'var(--success)' },
+  'CANCELADO':           { bg: 'var(--surface-hover)', text: 'var(--text-muted)' },
+  'FINALIZADO':          { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
+  'TROCA REAL INFRATOR': { bg: 'color-mix(in srgb, var(--info) 14%, transparent)', text: 'var(--info)' },
 };
 export const getStatusStyle = (s) => {
   const c = STATUS_COLORS[s];
@@ -54,7 +54,7 @@ export const formatDate = (v) => {
 };
 export const toInputDate = (v) => (!v ? '' : String(v).substring(0, 10));
 export const getPrazoStyle = (due) => {
-  if (!due) return { color: '#94a3b8' };
+  if (!due) return { color: 'var(--text-muted)' };
   const [y, m, d] = String(due).substring(0, 10).split('-');
   const prazo = new Date(+y, +m - 1, +d, 12, 0, 0);
   const diff = Math.ceil((prazo - new Date()) / 86400000);

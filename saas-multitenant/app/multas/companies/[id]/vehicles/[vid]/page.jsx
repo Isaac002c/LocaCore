@@ -181,7 +181,7 @@ export default function VehicleDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando veículo...</p>
     </div>
   );
@@ -199,7 +199,7 @@ export default function VehicleDetail() {
         <button onClick={() => router.push(`/multas/companies/${companyId}`)} className="btn-secondary" style={{ marginBottom: 14 }}>
           ← {company?.razao_social || 'Empresa'}
         </button>
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(165, 107, 255, 0.1)', color: 'var(--nx-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, flexShrink: 0, fontFamily: 'monospace' }}>
             {(vehicle.plate || '—').substring(0, 4)}
           </div>
@@ -229,14 +229,14 @@ export default function VehicleDetail() {
       )}
 
       {/* Processos do veículo */}
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Processos / Multas</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{total} processo(s)</p>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select value={statusFilter} onChange={(e) => onFilterChange(e.target.value)} style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <select value={statusFilter} onChange={(e) => onFilterChange(e.target.value)} style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)' }}>
               <option value="">Todos os andamentos</option>
               {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -260,7 +260,7 @@ export default function VehicleDetail() {
                     <tr>
                       <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>
                         {f.numero_multa || '—'}
-                        {!f.linked && <span title="Correspondência por placa, sem vínculo formal" style={{ marginLeft: 6, fontSize: 10, background: '#fef3c7', color: '#92400e', borderRadius: 8, padding: '1px 6px' }}>por placa</span>}
+                        {!f.linked && <span title="Correspondência por placa, sem vínculo formal" style={{ marginLeft: 6, fontSize: 10, background: 'color-mix(in srgb, var(--warning) 16%, transparent)', color: 'var(--warning)', borderRadius: 8, padding: '1px 6px' }}>por placa</span>}
                       </td>
                       <td>{f.vehicle_plate || '—'}</td>
                       <td>{f.organ || '—'}</td>
@@ -275,7 +275,7 @@ export default function VehicleDetail() {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                           </button>
                           {!f.linked && (
-                            <button onClick={() => linkProc(f)} disabled={linkingId === f.id} className="btn-icon" title="Vincular a este veículo" style={{ color: '#0e7490' }}>
+                            <button onClick={() => linkProc(f)} disabled={linkingId === f.id} className="btn-icon" title="Vincular a este veículo" style={{ color: 'var(--info)' }}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                             </button>
                           )}
@@ -290,7 +290,7 @@ export default function VehicleDetail() {
                     </tr>
                     {expandedId === f.id && (
                       <tr>
-                        <td colSpan={7} style={{ background: '#f8fafc', padding: 12 }}>
+                        <td colSpan={7} style={{ background: 'var(--surface-secondary)', padding: 12 }}>
                           <ProtocolPanel contract={f} onClose={() => setExpandedId(null)} />
                         </td>
                       </tr>
@@ -300,7 +300,7 @@ export default function VehicleDetail() {
               </tbody>
             </table>
             {fines.length < total && (
-              <div style={{ padding: 14, textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ padding: 14, textAlign: 'center', borderTop: '1px solid var(--border)' }}>
                 <button onClick={() => fetchFines(statusFilter, false)} disabled={loadingFines} className="btn-secondary">
                   {loadingFines ? 'Carregando...' : `Carregar mais (${fines.length}/${total})`}
                 </button>
@@ -343,7 +343,7 @@ export default function VehicleDetail() {
                 <div className="form-group"><label>Nº Auto / Processo</label><input value={procForm.numero_multa} onChange={e => setProcForm(p => ({ ...p, numero_multa: e.target.value }))} /></div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label>Placa</label><input value={vehicle.plate || ''} readOnly disabled style={{ background: '#f8fafc', color: 'var(--text-secondary)' }} /></div>
+                <div className="form-group"><label>Placa</label><input value={vehicle.plate || ''} readOnly disabled style={{ background: 'var(--surface-secondary)', color: 'var(--text-secondary)' }} /></div>
                 <div className="form-group">
                   <label>Prazo</label>
                   {/* Aceita colar/digitar dd/mm/aaaa, ddmmaaaa, yyyy-mm-dd; datepicker auxiliar à direita. */}

@@ -9,12 +9,12 @@ import { requestDeletion } from '../lib/approvalsAPI';
 
 // Colunas do kanban de Tarefas — sem "Entrada", com "Não Encontrado" e "Perdido"
 const COLUMNS = [
-  { key: 'possui_defensor',   label: 'Já Possui Defensor',   color: '#8b5cf6', bg: '#ede9fe',                   desc: 'Já tem advogado' },
-  { key: 'nao_quer_defender', label: 'Não Quer se Defender', color: '#f59e0b', bg: '#fef3c7',                   desc: 'Não tem interesse' },
+  { key: 'possui_defensor',   label: 'Já Possui Defensor',   color: '#8b5cf6', bg: 'var(--primary-soft)',                   desc: 'Já tem advogado' },
+  { key: 'nao_quer_defender', label: 'Não Quer se Defender', color: '#f59e0b', bg: 'color-mix(in srgb, var(--warning) 16%, transparent)',                   desc: 'Não tem interesse' },
   { key: 'negociacao',        label: 'Em Negociação',        color: 'var(--nx-primary)', bg: '#eff6ff',                   desc: 'Em tratativa' },
   { key: 'nao_encontrado',    label: 'Não Encontrado',       color: '#ef4444', bg: 'rgba(239,68,68,0.06)',      desc: 'Não atendeu/localizado' },
   { key: 'fechado',           label: 'Fechado',              color: 'var(--nx-primary)', bg: 'rgba(165, 107, 255, 0.06)',      desc: 'Contrato assinado' },
-  { key: 'perdido',           label: 'Perdido',              color: 'var(--text-muted)', bg: '#f1f5f9',                   desc: 'Lead perdido' },
+  { key: 'perdido',           label: 'Perdido',              color: 'var(--text-muted)', bg: 'var(--surface-hover)',                   desc: 'Lead perdido' },
 ];
 
 const formatDate = (v) => (!v ? '—' : new Date(v).toLocaleDateString('pt-BR'));
@@ -98,7 +98,7 @@ export default function Tarefas() {
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
-      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid var(--border)', borderTopColor:'var(--nx-primary)' }} />
       <p style={{ color:'var(--text-muted)', fontSize:14 }}>Carregando tarefas...</p>
     </div>
   );
@@ -117,7 +117,7 @@ export default function Tarefas() {
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" placeholder="Buscar por nome..." value={search} onChange={e=>setSearch(e.target.value)}
-              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', width:200, color:'var(--text-primary)' }}
+              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid var(--border)', borderRadius:8, fontSize:13, outline:'none', background:'var(--surface)', width:200, color:'var(--text-primary)' }}
             />
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function Tarefas() {
                   Excluir
                 </button>
               ) : (
-                <button style={{ padding:'8px 14px', borderRadius:8, fontSize:13, background:'#fef3c7', border:'1px solid #f59e0b', color:'#d97706', cursor:'pointer' }}
+                <button style={{ padding:'8px 14px', borderRadius:8, fontSize:13, background:'color-mix(in srgb, var(--warning) 16%, transparent)', border:'1px solid #f59e0b', color:'var(--warning)', cursor:'pointer' }}
                   onClick={()=>{ setShowDeleteModal(selectedLead); setDeleteReason(''); setSelectedLead(null); }}>
                   Solicitar Exclusão
                 </button>

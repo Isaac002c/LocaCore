@@ -348,7 +348,7 @@ export default function Frota() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
               {categories.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhuma categoria.</p>}
               {categories.map((c) => (
-                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13, opacity: c.active ? 1 : 0.55 }}>
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--surface-secondary)', borderRadius: 8, fontSize: 13, opacity: c.active ? 1 : 0.55 }}>
                   <span>{c.value}{!c.active && <em style={{ color: 'var(--text-muted)' }}> (inativa)</em>}</span>
                   <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} disabled={catBusy} onClick={() => toggleCategory(c)}>
                     {c.active ? 'Desativar' : 'Ativar'}

@@ -149,7 +149,7 @@ export default function CompanyDetail() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando empresa...</p>
     </div>
   );
@@ -167,7 +167,7 @@ export default function CompanyDetail() {
         <button onClick={() => router.push(urlDeVolta('companies', origemDaUrl()))} className="btn-secondary" style={{ marginBottom: 14 }}>
           ← Empresas
         </button>
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(165, 107, 255, 0.1)', color: 'var(--nx-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, flexShrink: 0 }}>
             {company.razao_social?.charAt(0).toUpperCase()}
           </div>
@@ -200,8 +200,8 @@ export default function CompanyDetail() {
       )}
 
       {/* Veículos */}
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
           <div>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Veículos / Frota</h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{vehicles.length} veículo(s) · clique na placa para ver os processos</p>
@@ -227,7 +227,7 @@ export default function CompanyDetail() {
                   <td style={{ color: 'var(--text-secondary)' }}>{v.renavam || '—'}</td>
                   <td style={{ color: 'var(--text-secondary)' }}>{maskCpfCnpj(v.owner_document) || '—'}</td>
                   <td>
-                    <span style={{ display: 'inline-block', minWidth: 24, textAlign: 'center', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, padding: '1px 9px', fontSize: 12, fontWeight: 600 }}>
+                    <span style={{ display: 'inline-block', minWidth: 24, textAlign: 'center', background: 'var(--surface-secondary)', color: 'var(--text-secondary)', borderRadius: 10, padding: '1px 9px', fontSize: 12, fontWeight: 600 }}>
                       {fineCounts[v.id] || 0}
                     </span>
                   </td>
@@ -260,7 +260,7 @@ export default function CompanyDetail() {
       <DocumentsSection scope={{ company_id: companyId }} title="Documentos da Empresa" docTypes={COMPANY_DOC_TYPES} excludeCategories={[RELATORIO_MENSAL_CAT]} isAdmin={isAdmin} />
 
       {/* Processos sem veículo vinculado (sob demanda, fechado por padrão) */}
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         <button onClick={toggleUnlinked} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer' }}>
           <div style={{ textAlign: 'left' }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Processos sem veículo vinculado</h2>
@@ -269,7 +269,7 @@ export default function CompanyDetail() {
           <span style={{ fontSize: 18, color: 'var(--text-muted)' }}>{showUnlinked ? '▾' : '▸'}</span>
         </button>
         {showUnlinked && (
-          <div style={{ borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ borderTop: '1px solid var(--border)' }}>
             {loadingUnlinked ? (
               <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Carregando...</div>
             ) : unlinked.length === 0 ? (
@@ -288,7 +288,7 @@ export default function CompanyDetail() {
                       <td><span className="service-status-badge" style={getStatusStyle(f.status)}>{getStatusLabel(f.status)}</span></td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <select value={linkTarget[f.id] || ''} onChange={e => setLinkTarget(p => ({ ...p, [f.id]: e.target.value }))} style={{ padding: '4px 6px', fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                          <select value={linkTarget[f.id] || ''} onChange={e => setLinkTarget(p => ({ ...p, [f.id]: e.target.value }))} style={{ padding: '4px 6px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)' }}>
                             <option value="">Selecione...</option>
                             {vehicles.filter(v => v.status !== 'inativo').map(v => <option key={v.id} value={v.id}>{v.plate || '(sem placa)'}</option>)}
                           </select>

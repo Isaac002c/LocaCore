@@ -48,7 +48,7 @@ export default function ClientFinanceSection({ clientId }) {
                       <td style={{ color: 'var(--text-secondary)' }}>{b.description || '—'}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{b.fine_number || '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatBRL(b.final_amount)}</td>
-                      <td style={{ textAlign: 'right', color: '#15803d' }}>{formatBRL(b.paid_amount)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--success)' }}>{formatBRL(b.paid_amount)}</td>
                       <td><StatusBadge status={b.financial_status} label={BILLING_STATUS_LABELS[b.financial_status]} /></td>
                     </tr>
                   ))}

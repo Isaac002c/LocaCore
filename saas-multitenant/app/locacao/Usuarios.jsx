@@ -7,9 +7,9 @@ import { PageLoading, InlineError, EmptyState } from '../components/states';
 const ROLE_LABELS = { admin: 'Administrador', manager: 'Gerente', operator: 'Operador', viewer: 'Visualizador' };
 const roleLabel = (r) => ROLE_LABELS[r] || r;
 const roleStyle = (r) => ({
-  admin: { bg: '#ede9fe', text: '#6d28d9' }, manager: { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
-  operator: { bg: '#dcfce7', text: '#15803d' }, viewer: { bg: '#f1f5f9', text: '#475569' },
-}[r] || { bg: '#f1f5f9', text: '#475569' });
+  admin: { bg: 'var(--primary-soft)', text: 'var(--primary)' }, manager: { bg: 'color-mix(in srgb, var(--info) 16%, transparent)', text: 'var(--info)' },
+  operator: { bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' }, viewer: { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
+}[r] || { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' });
 
 const EMPTY = { name: '', email: '', password: '', role: 'viewer' };
 

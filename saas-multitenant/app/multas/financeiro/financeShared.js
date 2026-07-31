@@ -98,7 +98,7 @@ export function AccessDenied() {
         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
       <h3 style={{ color: 'var(--text-primary)', marginBottom: 6 }}>Acesso restrito</h3>
-      <p style={{ color: '#94a3b8' }}>O módulo financeiro está disponível apenas para administradores.</p>
+      <p style={{ color: 'var(--text-muted)' }}>O módulo financeiro está disponível apenas para administradores.</p>
     </div>
   );
 }
@@ -107,7 +107,7 @@ export function Spinner({ label = 'Carregando...' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
       <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: BRAND }} />
-      <p style={{ color: '#94a3b8', fontSize: 14 }}>{label}</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{label}</p>
     </div>
   );
 }

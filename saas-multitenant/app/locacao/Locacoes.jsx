@@ -483,7 +483,15 @@ export default function Locacoes() {
               <div className="form-row">
                 <div className="form-group"><label>Retirada</label><input type="date" value={formData.start_date} onChange={set('start_date')} /></div>
                 <div className="form-group"><label>Devolução prevista</label><input type="date" value={formData.end_date} onChange={set('end_date')} /></div>
-                <div className="form-group"><label>Diárias</label><input type="text" value={formTotals.days} readOnly style={{ background: '#f8fafc' }} /></div>
+                <div className="form-group">
+                  <label>Diárias</label>
+                  {/* Calculado das datas — não é campo editável, então não se
+                      disfarça de input vazio. */}
+                  <output className="nx-derivado" title="Calculado a partir das datas de retirada e devolução">
+                    <strong>{formTotals.days || '—'}</strong>
+                    <span>{formTotals.days === 1 ? 'diária' : 'diárias'}</span>
+                  </output>
+                </div>
               </div>
 
               <div className="form-row">
@@ -501,9 +509,30 @@ export default function Locacoes() {
                 <div className="form-group"><label>Local de retirada</label><input type="text" value={formData.pickup_location} onChange={set('pickup_location')} placeholder="Opcional" /></div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', margin: '4px 0 8px' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total da locação</span>
-                <strong style={{ fontSize: 18, color: 'var(--text-primary)' }}>{fmtMoney(formTotals.total)}</strong>
+              {/* Resumo do valor: mostra a CONTA, não só o resultado. A caução
+                  aparece separada porque é reembolsável — não entra no total. */}
+              <div className="nx-resumo">
+                <div className="nx-resumo-linhas">
+                  <div className="nx-resumo-linha">
+                    <span>{formTotals.days || 0} {formTotals.days === 1 ? 'diária' : 'diárias'} × {fmtMoney(formData.daily_rate || 0)}</span>
+                    <span>{fmtMoney((Number(formData.daily_rate) || 0) * formTotals.days)}</span>
+                  </div>
+                  {Number(formData.discount_amount) > 0 && (
+                    <div className="nx-resumo-linha nx-resumo-linha--desconto">
+                      <span>Desconto</span>
+                      <span>− {fmtMoney(formData.discount_amount)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="nx-resumo-total">
+                  <span>Total da locação</span>
+                  <strong>{fmtMoney(formTotals.total)}</strong>
+                </div>
+                {Number(formData.deposit_amount) > 0 && (
+                  <div className="nx-resumo-nota">
+                    + {fmtMoney(formData.deposit_amount)} de caução — cobrada à parte e devolvida na entrega do veículo.
+                  </div>
+                )}
               </div>
 
               <div className="form-group"><label>Observações</label><textarea value={formData.notes} onChange={set('notes')} rows={2} placeholder="Anotações sobre a locação..." /></div>
@@ -577,7 +606,7 @@ export default function Locacoes() {
             )}
 
             {notice && (
-              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'color-mix(in srgb, var(--success) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 38%, transparent)', color: '#065f46', borderRadius: 8, padding: '8px 12px', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{notice}</span>
                 <button className="btn-close" onClick={() => setNotice(null)}>✕</button>
               </div>
@@ -590,7 +619,7 @@ export default function Locacoes() {
                 {extras.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                     {extras.map((ex) => (
-                      <div key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
+                      <div key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'var(--surface-secondary)', borderRadius: 8, fontSize: 13 }}>
                         <span style={{ color: 'var(--text-secondary)' }}>{ex.category || 'Extra'}{Number(ex.quantity) !== 1 ? ` · ${Number(ex.quantity)}×${fmtMoney(ex.unit_amount)}` : ''}{ex.description ? ` — ${ex.description}` : ''}</span>
                         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <strong>{fmtMoney(ex.total_amount)}</strong>
@@ -637,12 +666,12 @@ export default function Locacoes() {
                   {finance.summary && (
                     <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                       <span>Faturado: <strong>{fmtMoney(finance.summary.total_billed)}</strong></span>
-                      <span>Recebido: <strong style={{ color: '#15803d' }}>{fmtMoney(finance.summary.total_paid)}</strong></span>
-                      <span>Pendente: <strong style={{ color: '#b45309' }}>{fmtMoney(finance.summary.total_pending)}</strong></span>
+                      <span>Recebido: <strong style={{ color: 'var(--success)' }}>{fmtMoney(finance.summary.total_paid)}</strong></span>
+                      <span>Pendente: <strong style={{ color: 'var(--warning)' }}>{fmtMoney(finance.summary.total_pending)}</strong></span>
                     </div>
                   )}
                   {finance.billings.map((b) => (
-                    <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
+                    <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--surface-secondary)', borderRadius: 8, fontSize: 13 }}>
                       <span style={{ color: 'var(--text-secondary)' }}>{b.description || 'Faturamento'}</span>
                       <span style={{ fontWeight: 600 }}>{fmtMoney(b.final_amount)} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>({b.financial_status})</span></span>
                     </div>
@@ -658,7 +687,7 @@ export default function Locacoes() {
               {documents.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                   {documents.map((d) => (
-                    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 8, fontSize: 13 }}>
+                    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'var(--surface-secondary)', borderRadius: 8, fontSize: 13 }}>
                       <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--nx-primary)', textDecoration: 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {DOC_LABELS[d.category] || d.category || 'Documento'} · {d.file_name}
                       </a>
@@ -704,7 +733,7 @@ export default function Locacoes() {
 
 function DetailRow({ label, value }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '5px 0', fontSize: 13.5, borderBottom: '1px solid #f1f5f9' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '5px 0', fontSize: 13.5, borderBottom: '1px solid var(--border)' }}>
       <span style={{ color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>{value}</span>
     </div>

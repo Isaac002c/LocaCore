@@ -48,7 +48,7 @@ const fmtCompact = (v) => {
 const AXIS = { fontSize: 11, fill: CHART_COLORS.axis };
 const NX_TOOLTIP = {
   contentStyle: {
-    borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(15,23,42,.10)',
+    borderRadius: 8, border: '1px solid var(--border)', boxShadow: '0 8px 24px rgba(15,23,42,.10)',
     fontSize: 12.5, padding: '8px 12px',
   },
   labelStyle: { fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 },

@@ -27,21 +27,28 @@ export function VistoriaFields({ value = EMPTY_VISTORIA, onChange }) {
   const set = (patch) => onChange({ ...v, ...patch });
   const toggle = (key) => onChange({ ...v, items: { ...v.items, [key]: !v.items[key] } });
   return (
-    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, background: '#f8fafc' }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 }}>Vistoria</div>
+    <fieldset className="nx-vistoria">
+      <legend>Vistoria de retirada</legend>
+      <p className="nx-vistoria-hint">
+        Registre o estado do veículo na entrega. Serve de prova na devolução.
+      </p>
       <div className="form-row">
         <div className="form-group"><label>Combustível</label><select value={v.fuel} onChange={(e) => set({ fuel: e.target.value })}><option value="">—</option>{FUEL_LEVELS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
         <div className="form-group"><label>Estado geral</label><select value={v.condition} onChange={(e) => set({ condition: e.target.value })}><option value="">—</option>{CONDITIONS.map(([val, l]) => <option key={val} value={val}>{l}</option>)}</select></div>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, margin: '6px 0 10px' }}>
-        {ACCESSORIES.map(([key, l]) => (
-          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={!!v.items[key]} onChange={() => toggle(key)} />{l}
-          </label>
-        ))}
+      <div className="nx-vistoria-itens">
+        <span className="nx-vistoria-itens-label">Itens conferidos</span>
+        <div className="nx-vistoria-grade">
+          {ACCESSORIES.map(([key, l]) => (
+            <label key={key} className={`nx-vistoria-item${v.items[key] ? ' is-ok' : ''}`}>
+              <input type="checkbox" checked={!!v.items[key]} onChange={() => toggle(key)} />
+              <span>{l}</span>
+            </label>
+          ))}
+        </div>
       </div>
       <div className="form-group"><label>Avarias / observações da vistoria</label><textarea rows={2} value={v.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Riscos, amassados, faltas..." /></div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -56,8 +63,8 @@ export function VistoriaView({ data, title = 'Vistoria' }) {
       <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>{title}</div>
       {d.fuel && <span style={{ marginRight: 12 }}>Combustível: <strong>{d.fuel}</strong></span>}
       {d.condition && <span>Estado: <strong>{condLabel(d.condition)}</strong></span>}
-      {present.length > 0 && <div style={{ color: '#15803d' }}>✓ {present.join(', ')}</div>}
-      {missing.length > 0 && <div style={{ color: '#b91c1c' }}>✗ Faltando: {missing.join(', ')}</div>}
+      {present.length > 0 && <div style={{ color: 'var(--success)' }}>✓ {present.join(', ')}</div>}
+      {missing.length > 0 && <div style={{ color: 'var(--danger)' }}>✗ Faltando: {missing.join(', ')}</div>}
       {d.notes && <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>{d.notes}</div>}
     </div>
   );

@@ -22,7 +22,7 @@ export const LEGACY_TYPES = [
   { value: 'reuniao',  label: 'Reunião',  color: '#6366f1' },
   { value: 'prazo',    label: 'Prazo',    color: '#f59e0b' },
   { value: 'outro',    label: 'Outro',    color: 'var(--text-secondary)' },
-  { value: 'bloqueio', label: 'Bloqueio', color: '#dc2626' },
+  { value: 'bloqueio', label: 'Bloqueio', color: 'var(--danger)' },
 ];
 export const ALL_TYPES = [...TYPES, ...LEGACY_TYPES];
 export const typeInfo = (t) => ALL_TYPES.find(x => x.value === t) || { value: t, label: t || 'Outro', color: 'var(--text-secondary)' };

@@ -21,14 +21,14 @@ export const VEHICLE_STATUS = [
   { value: 'inativo',    label: 'Inativo' },
 ];
 const VEHICLE_STATUS_COLORS = {
-  disponivel: { bg: '#dcfce7', text: '#15803d' },
-  alugado:    { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
-  manutencao: { bg: '#fef3c7', text: '#b45309' },
-  inativo:    { bg: '#f1f5f9', text: '#64748b' },
+  disponivel: { bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' },
+  alugado:    { bg: 'color-mix(in srgb, var(--info) 16%, transparent)', text: 'var(--info)' },
+  manutencao: { bg: 'color-mix(in srgb, var(--warning) 16%, transparent)', text: 'var(--warning)' },
+  inativo:    { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
 };
 export const vehicleStatusLabel = (s) => VEHICLE_STATUS.find((o) => o.value === s)?.label || s || '—';
 export const vehicleStatusStyle = (s) => {
-  const c = VEHICLE_STATUS_COLORS[s] || { bg: '#f1f5f9', text: '#64748b' };
+  const c = VEHICLE_STATUS_COLORS[s] || { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' };
   return { background: c.bg, color: c.text };
 };
 
@@ -41,15 +41,15 @@ export const RENTAL_STATUS = [
   { value: 'cancelado',    label: 'Cancelado' },
 ];
 const RENTAL_STATUS_COLORS = {
-  reservado:    { bg: '#ede9fe', text: '#6d28d9' },
-  em_andamento: { bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
-  atrasado:     { bg: '#fee2e2', text: '#b91c1c' },
-  finalizado:   { bg: '#dcfce7', text: '#15803d' },
-  cancelado:    { bg: '#f1f5f9', text: '#64748b' },
+  reservado:    { bg: 'var(--primary-soft)', text: 'var(--primary)' },
+  em_andamento: { bg: 'color-mix(in srgb, var(--info) 16%, transparent)', text: 'var(--info)' },
+  atrasado:     { bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
+  finalizado:   { bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' },
+  cancelado:    { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
 };
 export const rentalStatusLabel = (s) => RENTAL_STATUS.find((o) => o.value === s)?.label || s || '—';
 export const rentalStatusStyle = (s) => {
-  const c = RENTAL_STATUS_COLORS[s] || { bg: '#f1f5f9', text: '#64748b' };
+  const c = RENTAL_STATUS_COLORS[s] || { bg: 'var(--surface-hover)', text: 'var(--text-secondary)' };
   return { background: c.bg, color: c.text };
 };
 

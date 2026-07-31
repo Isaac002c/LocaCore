@@ -186,7 +186,7 @@ function CategoriesSettings() {
       <Feedback {...(feedback || {})} onClose={() => setFeedback(null)} />
       {error && <div className="error-message" style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}><span>{error}</span><button onClick={() => setError(null)} className="btn-close">✕</button></div>}
 
-      <form onSubmit={submit} style={{ background: '#f8fafc', padding: 12, borderRadius: 10, marginBottom: 16 }}>
+      <form onSubmit={submit} style={{ background: 'var(--surface-secondary)', padding: 12, borderRadius: 10, marginBottom: 16 }}>
         <div className="form-row">
           <div className="form-group"><label>Nome *</label><input type="text" value={form.name} onChange={set('name')} placeholder="Nome da categoria" /></div>
           <div className="form-group"><label>Tipo *</label>

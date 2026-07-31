@@ -38,16 +38,16 @@ const prazoLabel = (v) => {
 const urgencyOf = (v, overdue) => {
   const d = diffDays(v);
   if (overdue && d === 0)               return { color: '#ea580c', soft: '#ffedd5' }; // vence hoje
-  if (overdue || (d != null && d < 0))  return { color: '#dc2626', soft: '#fee2e2' }; // vencido
-  if (d != null && d <= 7)              return { color: '#d97706', soft: '#fef3c7' }; // até 7 dias
+  if (overdue || (d != null && d < 0))  return { color: 'var(--danger)', soft: '#fee2e2' }; // vencido
+  if (d != null && d <= 7)              return { color: 'var(--warning)', soft: '#fef3c7' }; // até 7 dias
   return { color: 'var(--text-secondary)', soft: '#f1f5f9' };                                       // mais distante
 };
 
 // Abas por urgência (Vencido / Hoje / Até 7 dias / Mais distante)
 const TABS = [
-  { key: 'vencidos', label: 'Vencidos',      color: '#dc2626', soft: '#fee2e2' },
+  { key: 'vencidos', label: 'Vencidos',      color: 'var(--danger)', soft: '#fee2e2' },
   { key: 'hoje',     label: 'Vence hoje',    color: '#ea580c', soft: '#ffedd5' },
-  { key: 'ate7',     label: 'Até 7 dias',    color: '#d97706', soft: '#fef3c7' },
+  { key: 'ate7',     label: 'Até 7 dias',    color: 'var(--warning)', soft: '#fef3c7' },
   { key: 'distante', label: 'Mais distante', color: 'var(--text-secondary)', soft: '#f1f5f9' },
 ];
 
@@ -160,7 +160,7 @@ export default function MultasAgenda() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando prazos...</p>
     </div>
   );
@@ -182,7 +182,7 @@ export default function MultasAgenda() {
       </div>
 
       {error && (
-        <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)', color: 'var(--danger)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
           {error}
         </div>
       )}
@@ -244,9 +244,9 @@ export default function MultasAgenda() {
           <div className="ag-aside-card">
             <div className="ag-aside-title">Legenda</div>
             <p className="ag-legend">
-              <strong style={{ color: '#dc2626' }}>Vermelho</strong> — vencido<br />
+              <strong style={{ color: 'var(--danger)' }}>Vermelho</strong> — vencido<br />
               <strong style={{ color: '#ea580c' }}>Laranja</strong> — vence hoje<br />
-              <strong style={{ color: '#d97706' }}>Amarelo</strong> — vence em até 7 dias<br />
+              <strong style={{ color: 'var(--warning)' }}>Amarelo</strong> — vence em até 7 dias<br />
               <strong style={{ color: 'var(--text-secondary)' }}>Cinza</strong> — mais distante
             </p>
           </div>

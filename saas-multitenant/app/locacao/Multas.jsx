@@ -61,7 +61,7 @@ export default function Multas() {
       </div>
 
       <InlineError message={error} onDismiss={() => setError(null)} onRetry={load} />
-      {notice && <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
+      {notice && <div style={{ background: 'color-mix(in srgb, var(--success) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 38%, transparent)', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
 
       <div className="clients-toolbar">
         <div className="clients-filters"><select value={filter} onChange={(e) => setFilter(e.target.value)} className="clients-filter-select"><option value="">Todos os status</option>{STATUS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>

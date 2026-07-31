@@ -7,14 +7,14 @@ import { PageLoading, InlineError, EmptyState } from '../components/states';
 
 // Cores/rótulos por tipo de evento da agenda operacional.
 const TYPE_META = {
-  retirada:   { label: 'Retirada',    bg: '#dbeafe', text: 'var(--nx-primary-hover)' },
-  devolucao:  { label: 'Devolução',   bg: '#dcfce7', text: '#15803d' },
-  manutencao: { label: 'Manutenção',  bg: '#fef3c7', text: '#b45309' },
-  multa:      { label: 'Multa',       bg: '#fee2e2', text: '#b91c1c' },
-  bloqueio:   { label: 'Bloqueio',    bg: '#f1f5f9', text: '#475569' },
-  lembrete:   { label: 'Lembrete',    bg: '#ede9fe', text: '#6d28d9' },
-  tarefa:     { label: 'Tarefa',      bg: '#e0f2fe', text: '#0369a1' },
-  outro:      { label: 'Evento',      bg: '#f1f5f9', text: '#475569' },
+  retirada:   { label: 'Retirada',    bg: 'color-mix(in srgb, var(--info) 16%, transparent)', text: 'var(--info)' },
+  devolucao:  { label: 'Devolução',   bg: 'color-mix(in srgb, var(--success) 16%, transparent)', text: 'var(--success)' },
+  manutencao: { label: 'Manutenção',  bg: 'color-mix(in srgb, var(--warning) 16%, transparent)', text: 'var(--warning)' },
+  multa:      { label: 'Multa',       bg: 'color-mix(in srgb, var(--danger) 16%, transparent)', text: 'var(--danger)' },
+  bloqueio:   { label: 'Bloqueio',    bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
+  lembrete:   { label: 'Lembrete',    bg: 'var(--primary-soft)', text: 'var(--primary)' },
+  tarefa:     { label: 'Tarefa',      bg: 'color-mix(in srgb, var(--info) 14%, transparent)', text: 'var(--info)' },
+  outro:      { label: 'Evento',      bg: 'var(--surface-hover)', text: 'var(--text-secondary)' },
 };
 const meta = (t) => TYPE_META[t] || TYPE_META.outro;
 
@@ -116,14 +116,14 @@ export default function Calendario() {
             <div key={d}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: isToday(d) ? 'var(--primary)' : 'var(--text-primary)', margin: 0 }}>{fmtDate(d)}</h3>
-                {isToday(d) && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--nx-primary)', background: '#dbeafe', padding: '2px 8px', borderRadius: 999 }}>HOJE</span>}
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                {isToday(d) && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--nx-primary)', background: 'color-mix(in srgb, var(--info) 16%, transparent)', padding: '2px 8px', borderRadius: 999 }}>HOJE</span>}
+                <div style={{ flex: 1, height: 1, background: 'var(--surface-hover)' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {byDate.get(d).map((ev) => {
                   const m = meta(ev.type);
                   return (
-                    <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, borderLeft: `4px solid ${m.text}` }}>
+                    <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, borderLeft: `4px solid ${m.text}` }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: m.text, background: m.bg, padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>{m.label}</span>
                       {ev.start_time && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', minWidth: 44 }}>{String(ev.start_time).substring(0, 5)}</span>}
                       <div style={{ flex: 1, minWidth: 0 }}>

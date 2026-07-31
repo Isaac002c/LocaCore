@@ -125,7 +125,7 @@ export default function Automacoes() {
       </div>
 
       <InlineError message={error} onDismiss={() => setError(null)} onRetry={loadPanel} />
-      {notice && <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between', wordBreak: 'break-word' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
+      {notice && <div style={{ background: 'color-mix(in srgb, var(--success) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 38%, transparent)', color: '#065f46', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between', wordBreak: 'break-word' }}><span>{notice}</span><button className="btn-close" onClick={() => setNotice(null)}>✕</button></div>}
 
       {/* ── PAINEL: console operacional (§8) ────────────────────── */}
       {tab === 'painel' && (
@@ -342,7 +342,7 @@ export default function Automacoes() {
             </div>
             <div className="form-group" style={{ maxWidth: 320 }}><label>Provedor fiscal</label><select value={settings.fiscal_provider} onChange={setField('fiscal_provider')}><option value="null">Nenhum (pendente)</option><option value="focusnfe">Focus NFe</option><option value="nfeio">NFe.io</option></select></div>
             {validation && !validation.ok && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
+              <div style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 38%, transparent)', color: 'var(--warning)', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
                 Emissão fiscal pendente de configuração. Faltando: {validation.missing.join(', ')}. Definir com o contador; sem provedor/credenciais válidos, nenhuma nota produtiva é emitida.
               </div>
             )}
@@ -397,7 +397,7 @@ export default function Automacoes() {
                 <tr key={f.id}>
                   <td>{f.document_type || '—'}</td><td>{f.number || '—'}</td><td>{fmtMoney(f.amount)}</td>
                   <td><span className="client-status-badge">{f.status}</span></td>
-                  <td style={{ fontSize: 12, color: '#b45309', maxWidth: 260 }}>{f.error_message || '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--warning)', maxWidth: 260 }}>{f.error_message || '—'}</td>
                   <td>{['failed', 'rejected', 'pending_configuration'].includes(f.status) && <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={async () => { try { await retryFiscal(f.id); await loadFiscal(); } catch (e) { setError(e.message); } }}>Reprocessar</button>}</td>
                 </tr>
               ))}</tbody>

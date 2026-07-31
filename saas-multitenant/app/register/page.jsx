@@ -85,14 +85,14 @@ export default function Register() {
           }}>
             {PRODUCT_NAME}
           </h1>
-          <p style={{ color: '#94a3b8', fontSize: '14px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
             Criação de contas temporariamente desativada
           </p>
         </div>
 
         <div style={{
-          background: '#fef3c7',
-          color: '#92400e',
+          background: 'color-mix(in srgb, var(--warning) 16%, transparent)',
+          color: 'var(--warning)',
           padding: '16px',
           borderRadius: '8px',
           marginBottom: '24px',

@@ -5,9 +5,9 @@ import { listApprovals, approveRequest, rejectRequest, archiveOldLeads } from '.
 
 const STATUS_LABELS = { pending:'Pendente', approved:'Aprovado', rejected:'Recusado' };
 const STATUS_COLORS = {
-  pending:  { bg:'#fef3c7', color:'#d97706' },
-  approved: { bg:'#dcfce7', color:'#15803d' },
-  rejected: { bg:'#fee2e2', color:'#991b1b' },
+  pending:  { bg:'color-mix(in srgb, var(--warning) 16%, transparent)', color:'var(--warning)' },
+  approved: { bg:'color-mix(in srgb, var(--success) 16%, transparent)', color:'var(--success)' },
+  rejected: { bg:'color-mix(in srgb, var(--danger) 16%, transparent)', color:'var(--danger)' },
 };
 const TYPE_LABELS = { lead:'Lead', client:'Cliente', contract:'Contrato/Serviço', document:'Documento' };
 
@@ -83,7 +83,7 @@ export default function Approvals() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           <select value={filter} onChange={e=>setFilter(e.target.value)}
-            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'var(--text-primary)', outline:'none' }}>
+            style={{ padding:'8px 12px', border:'1px solid var(--border)', borderRadius:8, fontSize:13, background:'var(--surface)', color:'var(--text-primary)', outline:'none' }}>
             <option value="">Todas</option>
             <option value="pending">Pendentes</option>
             <option value="approved">Aprovadas</option>
@@ -92,7 +92,7 @@ export default function Approvals() {
           <span style={{ fontSize:13, color:'var(--text-muted)' }}>{items.length} solicitação(ões)</span>
         </div>
         <button onClick={handleArchive} disabled={archiving}
-          style={{ padding:'8px 16px', borderRadius:8, fontSize:13, background:'#fff', border:'1px solid #e2e8f0', color:'var(--text-secondary)', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+          style={{ padding:'8px 16px', borderRadius:8, fontSize:13, background:'var(--surface)', border:'1px solid var(--border)', color:'var(--text-secondary)', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
           </svg>
@@ -101,7 +101,7 @@ export default function Approvals() {
       </div>
 
       {archiveResult && (
-        <div style={{ padding:'10px 14px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, marginBottom:16, fontSize:13, color:'#15803d', display:'flex', justifyContent:'space-between' }}>
+        <div style={{ padding:'10px 14px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, marginBottom:16, fontSize:13, color:'var(--success)', display:'flex', justifyContent:'space-between' }}>
           {archiveResult}
           <button onClick={()=>setArchiveResult(null)} style={{ border:'none', background:'none', cursor:'pointer' }}>✕</button>
         </div>
@@ -116,7 +116,7 @@ export default function Approvals() {
 
       {loading ? (
         <div style={{ display:'flex', justifyContent:'center', padding:'40px 0' }}>
-          <div className="loading-spinner" style={{ width:28, height:28, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
+          <div className="loading-spinner" style={{ width:28, height:28, border:'3px solid var(--border)', borderTopColor:'var(--nx-primary)' }} />
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-muted)' }}>
@@ -127,7 +127,7 @@ export default function Approvals() {
           <p>Nenhuma solicitação {filter === 'pending' ? 'pendente' : ''}</p>
         </div>
       ) : (
-        <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, overflow:'hidden' }}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
           <table className="data-table" style={{ margin:0 }}>
             <thead>
               <tr>
@@ -169,11 +169,11 @@ export default function Approvals() {
                       {item.status === 'pending' && (
                         <div style={{ display:'flex', gap:6 }}>
                           <button onClick={()=>handleApprove(item.id)} disabled={acting===item.id}
-                            style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:600, background:'#dcfce7', border:'1px solid #bbf7d0', color:'#15803d', cursor:'pointer' }}>
+                            style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:600, background:'color-mix(in srgb, var(--success) 16%, transparent)', border:'1px solid #bbf7d0', color:'var(--success)', cursor:'pointer' }}>
                             {acting===item.id ? '...' : 'Aprovar'}
                           </button>
                           <button onClick={()=>handleReject(item.id)} disabled={acting===item.id}
-                            style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:600, background:'#fee2e2', border:'1px solid #fecaca', color:'#991b1b', cursor:'pointer' }}>
+                            style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:600, background:'color-mix(in srgb, var(--danger) 16%, transparent)', border:'1px solid color-mix(in srgb, var(--danger) 38%, transparent)', color:'var(--danger)', cursor:'pointer' }}>
                             {acting===item.id ? '...' : 'Recusar'}
                           </button>
                         </div>

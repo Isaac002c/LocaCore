@@ -51,36 +51,36 @@ const PROTOCOL_STATUS_OPTIONS = [
 
 function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploadingId, uploadError, handleFileUpload }) {
   return (
-    <div style={{ padding:'12px', background:'#f8fafc', borderRadius:8, border:'1px solid #e2e8f0', marginBottom:8 }}>
+    <div style={{ padding:'12px', background:'var(--surface-secondary)', borderRadius:8, border:'1px solid var(--border)', marginBottom:8 }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:8 }}>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Número</label>
-          <input type="text" value={form.protocol_number||''} onChange={e=>setForm(p=>({...p,protocol_number:e.target.value}))} placeholder="Ex.: 2024/00123" style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
+          <input type="text" value={form.protocol_number||''} onChange={e=>setForm(p=>({...p,protocol_number:e.target.value}))} placeholder="Ex.: 2024/00123" style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
         </div>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Data</label>
           <div style={{ display:'flex', gap:4 }}>
-            <input type="text" value={isoToDisplay(form.protocol_date||'')} onChange={e=>setForm(p=>({...p,protocol_date:normalizeDate(e.target.value)}))} placeholder="dd/mm/aaaa" inputMode="numeric" style={{ flex:1, padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
-            <input type="date" value={displayToIso(form.protocol_date)||''} onChange={e=>setForm(p=>({...p,protocol_date: e.target.value? isoToDisplay(e.target.value):''}))} title="Calendário" aria-label="Escolher data" style={{ width:32, flexShrink:0, padding:0, border:'1px solid #e2e8f0', borderRadius:6, fontSize:12 }} />
+            <input type="text" value={isoToDisplay(form.protocol_date||'')} onChange={e=>setForm(p=>({...p,protocol_date:normalizeDate(e.target.value)}))} placeholder="dd/mm/aaaa" inputMode="numeric" style={{ flex:1, padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
+            <input type="date" value={displayToIso(form.protocol_date)||''} onChange={e=>setForm(p=>({...p,protocol_date: e.target.value? isoToDisplay(e.target.value):''}))} title="Calendário" aria-label="Escolher data" style={{ width:32, flexShrink:0, padding:0, border:'1px solid var(--border)', borderRadius:6, fontSize:12 }} />
           </div>
         </div>
         <div><label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Status</label>
-          <select value={form.protocol_status||'protocolado'} onChange={e=>setForm(p=>({...p,protocol_status:e.target.value}))} style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12, background:'#fff' }}>
+          <select value={form.protocol_status||'protocolado'} onChange={e=>setForm(p=>({...p,protocol_status:e.target.value}))} style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12, background:'var(--surface)' }}>
             {PROTOCOL_STATUS_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
       </div>
       <div style={{ marginBottom:8 }}>
         <label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Observações</label>
-        <textarea value={form.protocol_notes||''} onChange={e=>setForm(p=>({...p,protocol_notes:e.target.value}))} rows={2} placeholder="Observações..." style={{ width:'100%', padding:'6px 8px', border:'1px solid #e2e8f0', borderRadius:6, fontSize:12, resize:'vertical' }} />
+        <textarea value={form.protocol_notes||''} onChange={e=>setForm(p=>({...p,protocol_notes:e.target.value}))} rows={2} placeholder="Observações..." style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, fontSize:12, resize:'vertical' }} />
       </div>
       <div style={{ marginBottom:8 }}>
         <label style={{ fontSize:11, color:'var(--text-secondary)', display:'block', marginBottom:3 }}>Anexo</label>
         {form.protocol_file_url ? (
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:6 }}>
-            <a href={form.protocol_file_url} target="_blank" rel="noreferrer" style={{ color:'#16a34a', fontSize:12, flex:1 }}>Abrir / Baixar</a>
+            <a href={form.protocol_file_url} target="_blank" rel="noreferrer" style={{ color:'var(--success)', fontSize:12, flex:1 }}>Abrir / Baixar</a>
             <button type="button" onClick={()=>setForm(p=>({...p,protocol_file_url:''}))} style={{ border:'none', background:'none', cursor:'pointer', color:'#ef4444', fontSize:11 }}>Remover</button>
           </div>
         ) : (
-          <label style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'#fff', border:'1px dashed #cbd5e1', borderRadius:6, cursor:'pointer' }}>
+          <label style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'var(--surface)', border:'1px dashed var(--border-strong)', borderRadius:6, cursor:'pointer' }}>
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:'none' }} onChange={e=>handleFileUpload(e, setForm)} disabled={uploadingId==='uploading'} />
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style={{ fontSize:11, color:'var(--text-muted)' }}>{uploadingId==='uploading'?'Enviando...':'Anexar PDF, JPG ou PNG (máx. 10 MB)'}</span>
@@ -89,7 +89,7 @@ function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploa
       </div>
       {uploadError && <p style={{ color:'#ef4444', fontSize:11, margin:'4px 0' }}>{uploadError}</p>}
       <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
-        {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'#fff', border:'1px solid #e2e8f0', color:'var(--text-secondary)', cursor:'pointer' }}>Cancelar</button>}
+        {onCancel && <button type="button" onClick={onCancel} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'var(--surface)', border:'1px solid var(--border)', color:'var(--text-secondary)', cursor:'pointer' }}>Cancelar</button>}
         <button type="button" onClick={onSubmit} disabled={submitting} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, background:'var(--nx-primary)', border:'none', color:'#fff', cursor:'pointer' }}>
           {submitting?'Salvando...':'Salvar'}
         </button>
@@ -175,7 +175,7 @@ export default function ProtocolPanel({ contract, onClose }) {
             <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
           </svg>
           <span className="cd-protocol-title">Protocolos</span>
-          <span style={{ fontSize:11, color:'var(--text-muted)', background:'#f1f5f9', borderRadius:10, padding:'1px 7px' }}>
+          <span style={{ fontSize:11, color:'var(--text-muted)', background:'var(--surface-secondary)', borderRadius:10, padding:'1px 7px' }}>
             {protocols.length + (hasLegacy ? 1 : 0)}
           </span>
         </div>
@@ -202,10 +202,10 @@ export default function ProtocolPanel({ contract, onClose }) {
             )}
 
             {hasLegacy && (
-              <div style={{ padding:'10px 12px', background:'#fffbeb', border:'1px solid #fde68a', borderRadius:8, marginBottom:8 }}>
+              <div style={{ padding:'10px 12px', background:'color-mix(in srgb, var(--warning) 12%, transparent)', border:'1px solid color-mix(in srgb, var(--warning) 38%, transparent)', borderRadius:8, marginBottom:8 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                  <span style={{ fontSize:11, fontWeight:600, color:'#92400e' }}>Protocolo legado</span>
-                  <span style={{ fontSize:10, color:'#b45309' }}>somente leitura</span>
+                  <span style={{ fontSize:11, fontWeight:600, color:'var(--warning)' }}>Protocolo legado</span>
+                  <span style={{ fontSize:10, color:'var(--warning)' }}>somente leitura</span>
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, fontSize:12, color:'var(--text-secondary)' }}>
                   <div><strong>Nº:</strong> {contract.protocol_number||'—'}</div>
@@ -214,13 +214,13 @@ export default function ProtocolPanel({ contract, onClose }) {
                 </div>
                 {contract.protocol_notes && <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{contract.protocol_notes}</div>}
                 {contract.protocol_file_url && (
-                  <a href={contract.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#92400e', display:'block', marginTop:4 }}>Abrir anexo legado</a>
+                  <a href={contract.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--warning)', display:'block', marginTop:4 }}>Abrir anexo legado</a>
                 )}
               </div>
             )}
 
             {protocols.map(proto => (
-              <div key={proto.id} style={{ padding:'10px 12px', background:'#fff', border:'1px solid #e2e8f0', borderRadius:8, marginBottom:8 }}>
+              <div key={proto.id} style={{ padding:'10px 12px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, marginBottom:8 }}>
                 {editingId === proto.id ? (
                   <ProtocolItemForm
                     form={proto}
@@ -250,16 +250,16 @@ export default function ProtocolPanel({ contract, onClose }) {
                     </div>
                     {proto.protocol_notes && <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:6 }}>{proto.protocol_notes}</div>}
                     {proto.protocol_file_url && (
-                      <a href={proto.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#16a34a', display:'block', marginBottom:6 }}>Abrir / Baixar anexo</a>
+                      <a href={proto.protocol_file_url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--success)', display:'block', marginBottom:6 }}>Abrir / Baixar anexo</a>
                     )}
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                      <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#f1f5f9', border:'none', color:'var(--text-secondary)', cursor:'pointer' }}>Editar</button>
+                      <button type="button" onClick={()=>setEditingId(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'var(--surface-secondary)', border:'none', color:'var(--text-secondary)', cursor:'pointer' }}>Editar</button>
                       {proto.protocol_file_url && (
                         <button type="button" disabled={emailingId===proto.id} onClick={()=>handleSendEmail(proto.id)} title="Enviar protocolo por e-mail ao cliente" style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'var(--nx-primary)', border:'none', color:'#fff', cursor: emailingId===proto.id?'wait':'pointer', opacity: emailingId===proto.id?0.7:1 }}>
                           {emailingId===proto.id ? 'Enviando...' : 'Enviar por e-mail'}
                         </button>
                       )}
-                      <button type="button" onClick={()=>handleDeleteItem(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'#fee2e2', border:'none', color:'#991b1b', cursor:'pointer' }}>Excluir</button>
+                      <button type="button" onClick={()=>handleDeleteItem(proto.id)} style={{ padding:'3px 10px', borderRadius:5, fontSize:11, background:'color-mix(in srgb, var(--danger) 16%, transparent)', border:'none', color:'var(--danger)', cursor:'pointer' }}>Excluir</button>
                     </div>
                     {emailFeedback?.id===proto.id && (
                       <div style={{ marginTop:6, fontSize:11, fontWeight:600, color: emailFeedback.type==='success' ? '#15803d' : '#b91c1c' }}>

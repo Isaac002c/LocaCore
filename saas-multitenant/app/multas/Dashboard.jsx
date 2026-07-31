@@ -42,7 +42,7 @@ const STAGE_GROUPS = {
 };
 
 // Etapa "Deferidos" — contagem/lista próprias (fines com stage DEFERIDO), inclui cliente OU empresa.
-const DEFERIDO_INFO = { label: 'Deferidos', color: '#15803d', bg: 'rgba(21,128,61,0.08)' };
+const DEFERIDO_INFO = { label: 'Deferidos', color: 'var(--success)', bg: 'rgba(21,128,61,0.08)' };
 
 // Parsing date-only seguro: evita o shift de 1 dia ao interpretar "YYYY-MM-DD" como UTC.
 const formatDate = (v) => {
@@ -309,7 +309,7 @@ export default function MultasDashboard() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p>
     </div>
   );

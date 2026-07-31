@@ -45,7 +45,7 @@ export default function Importacao() {
     <div className="clients-page">
       <InlineError message={error} onDismiss={() => setError(null)} />
 
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, marginBottom: 16 }}>
         <div className="form-row" style={{ alignItems: 'flex-end' }}>
           <div className="form-group"><label>O que importar</label>
             <select value={entity} onChange={(e) => { setEntity(e.target.value); setPreview(null); setResult(null); }}>
@@ -65,7 +65,7 @@ export default function Importacao() {
       </div>
 
       {preview && (
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 16 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, marginBottom: 16 }}>
           <div className="clients-summary" style={{ marginBottom: 14 }}>
             <div className="clients-summary-card all"><span className="summary-number">{preview.total}</span><span className="summary-label">Linhas</span></div>
             <div className="clients-summary-card fechado"><span className="summary-number">{preview.valid_count}</span><span className="summary-label">Válidas</span></div>
@@ -74,10 +74,10 @@ export default function Importacao() {
 
           {preview.errors?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>Erros (ignorados na importação)</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', marginBottom: 6 }}>Erros (ignorados na importação)</div>
               <div className="clients-table-wrap" style={{ maxHeight: 180, overflow: 'auto' }}><table className="data-table">
                 <thead><tr><th style={{ width: 70 }}>Linha</th><th>Motivo</th></tr></thead>
-                <tbody>{preview.errors.map((e, i) => <tr key={i}><td>{e.line}</td><td style={{ color: '#b91c1c' }}>{e.message}</td></tr>)}</tbody>
+                <tbody>{preview.errors.map((e, i) => <tr key={i}><td>{e.line}</td><td style={{ color: 'var(--danger)' }}>{e.message}</td></tr>)}</tbody>
               </table></div>
             </div>
           )}
@@ -98,16 +98,16 @@ export default function Importacao() {
 
       {result && (
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 18 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#15803d', marginBottom: 8 }}>Importação concluída</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--success)', marginBottom: 8 }}>Importação concluída</div>
           <div style={{ display: 'flex', gap: 24, fontSize: 14 }}>
-            <span><strong style={{ color: '#15803d', fontSize: 20 }}>{result.imported}</strong> importados</span>
-            <span><strong style={{ color: '#b45309', fontSize: 20 }}>{result.skipped}</strong> já existentes (ignorados)</span>
-            <span><strong style={{ color: '#b91c1c', fontSize: 20 }}>{result.error_count}</strong> com erro</span>
+            <span><strong style={{ color: 'var(--success)', fontSize: 20 }}>{result.imported}</strong> importados</span>
+            <span><strong style={{ color: 'var(--warning)', fontSize: 20 }}>{result.skipped}</strong> já existentes (ignorados)</span>
+            <span><strong style={{ color: 'var(--danger)', fontSize: 20 }}>{result.error_count}</strong> com erro</span>
           </div>
           {result.errors?.length > 0 && (
             <div className="clients-table-wrap" style={{ maxHeight: 160, overflow: 'auto', marginTop: 12 }}><table className="data-table">
               <thead><tr><th style={{ width: 70 }}>Linha</th><th>Motivo</th></tr></thead>
-              <tbody>{result.errors.map((e, i) => <tr key={i}><td>{e.line}</td><td style={{ color: '#b91c1c' }}>{e.message}</td></tr>)}</tbody>
+              <tbody>{result.errors.map((e, i) => <tr key={i}><td>{e.line}</td><td style={{ color: 'var(--danger)' }}>{e.message}</td></tr>)}</tbody>
             </table></div>
           )}
           <button className="btn-secondary" style={{ marginTop: 12 }} onClick={reset}>Nova importação</button>

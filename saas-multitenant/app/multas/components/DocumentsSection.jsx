@@ -83,8 +83,8 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
         : docs);
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #f1f5f9' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
         <div>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{subtitle || `${visibleDocs.length} documento(s)`}</p>
@@ -93,7 +93,7 @@ export default function DocumentsSection({ scope, title = 'Documentos', subtitle
       </div>
 
       {error && <div className="error-message" style={{ margin: '12px 18px 0', fontSize: 13 }}>{error}</div>}
-      {renameOk && <div style={{ margin: '12px 18px 0', fontSize: 13, color: '#15803d', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px' }}>Documento renomeado com sucesso.</div>}
+      {renameOk && <div style={{ margin: '12px 18px 0', fontSize: 13, color: 'var(--success)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px' }}>Documento renomeado com sucesso.</div>}
 
       {loading ? (
         <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Carregando...</div>

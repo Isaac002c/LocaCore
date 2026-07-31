@@ -14,9 +14,9 @@ const WINE = 'var(--nx-primary)';
 
 function Stat({ label, value, color }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, borderTop: `3px solid ${color}`, padding: '16px 18px', flex: 1, minWidth: 150 }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, borderTop: `3px solid ${color}`, padding: '16px 18px', flex: 1, minWidth: 150 }}>
       <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value ?? '—'}</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 6 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 6 }}>{label}</div>
     </div>
   );
 }
@@ -166,14 +166,14 @@ export default function MasterPanel() {
   if (!authorized) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-secondary)' }}>
       {/* Topo institucional do produto (painel master da plataforma) */}
       <header style={{ background: 'linear-gradient(160deg,#0a0f1e,#0d1428)', color: '#fff', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 36, height: 36, borderRadius: 8, background: WINE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{PRODUCT_NAME.charAt(0)}</div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>{PRODUCT_NAME} · Painel Master</div>
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>Gestão do SaaS — multi-tenant</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Gestão do SaaS — multi-tenant</div>
           </div>
         </div>
         <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Sair</button>
@@ -187,16 +187,16 @@ export default function MasterPanel() {
         )}
 
         {createdInfo && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 14, color: '#166534' }}>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 14, color: 'var(--success)' }}>
             ✅ Empresa <strong>{createdInfo.tenant?.name}</strong> (slug <code>{createdInfo.tenant?.slug}</code>) criada com admin <strong>{createdInfo.admin?.email}</strong>. O admin já pode logar normalmente.
-            <button className="btn-close" style={{ float: 'right', color: '#166534' }} onClick={() => setCreatedInfo(null)}>✕</button>
+            <button className="btn-close" style={{ float: 'right', color: 'var(--success)' }} onClick={() => setCreatedInfo(null)}>✕</button>
           </div>
         )}
 
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-            <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: WINE }} />
-            <p style={{ color: '#94a3b8', fontSize: 14 }}>Carregando painel...</p>
+            <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: WINE }} />
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando painel...</p>
           </div>
         ) : (
           <>
@@ -214,22 +214,22 @@ export default function MasterPanel() {
               <button className="btn-primary" onClick={openCreate}>+ Nova empresa</button>
             </div>
 
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               <table className="data-table" style={{ border: 'none', borderRadius: 0 }}>
                 <thead>
                   <tr><th>Empresa</th><th>Slug</th><th>Status</th><th>Usuários</th><th>Criada em</th><th>Último acesso</th><th style={{ width: 260 }}>Ações</th></tr>
                 </thead>
                 <tbody>
                   {tenants.length === 0 ? (
-                    <tr><td colSpan="7"><div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>Nenhuma empresa cadastrada.</div></td></tr>
+                    <tr><td colSpan="7"><div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma empresa cadastrada.</div></td></tr>
                   ) : tenants.map(t => (
                     <tr key={t.id}>
                       <td><strong style={{ color: '#0f172a' }}>{t.name}</strong></td>
-                      <td style={{ color: '#475569', fontFamily: 'monospace', fontSize: 13 }}>{t.slug || '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 13 }}>{t.slug || '—'}</td>
                       <td><span className={`client-status-badge ${t.status === 'inativo' ? 'negociacao' : 'fechado'}`}>{t.status === 'inativo' ? 'Inativa' : 'Ativa'}</span></td>
-                      <td style={{ color: '#475569' }}>{t.users_count ?? 0}</td>
-                      <td style={{ color: '#475569' }}>{fmtDate(t.created_at)}</td>
-                      <td style={{ color: '#64748b', fontSize: 13 }}>{fmtDateTime(t.last_login)}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{t.users_count ?? 0}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{fmtDate(t.created_at)}</td>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{fmtDateTime(t.last_login)}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <button className="btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => openUsers(t)}>Usuários</button>
@@ -264,7 +264,7 @@ export default function MasterPanel() {
             <div className="modal-header">
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Nova Empresa (Tenant)</h2>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Cria a empresa e o usuário administrador dela.</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Cria a empresa e o usuário administrador dela.</p>
               </div>
               <button type="button" onClick={() => setShowCreate(false)} className="btn-close">✕</button>
             </div>
@@ -282,7 +282,7 @@ export default function MasterPanel() {
                   </select>
                 </div>
               </div>
-              <div style={{ borderTop: '1px solid #f1f5f9', margin: '4px 0 10px', paddingTop: 10, fontSize: 12, fontWeight: 700, color: '#94a3b8' }}>USUÁRIO ADMIN</div>
+              <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0 10px', paddingTop: 10, fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>USUÁRIO ADMIN</div>
               <div className="form-group"><label>Nome do admin</label><input value={form.adminName} onChange={e => setForm(p => ({ ...p, adminName: e.target.value }))} placeholder="Nome do responsável" /></div>
               <div className="form-row">
                 <div className="form-group"><label>E-mail do admin *</label><input type="email" value={form.adminEmail} onChange={e => setForm(p => ({ ...p, adminEmail: e.target.value }))} required /></div>
@@ -307,29 +307,29 @@ export default function MasterPanel() {
             </div>
 
             {resetInfo && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 13, color: '#92400e' }}>
+              <div style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 38%, transparent)', borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 13, color: 'var(--warning)' }}>
                 Senha temporária de <strong>{resetInfo.email}</strong>: <code style={{ fontSize: 14 }}>{resetInfo.temp_password}</code><br />
                 Anote e repasse — será exibida apenas uma vez. Recomende a troca no primeiro acesso.
               </div>
             )}
 
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginBottom: 14 }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 14 }}>
               <table className="data-table" style={{ border: 'none', borderRadius: 0 }}>
                 <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Último acesso</th><th style={{ width: 210 }}>Ações</th></tr></thead>
                 <tbody>
                   {(usersDrawer.users || []).length === 0 ? (
-                    <tr><td colSpan="5"><div style={{ padding: 18, textAlign: 'center', color: '#94a3b8' }}>Sem usuários.</div></td></tr>
+                    <tr><td colSpan="5"><div style={{ padding: 18, textAlign: 'center', color: 'var(--text-muted)' }}>Sem usuários.</div></td></tr>
                   ) : usersDrawer.users.map(u => (
                     <tr key={u.id}>
                       <td>{u.name || '—'}</td>
-                      <td style={{ color: '#475569' }}>{u.email}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
                       <td><span className="client-status-badge fechado">{u.role}</span></td>
-                      <td style={{ color: '#64748b', fontSize: 12 }}>{fmtDateTime(u.last_login)}</td>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{fmtDateTime(u.last_login)}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                           <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => openEditUser(u)}>Editar</button>
                           <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => doReset(u)}>Resetar senha</button>
-                          <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: 11, color: '#b91c1c', borderColor: '#fecaca' }} onClick={() => doDeleteUser(u)}>Apagar</button>
+                          <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 38%, transparent)' }} onClick={() => doDeleteUser(u)}>Apagar</button>
                         </div>
                       </td>
                     </tr>
@@ -338,8 +338,8 @@ export default function MasterPanel() {
               </table>
             </div>
 
-            <form onSubmit={submitAddAdmin} style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>ADICIONAR ADMIN</div>
+            <form onSubmit={submitAddAdmin} style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>ADICIONAR ADMIN</div>
               <div className="form-row">
                 <div className="form-group"><label>Nome</label><input value={addAdmin.name} onChange={e => setAddAdmin(p => ({ ...p, name: e.target.value }))} /></div>
                 <div className="form-group"><label>E-mail *</label><input type="email" value={addAdmin.email} onChange={e => setAddAdmin(p => ({ ...p, email: e.target.value }))} required /></div>
@@ -377,7 +377,7 @@ export default function MasterPanel() {
                   </select>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: -2, marginBottom: 8 }}>Alterar o slug muda a identidade da empresa — faça apenas se souber o efeito.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -2, marginBottom: 8 }}>Alterar o slug muda a identidade da empresa — faça apenas se souber o efeito.</div>
               <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={() => setEditTenant(null)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
@@ -392,10 +392,10 @@ export default function MasterPanel() {
         <div className="modal-overlay" onClick={() => !deleting && setDelTenant(null)}>
           <div className="modal-content" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#b91c1c' }}>Apagar empresa</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--danger)' }}>Apagar empresa</h2>
               <button type="button" onClick={() => !deleting && setDelTenant(null)} className="btn-close">✕</button>
             </div>
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 13, color: '#991b1b' }}>
+            <div style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 38%, transparent)', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 13, color: 'var(--danger)' }}>
               Esta ação é <strong>permanente e irreversível</strong>. Todos os dados de <strong>{delTenant.name}</strong> (usuários, clientes, multas, leads, documentos) serão apagados.
             </div>
             <div className="form-group">
@@ -437,7 +437,7 @@ export default function MasterPanel() {
                   </select>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: -4, marginBottom: 8 }}>Para alterar a senha, use “Resetar senha”.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: -4, marginBottom: 8 }}>Para alterar a senha, use “Resetar senha”.</div>
               <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={() => setEditUser(null)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={savingUser}>{savingUser ? 'Salvando...' : 'Salvar'}</button>

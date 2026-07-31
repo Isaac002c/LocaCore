@@ -13,21 +13,21 @@ const COLUMNS = [
     key:   'entrada',
     label: 'Entrada',
     color: 'var(--text-secondary)',
-    bg:    '#f1f5f9',
+    bg:    'var(--surface-hover)',
     desc:  'Novos contatos',
   },
   {
     key:   'possui_defensor',
     label: 'Já Possui Defensor',
     color: '#8b5cf6',
-    bg:    '#ede9fe',
+    bg:    'var(--primary-soft)',
     desc:  'Já tem advogado',
   },
   {
     key:   'nao_quer_defender',
     label: 'Não Quer se Defender',
     color: '#f59e0b',
-    bg:    '#fef3c7',
+    bg:    'color-mix(in srgb, var(--warning) 16%, transparent)',
     desc:  'Não tem interesse',
   },
   {
@@ -234,7 +234,7 @@ export default function MultasLeads() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando leads...</p>
     </div>
   );
@@ -263,8 +263,8 @@ export default function MultasLeads() {
               onChange={(e) => setSearchName(e.target.value)}
               style={{
                 paddingLeft: 34, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
-                border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13,
-                outline: 'none', background: '#fff', width: 200,
+                border: '1px solid var(--border)', borderRadius: 8, fontSize: 13,
+                outline: 'none', background: 'var(--surface)', width: 200,
                 color: 'var(--text-primary)',
               }}
             />

@@ -31,7 +31,7 @@ function GlobalKPIs({ leads }) {
 function KPICard({ label, value, icon }) {
   return (
     <div style={{
-      background: "#fff",
+      background: "var(--surface)",
       border: "1px solid #e0e0e0",
       borderRadius: "12px",
       padding: "16px",
@@ -102,7 +102,7 @@ function SellerModal({ isOpen, onClose, onSave, seller, isEditing }) {
       zIndex: 1000
     }} onClick={onClose}>
       <div style={{
-        background: "#fff",
+        background: "var(--surface)",
         borderRadius: "12px",
         padding: "24px",
         width: "400px",
@@ -192,7 +192,7 @@ function SellerModal({ isOpen, onClose, onSave, seller, isEditing }) {
                 padding: "10px 20px",
                 border: "1px solid #ddd",
                 borderRadius: "6px",
-                background: "#fff",
+                background: "var(--surface)",
                 cursor: "pointer"
               }}
             >
@@ -231,7 +231,7 @@ function SellerCard({ seller, stats, onEdit, onDelete }) {
       border: "1px solid #e0e0e0",
       borderRadius: "12px",
       padding: "20px",
-      background: "#fff",
+      background: "var(--surface)",
       boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
@@ -246,7 +246,7 @@ function SellerCard({ seller, stats, onEdit, onDelete }) {
               padding: "6px 12px",
               border: "1px solid #ddd",
               borderRadius: "6px",
-              background: "#fff",
+              background: "var(--surface)",
               cursor: "pointer",
               fontSize: "12px"
             }}
@@ -259,7 +259,7 @@ function SellerCard({ seller, stats, onEdit, onDelete }) {
               padding: "6px 12px",
               border: "1px solid #fcc",
               borderRadius: "6px",
-              background: "#fff",
+              background: "var(--surface)",
               color: "#c00",
               cursor: "pointer",
               fontSize: "12px"

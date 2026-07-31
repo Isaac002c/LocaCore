@@ -10,7 +10,7 @@ const SHIFT_DEFAULTS = { manha: { start: '08:00', end: '12:00' }, tarde: { start
 const STATUS_LABEL = { agendado: 'Agendado', concluido: 'Concluído', cancelado: 'Cancelado' };
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-const DAY_STATUS = { livre: { label: 'Livre', color: '#22c55e' }, ocupado: { label: 'Ocupado', color: '#f59e0b' }, fechado: { label: 'Fechado', color: '#dc2626' } };
+const DAY_STATUS = { livre: { label: 'Livre', color: '#22c55e' }, ocupado: { label: 'Ocupado', color: '#f59e0b' }, fechado: { label: 'Fechado', color: 'var(--danger)' } };
 
 const pad = (n) => String(n).padStart(2, '0');
 const localISO = (dt) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
@@ -151,11 +151,11 @@ export default function CalendarioEventos() {
         </div>
       </div>
 
-      {error && <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+      {error && <div style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)', color: 'var(--danger)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
 
       {showSpinner ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 14 }}>
-          <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: 'var(--nx-primary)' }} />
+          <div className="loading-spinner" style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--nx-primary)' }} />
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando agenda...</p>
         </div>
       ) : view === 'mes' ? (
@@ -197,7 +197,7 @@ export default function CalendarioEventos() {
                   ) : (
                     <>
                       {partialBlocks.map(b => (
-                        <span key={b.id} className="cal-chip" style={{ background: '#fee2e2', color: '#b91c1c' }} title={blockLabel(b)}>
+                        <span key={b.id} className="cal-chip" style={{ background: 'color-mix(in srgb, var(--danger) 16%, transparent)', color: 'var(--danger)' }} title={blockLabel(b)}>
                           🔒 {fmtTime(b.start_time)}–{fmtTime(b.end_time)}
                         </span>
                       ))}
@@ -284,8 +284,8 @@ export default function CalendarioEventos() {
               </div>
 
               {fullClosed ? (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: '#b91c1c', fontWeight: 600 }}>Agenda fechada o dia inteiro. Novos eventos estão bloqueados.</span>
+                <div style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 38%, transparent)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>Agenda fechada o dia inteiro. Novos eventos estão bloqueados.</span>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -297,11 +297,11 @@ export default function CalendarioEventos() {
               {/* Bloqueios do dia */}
               {blocks.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 6 }}>Bloqueios</div>
-                  <div className="ag-list" style={{ border: '1px solid #fecaca', borderRadius: 10, overflow: 'hidden' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 6 }}>Bloqueios</div>
+                  <div className="ag-list" style={{ border: '1px solid color-mix(in srgb, var(--danger) 38%, transparent)', borderRadius: 10, overflow: 'hidden' }}>
                     {blocks.map(b => (
                       <div key={b.id} className="ag-item" style={{ borderLeft: '3px solid #dc2626' }}>
-                        <div className="ag-ava" style={{ background: '#fee2e2', color: '#b91c1c', fontSize: 14 }}>🔒</div>
+                        <div className="ag-ava" style={{ background: 'color-mix(in srgb, var(--danger) 16%, transparent)', color: 'var(--danger)', fontSize: 14 }}>🔒</div>
                         <div className="ag-itembody">
                           <div className="ag-name">{blockLabel(b)}</div>
                         </div>
@@ -322,7 +322,7 @@ export default function CalendarioEventos() {
               {normal.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>Nenhum evento neste dia.</p>
               ) : (
-                <div className="ag-list" style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+                <div className="ag-list" style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                   {normal.map(ev => <EventRow key={ev.id} ev={ev} onView={openView} onEdit={openEdit} onCancel={cancelEvent} onRemove={removeEvent} />)}
                 </div>
               )}
@@ -373,18 +373,18 @@ export default function CalendarioEventos() {
                 {ev.description && (
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Observações</div>
-                    <div style={{ background: '#f8fafc', border: '1px solid #eef2f7', borderRadius: 8, padding: '9px 12px', fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <div style={{ background: 'var(--surface-secondary)', border: '1px solid #eef2f7', borderRadius: 8, padding: '9px 12px', fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {ev.description}
                     </div>
                   </div>
                 )}
 
-                <div className="form-actions" style={{ justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', marginTop: 0, paddingTop: 14 }}>
-                  <button type="button" className="btn-secondary" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={() => { setViewEvent(null); removeEvent(ev); }}>
+                <div className="form-actions" style={{ justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', borderTop: '1px solid var(--border)', marginTop: 0, paddingTop: 14 }}>
+                  <button type="button" className="btn-secondary" style={{ color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 38%, transparent)' }} onClick={() => { setViewEvent(null); removeEvent(ev); }}>
                     Excluir
                   </button>
                   {!cancelled && (
-                    <button type="button" className="btn-secondary" style={{ color: '#f59e0b', borderColor: '#fde68a' }} onClick={() => { setViewEvent(null); cancelEvent(ev); }}>
+                    <button type="button" className="btn-secondary" style={{ color: '#f59e0b', borderColor: 'color-mix(in srgb, var(--warning) 38%, transparent)' }} onClick={() => { setViewEvent(null); cancelEvent(ev); }}>
                       Cancelar agendamento
                     </button>
                   )}
@@ -483,7 +483,7 @@ function EventRow({ ev, onView, onEdit, onCancel, onRemove }) {
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
         {!isBlock && (cancelled
-          ? <span className="ag-pill" style={{ background: '#f1f5f9', color: 'var(--text-muted)' }}>Cancelado</span>
+          ? <span className="ag-pill" style={{ background: 'var(--surface-secondary)', color: 'var(--text-muted)' }}>Cancelado</span>
           : <span className="ag-pill" style={{ background: `${ti.color}18`, color: ti.color }}>{STATUS_LABEL[ev.status] || 'Agendado'}</span>)}
         <button className="btn-icon" title="Editar" onClick={(e) => { e.stopPropagation(); onEdit(ev); }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>

@@ -148,7 +148,7 @@ export default function LeadsList() {
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', padding:'60px 0', flexDirection:'column', alignItems:'center', gap:14 }}>
-      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'var(--nx-primary)' }} />
+      <div className="loading-spinner" style={{ width:32, height:32, border:'3px solid var(--border)', borderTopColor:'var(--nx-primary)' }} />
       <p style={{ color:'var(--text-muted)', fontSize:14 }}>Carregando leads...</p>
     </div>
   );
@@ -165,11 +165,11 @@ export default function LeadsList() {
             </svg>
             <input type="text" placeholder="Buscar por nome..." value={search}
               onChange={e=>setSearch(e.target.value)}
-              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, outline:'none', background:'#fff', color:'var(--text-primary)', width:200 }}
+              style={{ paddingLeft:34, paddingRight:12, paddingTop:8, paddingBottom:8, border:'1px solid var(--border)', borderRadius:8, fontSize:13, outline:'none', background:'var(--surface)', color:'var(--text-primary)', width:200 }}
             />
           </div>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{ padding:'8px 12px', border:'1px solid #e2e8f0', borderRadius:8, fontSize:13, background:'#fff', color:'var(--text-primary)', outline:'none' }}>
+            style={{ padding:'8px 12px', border:'1px solid var(--border)', borderRadius:8, fontSize:13, background:'var(--surface)', color:'var(--text-primary)', outline:'none' }}>
             <option value="">Todos os status</option>
             {ALL_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
@@ -191,7 +191,7 @@ export default function LeadsList() {
       )}
 
       {/* Tabela */}
-      <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, overflow:'hidden' }}>
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
         <table className="data-table" style={{ margin:0 }}>
           <thead>
             <tr>
@@ -308,8 +308,8 @@ export default function LeadsList() {
                 </select>
               </div>
               {BLOCKED_STATUSES.includes(formData.status) && (
-                <div className="form-group" style={{ background:'#fef3c7', borderRadius:8, padding:'10px 12px', border:'1px solid #f59e0b33' }}>
-                  <label style={{ color:'#d97706' }}>{MOTIVO_LABELS[formData.status]}</label>
+                <div className="form-group" style={{ background:'color-mix(in srgb, var(--warning) 16%, transparent)', borderRadius:8, padding:'10px 12px', border:'1px solid #f59e0b33' }}>
+                  <label style={{ color:'var(--warning)' }}>{MOTIVO_LABELS[formData.status]}</label>
                   <input type="text" value={formData.motivo} onChange={set('motivo')} placeholder="Ex.: Não quer gastar dinheiro no momento" />
                 </div>
               )}
