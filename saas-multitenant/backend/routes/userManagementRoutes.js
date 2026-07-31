@@ -4,6 +4,7 @@ const permissionModel = require('../models/permissionModels');
 const { checkPermission, requireAdminOrManager, getAllRoles } = require('../middlewares/checkPermission');
 const saasModel = require('../models/saasModels');
 const seats = require('../services/userSeats');
+const { invalidateAuthCache } = require('../middlewares/tenantContext');
 
 // Traduz SeatError (assento esgotado / conta protegida) em resposta HTTP.
 const seatErr = (res, err) => {
@@ -231,6 +232,9 @@ router.patch('/:id/password', async (req, res) => {
     // quem recebe é obrigado a definir a própria no primeiro acesso.
     const redefinidaPorTerceiro = req.userId !== id;
     await permissionModel.updateUserPassword(id, password, tenantId, { forceChange: redefinidaPorTerceiro });
+    // O middleware guarda o estado de acesso por ~15s; sem limpar, o token antigo
+    // continuaria valendo esse tempo depois da troca.
+    invalidateAuthCache(id);
     
     // Log de atividade
     await saasModel.createActivityLog({
@@ -266,6 +270,7 @@ router.patch('/:id/active', requireAdminOrManager, async (req, res) => {
     catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
 
     const user = await permissionModel.setUserActive(id, isActive, tenantId);
+    invalidateAuthCache(id);
     await saasModel.createActivityLog({
       tenant_id: tenantId, user_id: req.userId, action: isActive ? 'activate' : 'deactivate',
       entity_type: 'user', entity_id: id,
@@ -302,6 +307,7 @@ router.delete('/:id', requireAdminOrManager, async (req, res) => {
     catch (e) { const r = seatErr(res, e); if (r) return r; throw e; }
 
     await permissionModel.deleteUser(id, tenantId);
+    invalidateAuthCache(id);
     
     // Log de atividade
     await saasModel.createActivityLog({

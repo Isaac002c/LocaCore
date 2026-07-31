@@ -35,12 +35,31 @@ async function accessDenialReason(userId, tenantId, iatSeconds) {
   }
   if (!state.is_active) return 'Usuário desativado.';
   if (state.sessions_valid_after && iatSeconds) {
-    if (iatSeconds * 1000 < new Date(state.sessions_valid_after).getTime()) return 'Sessão expirada. Faça login novamente.';
+    // Comparar na MESMA resolução dos dois lados.
+    //
+    // `iat` do JWT é em SEGUNDOS inteiros (truncado); `sessions_valid_after` é
+    // timestamptz com MILISSEGUNDOS. Comparar `iat*1000 < sva` recusava um token
+    // recém-emitido e legítimo: trocar a senha às 12:00:00.300 e logar às
+    // 12:00:00.800 gera iat=12:00:00.000, que é "menor" que 12:00:00.300 — o
+    // login dava 200 e a requisição seguinte, 401.
+    //
+    // Truncando `sessions_valid_after` para o segundo, um token emitido no mesmo
+    // segundo da invalidação continua valendo (janela ≤ 1s, limite inerente ao
+    // JWT) e qualquer token de um segundo anterior segue bloqueado.
+    const invalidadoEmSegundos = Math.floor(new Date(state.sessions_valid_after).getTime() / 1000);
+    if (invalidadoEmSegundos > iatSeconds) return 'Sessão expirada. Faça login novamente.';
   }
   return null;
 }
 
-module.exports = async function tenantContext(req, res, next) {
+// Descarta o estado em cache de um usuário — usado após trocar senha, desativar
+// ou excluir, para o bloqueio valer na hora em vez de esperar o TTL.
+function invalidateAuthCache(userId) {
+  if (userId) authCache.delete(String(userId));
+  else authCache.clear();
+}
+
+const tenantContext = async function tenantContext(req, res, next) {
   try {
     let token = null;
 
@@ -107,3 +126,6 @@ module.exports = async function tenantContext(req, res, next) {
     return res.status(500).json({ error: 'Erro interno no middleware.' });
   }
 };
+
+module.exports = tenantContext;
+module.exports.invalidateAuthCache = invalidateAuthCache;

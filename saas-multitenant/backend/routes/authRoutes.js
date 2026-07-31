@@ -21,13 +21,17 @@ const sendJson = (res, status, data) => {
   res.status(status).setHeader('Content-Type', 'application/json').json(data);
 };
 
-// ✅ Rate limit específico pro login
+// ✅ Rate limit específico pro login (proteção contra força bruta).
+// Configurável por env para ajuste operacional — o padrão de PRODUÇÃO continua
+// 10 tentativas / 15 min. Desligado apenas em NODE_ENV=test, onde a suíte faz
+// dezenas de logins legítimos em segundos.
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs: Number(process.env.LOGIN_RATE_WINDOW_MS) || 15 * 60 * 1000,
+  max: Number(process.env.LOGIN_RATE_MAX) || 10,
   message: { success: false, message: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 // 1. REGISTER
