@@ -152,7 +152,7 @@ export function Drawer({ open, title, subtitle, onClose, footer, children, heade
 export function ConfirmDialog({
   open, title, message, confirmLabel = 'Confirmar', cancelLabel = 'Voltar',
   danger = false, requireReason = false, reasonLabel = 'Motivo',
-  onConfirm, onClose, busy = false,
+  onConfirm, onClose, busy = false, error = null,
 }) {
   const [reason, setReason] = useState('');
   useEffect(() => { if (open) setReason(''); }, [open]);
@@ -172,6 +172,9 @@ export function ConfirmDialog({
             <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Descreva o motivo (mín. 3 caracteres)" />
             {!canConfirm && reason.length > 0 && <div className="nx-field-error">Informe pelo menos 3 caracteres.</div>}
           </div>
+        )}
+        {error && (
+          <div className="error-message" role="alert" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45 }}>{error}</div>
         )}
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>{cancelLabel}</button>

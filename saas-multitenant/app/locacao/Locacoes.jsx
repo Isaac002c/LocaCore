@@ -63,6 +63,11 @@ export default function Locacoes() {
   const [returnMode, setReturnMode] = useState(false);
   const [returnData, setReturnData] = useState({ return_date: '', return_odometer: '', notes: '', return_inspection: EMPTY_VISTORIA });
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  // Erro exibido DENTRO do diálogo de confirmação (cancelar/excluir). Sem ele, a
+  // recusa do backend era gravada em `error`, que só renderiza atrás do drawer —
+  // o usuário via o diálogo fechar e "nada acontecer".
+  const [dialogError, setDialogError] = useState(null);
   const [notice, setNotice] = useState(null);
 
   // Adicionais / documentos da locação selecionada
@@ -206,11 +211,17 @@ export default function Locacoes() {
     setReturnMode(false);
     setFinance(null);
     setExtras([]); setDocuments([]);
+    setError(null); setNotice(null); setDialogError(null);
+    setConfirmCancel(false); setConfirmDelete(false);
     setExtraForm({ category: '', description: '', quantity: '1', unit_amount: '' });
     getRentalBillings(r.id).then(setFinance).catch(() => setFinance({ billings: [], summary: null }));
     loadExtrasDocs(r.id);
   };
-  const closeDrawer = () => { setSelected(null); setFinance(null); setReturnMode(false); setExtras([]); setDocuments([]); };
+  const closeDrawer = () => {
+    setSelected(null); setFinance(null); setReturnMode(false); setExtras([]); setDocuments([]);
+    setError(null); setNotice(null); setDialogError(null);
+    setConfirmCancel(false); setConfirmDelete(false);
+  };
 
   // Recarrega a locação (com total recalculado), a lista e o financeiro.
   const refreshSelected = async () => {
@@ -285,11 +296,29 @@ export default function Locacoes() {
     if (!selected) return;
     try {
       setDrawerBusy(true);
+      setDialogError(null);
       await cancelRental(selected.id, reason);
       setConfirmCancel(false);
+      setNotice('Locação cancelada.');
       await refreshAfterAction();
-    } catch (err) { setError(err.message); setConfirmCancel(false); }
-    finally { setDrawerBusy(false); }
+    } catch (err) {
+      // Mantém o diálogo aberto e mostra o MOTIVO da recusa ali mesmo.
+      setDialogError(err.message);
+    } finally { setDrawerBusy(false); }
+  };
+
+  const doDelete = async () => {
+    if (!selected) return;
+    try {
+      setDrawerBusy(true);
+      setDialogError(null);
+      await deleteRental(selected.id);
+      setConfirmDelete(false);
+      closeDrawer();
+      await load({ q: searchTerm.length >= 2 ? searchTerm : '' });
+    } catch (err) {
+      setDialogError(err.message);
+    } finally { setDrawerBusy(false); }
   };
 
   const doAddExtra = async (e) => {
@@ -561,12 +590,21 @@ export default function Locacoes() {
             <button className="btn-secondary" disabled={drawerBusy} onClick={doContract}>Contrato (PDF)</button>
             {selected.status === 'reservado' && <button className="btn-primary" disabled={drawerBusy} onClick={() => doStatus('em_andamento')}>Iniciar locação</button>}
             {(selected.status === 'em_andamento' || selected.status === 'atrasado') && !returnMode && <button className="btn-primary" disabled={drawerBusy} onClick={() => setReturnMode(true)}>Registrar devolução</button>}
-            {selected.status !== 'cancelado' && selected.status !== 'finalizado' && <button className="btn-secondary" disabled={drawerBusy} onClick={() => setConfirmCancel(true)}>Cancelar locação</button>}
+            {selected.status !== 'cancelado' && selected.status !== 'finalizado' && <button className="btn-secondary" disabled={drawerBusy} onClick={() => { setDialogError(null); setConfirmCancel(true); }}>Cancelar locação</button>}
+            <button className="btn-secondary" style={{ color: 'var(--nx-red)', borderColor: 'color-mix(in srgb, var(--nx-red) 45%, transparent)' }} disabled={drawerBusy} onClick={() => { setDialogError(null); setConfirmDelete(true); }}>Excluir</button>
           </div>
         )}
       >
         {selected && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Erro de qualquer ação do drawer (devolução, faturar, adicionais…).
+                Antes só existia atrás do drawer, então a falha parecia silenciosa. */}
+            {error && (
+              <div className="error-message" role="alert" style={{ margin: 0, fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <span>{error}</span>
+                <button className="btn-close" onClick={() => setError(null)} aria-label="Fechar">✕</button>
+              </div>
+            )}
             <div className="nx-form-section">
               <div className="nx-form-section-title">Resumo</div>
               <DetailRow label="Período" value={`${fmtDate(selected.start_date)} → ${fmtDate(selected.end_date)}`} />
@@ -724,8 +762,22 @@ export default function Locacoes() {
         requireReason
         reasonLabel="Motivo do cancelamento"
         busy={drawerBusy}
+        error={dialogError}
         onConfirm={doCancel}
-        onClose={() => setConfirmCancel(false)}
+        onClose={() => { setConfirmCancel(false); setDialogError(null); }}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Excluir locação"
+        message="A locação será removida definitivamente. Faturamentos ainda não pagos são cancelados junto; se já houve pagamento, estorne no Financeiro antes. Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        cancelLabel="Voltar"
+        danger
+        busy={drawerBusy}
+        error={dialogError}
+        onConfirm={doDelete}
+        onClose={() => { setConfirmDelete(false); setDialogError(null); }}
       />
     </div>
   );
