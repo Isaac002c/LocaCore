@@ -7,6 +7,7 @@
 const M = require('../../models/automationModels');
 const billingModel = require('../../models/serviceBillingModels');
 const paymentModel = require('../../models/paymentModels');
+const clientModel = require('../../models/clientModels');
 const { getFiscalProvider } = require('./providers/fiscal');
 
 async function issueForPayment(tenant_id, payment_id, { settings, created_by } = {}) {
@@ -42,12 +43,19 @@ async function issueForPayment(tenant_id, payment_id, { settings, created_by } =
     });
   }
 
+  // Tomador (destinatário) da nota — o provedor real precisa do CPF/CNPJ, nome e
+  // e-mail do cliente, que não estão no pagamento/faturamento.
+  const client = doc.client_id ? await clientModel.getClientById(doc.client_id, tenant_id).catch(() => null) : null;
+
   // Provedor configurado → tenta emitir. (Null/homologação sem creds → pendência.)
-  const result = await provider.issueDocument({ tenant_id, amount, document_type: doc_type, settings }).catch((e) => ({ status: 'failed', error_code: 'PROVIDER_ERROR', error_message: e.message }));
+  // `ref` estável = id do documento fiscal (idempotente no provedor).
+  const result = await provider.issueDocument({ tenant_id, ref: doc.id, amount, document_type: doc_type, client, settings })
+    .catch((e) => ({ status: 'failed', error_code: 'PROVIDER_ERROR', error_message: e.message }));
   const patch = {
     status: result.status || 'pending',
     external_id: result.external_id, number: result.number, series: result.series,
-    verification_code: result.verification_code, error_code: result.error_code, error_message: result.error_message,
+    verification_code: result.verification_code, pdf_url: result.pdf_url, xml_url: result.xml_url,
+    error_code: result.error_code, error_message: result.error_message,
   };
   if (result.status === 'authorized') {
     patch.authorization_date = new Date().toISOString();

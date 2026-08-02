@@ -34,12 +34,14 @@ const sandboxProvider = {
 };
 
 // ── META WhatsApp Cloud API (REAL) ───────────────────────────────────────────
-function metaProvider({ fetchImpl, secretFn = getSecret } = {}) {
+function metaProvider({ fetchImpl, secretFn = getSecret, settings = {} } = {}) {
   const doFetch = fetchImpl || (typeof fetch !== 'undefined' ? fetch : null);
   const version = secretFn('META_GRAPH', 'API_VERSION') || process.env.META_GRAPH_API_VERSION || 'v20.0';
   const creds = () => ({
     token: secretFn('META_WHATSAPP', 'ACCESS_TOKEN'),
-    phoneId: secretFn('META_WHATSAPP', 'PHONE_NUMBER_ID'),
+    // phone_number_id NÃO é secret e é POR-TENANT: vem das settings do tenant
+    // (Automações > Configurações → whatsapp_from). Env é só fallback single-tenant.
+    phoneId: settings.whatsapp_from || secretFn('META_WHATSAPP', 'PHONE_NUMBER_ID'),
     appSecret: secretFn('META', 'APP_SECRET'),
   });
 
@@ -110,7 +112,7 @@ function metaProvider({ fetchImpl, secretFn = getSecret } = {}) {
 function getWhatsAppProvider(settings = {}, deps = {}) {
   const p = (settings.whatsapp_provider || 'null').toLowerCase();
   if (p === 'null' || !p) return sandboxProvider;
-  if (p === 'meta') return metaProvider(deps);
+  if (p === 'meta') return metaProvider({ ...deps, settings });
   // Provedor não implementado → adapter que falha com clareza.
   return {
     name: p, isSandbox: false,

@@ -63,6 +63,23 @@ function asaasProvider({ fetchImpl, secretFn = getSecret } = {}) {
   return {
     name: 'asaas',
     isSandbox: false,
+    // Cria (ou identifica) o cliente no Asaas. cpfCnpj é OBRIGATÓRIO na API do
+    // Asaas — sem ele, a cobrança não pode ser gerada. Devolve o id do customer.
+    async createCustomer({ name, cpfCnpj, email, phone }) {
+      const doc = String(cpfCnpj || '').replace(/\D/g, '');
+      if (!doc) throw new Error('Cliente sem CPF/CNPJ — o Asaas exige o documento para criar o customer.');
+      const data = await api('/customers', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name || 'Cliente',
+          cpfCnpj: doc,
+          email: email || undefined,
+          mobilePhone: String(phone || '').replace(/\D/g, '') || undefined,
+          notificationDisabled: true, // as notificações saem pelo WhatsApp do LocaCore
+        }),
+      });
+      return { external_id: data.id };
+    },
     // Requer external_customer_id (cliente já criado no Asaas) — evita duplicar cliente.
     async createCharge({ amount, due_date, external_customer_id, description }) {
       if (!external_customer_id) throw new Error('Cliente externo (Asaas customer id) ausente — crie/vincule antes.');

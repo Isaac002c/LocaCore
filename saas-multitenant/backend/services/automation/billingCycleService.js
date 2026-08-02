@@ -9,6 +9,7 @@ const M = require('../../models/automationModels');
 const billingModel = require('../../models/serviceBillingModels');
 const rentalModel = require('../../models/rentalModels');
 const { getPaymentProvider } = require('./providers/payment');
+const { ensurePaymentCustomer } = require('./paymentCustomers');
 const { render, buildVars } = require('./render');
 const { withTransaction } = require('../tx');
 
@@ -53,7 +54,15 @@ async function runBilling(tenant_id, { now = new Date(), force = false } = {}) {
     const amount = money2(Number(rental.daily_rate) * 7); // semana de diárias
     let extCharge = null;
     if (settings.billing_auto_create) {
-      extCharge = await provider.createCharge({ amount, due_date: dueDate, client: { name: rental.client_name }, description: `Locação ${rental.rental_number}` }).catch(() => null);
+      // Garante o cliente no provedor (ex.: Asaas customer) e passa o id — o
+      // adapter real recusa a cobrança sem external_customer_id. Sandbox = no-op.
+      const external_customer_id = await ensurePaymentCustomer(tenant_id, provider, {
+        client_id: rental.client_id, client_name: rental.client_name, client_phone: rental.client_phone,
+      }).catch(() => null);
+      extCharge = await provider.createCharge({
+        amount, due_date: dueDate, external_customer_id,
+        client: { name: rental.client_name }, description: `Locação ${rental.rental_number}`,
+      }).catch(() => null);
     }
 
     await withTransaction(async (db) => {

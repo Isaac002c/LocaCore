@@ -45,11 +45,14 @@ function integrationsReadiness(settings = {}, slug = null) {
   const waItens = [
     item('Adapter implementado', true, { detalhe: 'services/automation/providers/whatsapp.js' }),
     item('Provedor selecionado', waProvider === 'meta', { detalhe: waProvider === 'meta' ? 'Meta Cloud API' : 'Nenhum provedor real selecionado' }),
-    item('Token de acesso', temSecret('WHATSAPP', 'META_TOKEN', slug), { env: 'WHATSAPP_META_TOKEN' }),
+    // Os nomes de env aqui têm que ser EXATAMENTE os que o runtime lê
+    // (providers/whatsapp.js + a rota de webhook), senão a tela mente "pronto"
+    // enquanto o envio falha (ou vice-versa).
+    item('Token de acesso', temSecret('META_WHATSAPP', 'ACCESS_TOKEN', slug), { env: 'META_WHATSAPP_ACCESS_TOKEN' }),
     item('ID do número (phone_number_id)', !!settings.whatsapp_from, { detalhe: 'Configurado em Automações > Configurações' }),
     item('Conta comercial (WABA)', !!settings.whatsapp_account_id, { detalhe: 'Configurado em Automações > Configurações' }),
-    item('Segredo do webhook', temSecret('WHATSAPP', 'META_APP_SECRET', slug), { env: 'WHATSAPP_META_APP_SECRET' }),
-    item('Token de verificação do webhook', temSecret('WHATSAPP', 'META_VERIFY_TOKEN', slug), { env: 'WHATSAPP_META_VERIFY_TOKEN' }),
+    item('Segredo do app (webhook HMAC)', temSecret('META', 'APP_SECRET', slug), { env: 'META_APP_SECRET' }),
+    item('Token de verificação do webhook', temSecret('META_WHATSAPP', 'VERIFY_TOKEN', slug), { env: 'META_WHATSAPP_VERIFY_TOKEN' }),
     item('Templates aprovados pela Meta', false, { depende: 'Aprovação da Meta (fora do sistema)', detalhe: 'Cada template de cobrança precisa ser submetido e aprovado.' }),
   ];
 

@@ -148,6 +148,23 @@ const listOpenChargesForDunning = async (tenant_id, db = pool) => {
   return r.rows;
 };
 
+// ── payment_customers (mapa cliente → customer do provedor de cobrança) ──────
+const getPaymentCustomer = async (tenant_id, provider, client_id, db = pool) => {
+  const r = await db.query(
+    'SELECT * FROM payment_customers WHERE tenant_id=$1 AND provider=$2 AND client_id=$3',
+    [tenant_id, provider, client_id]
+  );
+  return r.rows[0];
+};
+const savePaymentCustomer = async ({ tenant_id, provider, client_id, external_customer_id }, db = pool) => {
+  return _insertIfAbsent(db,
+    'SELECT * FROM payment_customers WHERE tenant_id=$1 AND provider=$2 AND client_id=$3',
+    [tenant_id, provider, client_id],
+    `INSERT INTO payment_customers (tenant_id, provider, client_id, external_customer_id)
+     VALUES ($1,$2,$3,$4) RETURNING *`,
+    [tenant_id, provider, client_id, external_customer_id]);
+};
+
 // ── message_outbox ───────────────────────────────────────────────────────────
 const insertOutbox = async (data, db = pool) => {
   return _insertIfAbsent(db,
@@ -396,6 +413,7 @@ module.exports = {
   getSettings, ensureSettings, updateSettings,
   listTemplates, getActiveTemplate, upsertTemplate, ensureDefaultTemplates,
   getChargeByIdemp, getChargeByExternal, getChargeForUpdate, insertCharge, setChargeStatus, listOpenChargesForDunning,
+  getPaymentCustomer, savePaymentCustomer,
   insertOutbox, claimPendingOutbox, updateOutbox, cancelRemindersForCharge, countRemindersForCharge, listOutbox, getOutboxByExternal,
   getFiscalByIdemp, insertFiscal, updateFiscal, listFiscal,
   startRun, finishRun, listRuns,
