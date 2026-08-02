@@ -2322,7 +2322,10 @@ tr:last-child td {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* Acima do .nx-drawer-overlay (1200): diálogos de confirmação (cancelar/excluir)
+     abrem SOBRE o drawer; com z-index menor, a camada do drawer cobria os botões
+     e engolia o clique — o usuário clicava em "Excluir/Cancelar" e nada acontecia. */
+  z-index: 1300;
   animation: fadeIn 0.2s ease;
 }
 
@@ -3278,7 +3281,10 @@ tr:last-child td {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* Acima do .nx-drawer-overlay (1200): diálogos de confirmação (cancelar/excluir)
+     abrem SOBRE o drawer; com z-index menor, a camada do drawer cobria os botões
+     e engolia o clique — o usuário clicava em "Excluir/Cancelar" e nada acontecia. */
+  z-index: 1300;
   animation: fadeIn 0.2s ease;
 }
 
