@@ -89,7 +89,11 @@ export default function Multas() {
                   <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => openEdit(f)}>Editar</button>
                   {!f.billing_id && <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => act(faturarFine, f.id, 'Multa faturada.')}>Faturar</button>}
                   {f.rental_id && !f.rental_extra_id && <button className="btn-secondary" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => act(fineToExtra, f.id, 'Lançada como adicional.')}>Adicional</button>}
-                  {!f.billing_id && !f.rental_extra_id && <button className="btn-icon danger" title="Excluir" onClick={() => remove(f.id)}>✕</button>}
+                  <button
+                    className="btn-icon danger"
+                    title={f.billing_id ? 'Excluir (o faturamento vinculado é cancelado junto)' : 'Excluir'}
+                    onClick={() => remove(f.id)}
+                  >✕</button>
                 </div>
               </td>
             </tr>

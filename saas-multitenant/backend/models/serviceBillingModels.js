@@ -162,14 +162,29 @@ const updateBilling = async (id, data, tenant_id) => {
   return rows[0];
 };
 
-const cancelBilling = async (id, tenant_id) => {
-  const { rows } = await pool.query(
+// `db` injetável: permite cancelar o faturamento DENTRO da transação que
+// cancela a locação, para os dois caírem juntos se algo falhar.
+const cancelBilling = async (id, tenant_id, db = pool) => {
+  const { rows } = await db.query(
     `UPDATE service_billings
        SET financial_status = 'cancelado', updated_at = NOW()
      WHERE id = $1 AND tenant_id = $2 RETURNING *`,
     [id, tenant_id]
   );
   return rows[0];
+};
+
+// Faturamentos ATIVOS da locação, travados para atualização — evita que um
+// pagamento entre entre a checagem e o cancelamento.
+const getActiveBillingsByRentalForUpdate = async (rental_id, tenant_id, db = pool) => {
+  const { rows } = await db.query(
+    `SELECT id, final_amount, paid_amount, financial_status, description
+       FROM service_billings
+      WHERE rental_id = $1 AND tenant_id = $2 AND financial_status <> 'cancelado'
+      FOR UPDATE`,
+    [rental_id, tenant_id]
+  );
+  return rows;
 };
 
 const getBillingsByClient = async (client_id, tenant_id) => {
@@ -247,6 +262,7 @@ module.exports = {
   getBillingById,
   updateBilling,
   cancelBilling,
+  getActiveBillingsByRentalForUpdate,
   getBillingsByClient,
   getBillingsByFine,
   getBillingsByRental,

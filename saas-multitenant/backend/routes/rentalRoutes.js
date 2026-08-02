@@ -238,16 +238,21 @@ router.post('/:id/cancel', checkPermission('rentals:cancel'), async (req, res) =
     const reason = (req.body.reason || '').trim();
     if (reason.length < 3) return res.status(400).json({ success: false, error: 'Informe o motivo do cancelamento (mín. 3 caracteres).' });
 
-    // Bloqueia cancelamento simples quando houver faturamento ativo (§11).
-    const billings = await billingModel.getBillingsByRental(req.params.id, req.tenantId);
-    if (billings.some((b) => b.financial_status !== 'cancelado')) {
-      return res.status(409).json({ success: false, error: 'Locação com faturamento vinculado. Cancele/trate o faturamento no Financeiro antes de cancelar a locação.' });
-    }
-
-    const { rental, previous } = await rentalService.cancelRental(req.params.id, { reason }, req.tenantId);
+    // O faturamento vinculado é cancelado JUNTO, dentro da transação. A única
+    // recusa que resta é quando já houve pagamento (o serviço explica o porquê).
+    const { rental, previous, canceledBillings } = await rentalService.cancelRental(req.params.id, { reason }, req.tenantId);
     activityLog.logUpdate(req.tenantId, req.userId, 'rental', rental.id,
-      `Locação ${rental.rental_number} cancelada — ${reason}`, { status: previous }, { status: 'cancelado', reason }).catch(() => {});
-    res.json({ success: true, data: rental });
+      `Locação ${rental.rental_number} cancelada — ${reason}`
+      + (canceledBillings ? ` (${canceledBillings} faturamento(s) cancelado(s) junto)` : ''),
+      { status: previous }, { status: 'cancelado', reason, canceled_billings: canceledBillings }).catch(() => {});
+    res.json({
+      success: true,
+      data: rental,
+      canceled_billings: canceledBillings,
+      message: canceledBillings
+        ? `Locação cancelada. ${canceledBillings} faturamento(s) cancelado(s) junto.`
+        : 'Locação cancelada.',
+    });
   } catch (err) { handleErr(res, err, 'Erro ao cancelar locação:'); }
 });
 
@@ -416,9 +421,21 @@ router.delete('/:id', checkPermission('rentals:delete'), async (req, res) => {
     const existing = await rentalModel.getRentalById(req.params.id, req.tenantId);
     if (!existing) return res.status(404).json({ success: false, error: 'Locação não encontrada' });
 
+    // Excluir apaga o registro. Só é recusado quando há DINHEIRO recebido —
+    // aí o histórico financeiro precisa continuar existindo (estorne antes).
     const billings = await billingModel.getBillingsByRental(req.params.id, req.tenantId);
-    if (billings.some((b) => b.financial_status !== 'cancelado')) {
-      return res.status(409).json({ success: false, error: 'Locação com faturamento vinculado. Cancele a locação em vez de excluir.' });
+    const comPagamento = billings.filter((b) => b.financial_status !== 'cancelado' && Number(b.paid_amount) > 0);
+    if (comPagamento.length) {
+      const total = comPagamento.reduce((a, b) => a + Number(b.paid_amount), 0);
+      return res.status(409).json({
+        success: false,
+        error: `Esta locação já recebeu ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em pagamentos `
+          + 'e não pode ser excluída. Estorne o pagamento no Financeiro e, se precisar, cancele a locação — o histórico é preservado.',
+      });
+    }
+    // Faturamentos ainda não pagos saem junto.
+    for (const b of billings.filter((x) => x.financial_status !== 'cancelado')) {
+      await billingModel.cancelBilling(b.id, req.tenantId).catch(() => {});
     }
 
     const rental = await rentalModel.deleteRental(req.params.id, req.tenantId);

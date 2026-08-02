@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getAgenda, createEvent, deleteEvent } from '../lib/calendarAPI';
+import { getAgenda, createEvent, updateEvent, deleteEvent } from '../lib/calendarAPI';
 import { fmtDate } from './shared';
 import { PageLoading, InlineError, EmptyState } from '../components/states';
 
@@ -45,6 +45,7 @@ export default function Calendario() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -57,12 +58,34 @@ export default function Calendario() {
   useEffect(() => { load(); }, [load]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const openNew = () => { setForm({ ...EMPTY, event_date: new Date().toISOString().substring(0, 10) }); setModal(true); };
+  const openNew = () => {
+    setEditing(null);
+    setForm({ ...EMPTY, event_date: new Date().toISOString().substring(0, 10) });
+    setModal(true);
+  };
+  // Só evento MANUAL é editável: retirada/devolução/manutenção são derivados da
+  // locação — mudar aqui daria a falsa impressão de ter mudado o contrato.
+  const openEdit = (ev) => {
+    if (ev.source !== 'manual') return;
+    setEditing(ev);
+    setForm({
+      title: ev.title || '',
+      event_date: String(ev.event_date || '').substring(0, 10),
+      start_time: ev.start_time ? String(ev.start_time).substring(0, 5) : '',
+      type: ev.type || 'outro',
+      description: ev.description || '',
+    });
+    setModal(true);
+  };
   const submit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.event_date) { setError('Título e data são obrigatórios.'); return; }
-    try { setSaving(true); await createEvent(form); setModal(false); await load(); }
-    catch (err) { setError(err.message); } finally { setSaving(false); }
+    try {
+      setSaving(true); setError(null);
+      if (editing) await updateEvent(editing.id, form);
+      else await createEvent(form);
+      setModal(false); setEditing(null); await load();
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
   };
   const remove = async (ev) => {
     if (ev.source !== 'manual') return;
@@ -132,9 +155,17 @@ export default function Calendario() {
                           {[ev.client_name, ev.vehicle_plate, ev.responsible_name && `resp. ${ev.responsible_name}`, ev.status].filter(Boolean).join(' · ')}
                         </div>
                       </div>
-                      {ev.source === 'manual'
-                        ? <button className="btn-icon danger" title="Excluir" onClick={() => remove(ev)}>✕</button>
-                        : <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>automático</span>}
+                      {ev.source === 'manual' ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => openEdit(ev)}>Editar</button>
+                          <button className="btn-icon danger" title="Excluir" onClick={() => remove(ev)}>✕</button>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', whiteSpace: 'nowrap' }}
+                              title="Gerado a partir de uma locação, manutenção ou multa — edite o registro de origem">
+                          automático
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -147,7 +178,7 @@ export default function Calendario() {
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(false)}>
           <div className="modal-content" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2 style={{ fontSize: 18, fontWeight: 700 }}>Novo Evento</h2><button className="btn-close" onClick={() => setModal(false)}>✕</button></div>
+            <div className="modal-header"><h2 style={{ fontSize: 18, fontWeight: 700 }}>{editing ? 'Editar Evento' : 'Novo Evento'}</h2><button className="btn-close" onClick={() => { setModal(false); setEditing(null); }}>✕</button></div>
             <form onSubmit={submit} className="modal-form">
               <div className="form-group"><label>Título *</label><input type="text" value={form.title} onChange={set('title')} required autoFocus /></div>
               <div className="form-row">
@@ -157,7 +188,7 @@ export default function Calendario() {
               </div>
               <div className="form-group"><label>Descrição</label><textarea rows="2" value={form.description} onChange={set('description')} /></div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Retiradas, devoluções, manutenções e multas aparecem automaticamente na agenda.</p>
-              <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Criar'}</button></div>
+              <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => { setModal(false); setEditing(null); }}>Cancelar</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : editing ? 'Salvar' : 'Criar'}</button></div>
             </form>
           </div>
         </div>

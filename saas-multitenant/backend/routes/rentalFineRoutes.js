@@ -7,6 +7,7 @@ const rentalService = require('../services/rentalService');
 const { checkPermission } = require('../middlewares/checkPermission');
 const { requireModule } = require('../middlewares/requireModule');
 const activityLog = require('../services/activityLogService');
+const extraModel = require('../models/rentalExtraModels');
 
 router.use(requireModule('locacao'));
 
@@ -110,7 +111,24 @@ router.delete('/:id', checkPermission('rental_fines:manage'), async (req, res) =
   try {
     const fine = await model.getById(req.params.id, req.tenantId);
     if (!fine) return res.status(404).json({ success: false, error: 'Multa não encontrada' });
-    if (fine.billing_id || fine.rental_extra_id) return res.status(409).json({ success: false, error: 'Multa com vínculo financeiro. Cancele-a em vez de excluir.' });
+    // Vínculo financeiro não impede mais excluir: o faturamento/adicional é
+    // cancelado JUNTO. Só recusamos quando já houve pagamento — aí o histórico
+    // financeiro precisa continuar existindo (estorne antes).
+    if (fine.billing_id) {
+      const billing = await billingModel.getBillingById(fine.billing_id, req.tenantId).catch(() => null);
+      if (billing && Number(billing.paid_amount) > 0) {
+        return res.status(409).json({
+          success: false,
+          error: `Esta multa já recebeu ${Number(billing.paid_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} `
+            + 'em pagamentos. Estorne o pagamento no Financeiro antes de excluir.',
+        });
+      }
+      if (billing) await billingModel.cancelBilling(fine.billing_id, req.tenantId).catch(() => {});
+    }
+    if (fine.rental_extra_id) {
+      await extraModel.cancel(fine.rental_extra_id, req.tenantId).catch(() => {});
+    }
+
     const removed = await model.remove(req.params.id, req.tenantId);
     activityLog.logDelete(req.tenantId, req.userId, 'rental_fine', req.params.id, `Multa removida: ${fine.fine_number || ''}`, fine).catch(() => {});
     res.json({ success: true, data: removed });

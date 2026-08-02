@@ -16,6 +16,7 @@
 const rentalModel = require('../models/rentalModels');
 const vehicleModel = require('../models/vehicleModels');
 const rentalExtraModel = require('../models/rentalExtraModels');
+const billingModel = require('../models/serviceBillingModels');
 const defaultWithTransaction = require('./tx').withTransaction;
 
 class HttpError extends Error {
@@ -164,15 +165,35 @@ function factory(withTransaction = defaultWithTransaction) {
     },
 
     // Cancelamento atômico (com motivo). Preserva histórico e libera o veículo.
+    // Cancelamento (§11). O faturamento vinculado é cancelado JUNTO, na mesma
+    // transação — antes o sistema bloqueava e mandava o usuário "tratar o
+    // faturamento no Financeiro", o que na prática impedia o cancelamento.
+    //
+    // A única trava que permanece é quando já houve DINHEIRO recebido: aí o
+    // caminho correto é estornar o pagamento (que gera o lançamento contrário),
+    // não apagar o faturamento por baixo.
     async cancelRental(id, { reason } = {}, tenant_id) {
       return withTransaction(async (db) => {
         const current = await rentalModel.getRentalByIdForUpdate(id, tenant_id, db);
         if (!current) throw new HttpError(404, 'Locação não encontrada');
         if (current.status === 'cancelado') throw new HttpError(409, 'Locação já cancelada.');
         if (current.status === 'finalizado') throw new HttpError(409, 'Locação finalizada não pode ser cancelada.');
+
+        // Trava os faturamentos ativos para ninguém pagar no meio do caminho.
+        const ativos = await billingModel.getActiveBillingsByRentalForUpdate(id, tenant_id, db);
+        const pagos = ativos.filter((b) => Number(b.paid_amount) > 0);
+        if (pagos.length) {
+          const total = pagos.reduce((a, b) => a + Number(b.paid_amount), 0);
+          throw new HttpError(409,
+            `Esta locação já recebeu ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} `
+            + 'em pagamentos. Estorne o pagamento no Financeiro antes de cancelar — assim o estorno fica registrado.');
+        }
+
+        for (const b of ativos) await billingModel.cancelBilling(b.id, tenant_id, db);
+
         const rental = await rentalModel.cancelRental(id, { reason }, tenant_id, db);
         await vehicleModel.refreshVehicleStatus(rental.vehicle_id, tenant_id, db);
-        return { rental, previous: current.status };
+        return { rental, previous: current.status, canceledBillings: ativos.length };
       });
     },
   };
