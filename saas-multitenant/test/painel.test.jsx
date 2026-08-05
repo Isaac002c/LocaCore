@@ -2,7 +2,7 @@
 // Painel de Locação — comportamento visível (§2–§5).
 //
 // Cobre as regras que o ciclo de refinamento estabeleceu:
-//   · no máximo 4 indicadores na primeira dobra;
+//   · cinco indicadores na primeira dobra, incluindo a projeção mensal;
 //   · alerta com contagem ZERO não ocupa espaço;
 //   · sem pendência, aparece "Operação em dia";
 //   · base vazia explica o que cadastrar, sem inventar número;
@@ -37,7 +37,7 @@ const overviewCheio = {
   automacoes: { mensagens_falha: 0, mensagens_pendentes: 3, fiscais_pendentes: 0 },
   financeiro: {
     faturado_periodo: 12000, recebido_periodo: 9000, pendente_periodo: 3000,
-    valor_em_aberto: 15000, caucao_retida: 2000,
+    valor_em_aberto: 15000, valor_mensal: 7200, caucao_retida: 2000,
     inadimplencia_qtd: 2, inadimplencia_valor: 1800,
   },
 };
@@ -53,7 +53,7 @@ const overviewVazio = {
   automacoes: { mensagens_falha: 0, mensagens_pendentes: 0, fiscais_pendentes: 0 },
   financeiro: {
     faturado_periodo: 0, recebido_periodo: 0, pendente_periodo: 0,
-    valor_em_aberto: 0, caucao_retida: 0, inadimplencia_qtd: 0, inadimplencia_valor: 0,
+    valor_em_aberto: 0, valor_mensal: 0, caucao_retida: 0, inadimplencia_qtd: 0, inadimplencia_valor: 0,
   },
 };
 
@@ -93,28 +93,29 @@ beforeEach(() => {
 });
 
 describe('primeira dobra', () => {
-  it('mostra EXATAMENTE 4 indicadores principais', async () => {
+  it('mostra os 5 indicadores principais, incluindo a projeção mensal', async () => {
     const { container } = render(<Painel />);
     await screen.findByText('Disponíveis');
-    const primeiraDobra = container.querySelector('.nx-kpi-grid--4');
+    const primeiraDobra = container.querySelector('.nx-kpi-grid--5');
     expect(primeiraDobra).toBeTruthy();
-    expect(primeiraDobra.querySelectorAll('.nx-kpi')).toHaveLength(4);
+    expect(primeiraDobra.querySelectorAll('.nx-kpi')).toHaveLength(5);
   });
 
-  it('responde às quatro perguntas de abertura do dia', async () => {
+  it('responde às cinco perguntas de abertura do dia', async () => {
     render(<Painel />);
     await screen.findByText('Disponíveis');
-    for (const titulo of ['Disponíveis', 'Locações ativas', 'Atrasadas', 'Valor em aberto']) {
+    for (const titulo of ['Disponíveis', 'Locações ativas', 'Atrasadas', 'Valor em aberto', 'Valor mensal (30 dias)']) {
       expect(screen.getByText(titulo)).toBeInTheDocument();
     }
     expect(screen.getByText('de 10 veículos')).toBeInTheDocument();
     expect(screen.getByText(/R\$\s*15\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*7\.200,00/)).toBeInTheDocument();
   });
 
   it('card leva para a tela correspondente JÁ FILTRADA', async () => {
     const { container } = render(<Painel />);
     await screen.findByText('Atrasadas');
-    const cardAtrasadas = within(container.querySelector('.nx-kpi-grid--4'))
+    const cardAtrasadas = within(container.querySelector('.nx-kpi-grid--5'))
       .getByText('Atrasadas').closest('.nx-kpi');
     await userEvent.click(cardAtrasadas);
     expect(push).toHaveBeenCalledWith(expect.stringContaining('tab=locacoes'));
@@ -128,7 +129,7 @@ describe('primeira dobra', () => {
     });
     const { container } = render(<Painel />);
     await screen.findByText('Atrasadas');
-    const card = within(container.querySelector('.nx-kpi-grid--4')).getByText('Atrasadas').closest('.nx-kpi');
+    const card = within(container.querySelector('.nx-kpi-grid--5')).getByText('Atrasadas').closest('.nx-kpi');
     expect(within(card).getByText('0')).toBeInTheDocument();
     expect(within(card).getByText('Nenhuma')).toBeInTheDocument();
   });

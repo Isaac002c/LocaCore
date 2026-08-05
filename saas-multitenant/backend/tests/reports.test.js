@@ -22,7 +22,7 @@ before(async () => {
   db.public.none(`
     CREATE TABLE vehicles ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, plate TEXT, status TEXT DEFAULT 'disponivel' );
     CREATE TABLE clients ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, name TEXT );
-    CREATE TABLE rentals ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, rental_number TEXT, client_id UUID, vehicle_id UUID, status TEXT DEFAULT 'em_andamento', start_date DATE, end_date DATE, total_amount NUMERIC(15,2) DEFAULT 0, deposit_amount NUMERIC(15,2) DEFAULT 0 );
+    CREATE TABLE rentals ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, rental_number TEXT, client_id UUID, vehicle_id UUID, status TEXT DEFAULT 'em_andamento', start_date DATE, end_date DATE, daily_rate NUMERIC(15,2) DEFAULT 0, total_amount NUMERIC(15,2) DEFAULT 0, deposit_amount NUMERIC(15,2) DEFAULT 0 );
     CREATE TABLE rental_fines ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, total_amount NUMERIC(15,2) DEFAULT 0, status TEXT DEFAULT 'identificada' );
     CREATE TABLE inventory_items ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, active BOOLEAN DEFAULT TRUE, quantity NUMERIC(15,3) DEFAULT 0, min_quantity NUMERIC(15,3) DEFAULT 0 );
     CREATE TABLE service_billings ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, client_id UUID, rental_id UUID, description TEXT, final_amount NUMERIC(15,2) DEFAULT 0, paid_amount NUMERIC(15,2) DEFAULT 0, financial_status TEXT DEFAULT 'faturado', created_at TIMESTAMPTZ DEFAULT NOW() );
@@ -36,8 +36,8 @@ before(async () => {
   const cli = (await pool.query(`INSERT INTO clients (tenant_id, name) VALUES ($1,'Ana') RETURNING *`, [T])).rows[0];
   const v1 = (await pool.query(`INSERT INTO vehicles (tenant_id, plate, status) VALUES ($1,'AAA1A11','alugado') RETURNING *`, [T])).rows[0];
   await pool.query(`INSERT INTO vehicles (tenant_id, plate, status) VALUES ($1,'BBB2B22','disponivel'),($1,'CCC3C33','manutencao')`, [T]);
-  await pool.query(`INSERT INTO rentals (tenant_id, rental_number, client_id, vehicle_id, status, start_date, end_date, total_amount, deposit_amount) VALUES ($1,'LOC-1',$2,$3,'em_andamento',$4,$4,500,200)`, [T, cli.id, v1.id, T_ISO]);
-  await pool.query(`INSERT INTO rentals (tenant_id, rental_number, status, start_date, end_date, total_amount) VALUES ($1,'LOC-2','atrasado',$2,$2,300)`, [T, T_ISO]);
+  await pool.query(`INSERT INTO rentals (tenant_id, rental_number, client_id, vehicle_id, status, start_date, end_date, daily_rate, total_amount, deposit_amount) VALUES ($1,'LOC-1',$2,$3,'em_andamento',$4,$4,20,500,200)`, [T, cli.id, v1.id, T_ISO]);
+  await pool.query(`INSERT INTO rentals (tenant_id, rental_number, status, start_date, end_date, daily_rate, total_amount) VALUES ($1,'LOC-2','atrasado',$2,$2,10,300)`, [T, T_ISO]);
   await pool.query(`INSERT INTO rental_fines (tenant_id, total_amount, status) VALUES ($1,150,'identificada'),($1,80,'paga')`, [T]);
   await pool.query(`INSERT INTO inventory_items (tenant_id, active, quantity, min_quantity) VALUES ($1,true,2,5),($1,true,10,3)`, [T]);
   await pool.query(`INSERT INTO service_billings (tenant_id, client_id, rental_id, description, final_amount, paid_amount, financial_status) VALUES ($1,$2,$3,'Locação LOC-1',500,200,'faturado')`, [T, cli.id, v1.id]);
@@ -60,6 +60,7 @@ test('overview: agrega frota, locações, hoje, multas, estoque e financeiro', a
   assert.equal(Number(o.financeiro.faturado_mes), 500);
   assert.equal(Number(o.financeiro.recebido_mes), 200);
   assert.equal(Number(o.financeiro.valor_em_aberto), 800, 'total das locações ativas');
+  assert.equal(Number(o.financeiro.valor_mensal), 900, 'projeção de 30 dias das locações em curso');
   assert.equal(Number(o.financeiro.caucao_retida), 200);
 });
 

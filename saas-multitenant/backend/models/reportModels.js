@@ -109,9 +109,11 @@ const overview = async (tenant_id, periodo = {}) => {
     [tenant_id, from, to], [{ faturado: 0, recebido: 0 }]);
 
   const openValue = await q(
-    `SELECT COALESCE(SUM(total_amount),0) AS total, COALESCE(SUM(deposit_amount),0) AS caucao
+    `SELECT COALESCE(SUM(total_amount),0) AS total,
+            COALESCE(SUM(deposit_amount),0) AS caucao,
+            COALESCE(SUM(CASE WHEN status IN ('em_andamento','atrasado') THEN daily_rate * 30 ELSE 0 END),0) AS mensal
        FROM rentals WHERE tenant_id = $1 AND status IN ('reservado','em_andamento','atrasado')`,
-    [tenant_id], [{ total: 0, caucao: 0 }]);
+    [tenant_id], [{ total: 0, caucao: 0, mensal: 0 }]);
 
   // Inadimplência: faturado com vencimento passado e saldo em aberto.
   const inadimplencia = await q(
@@ -170,7 +172,9 @@ const overview = async (tenant_id, periodo = {}) => {
       faturado_mes: faturado, recebido_mes: recebido,
       faturado_periodo: faturado, recebido_periodo: recebido,
       pendente_periodo: Math.max(faturado - recebido, 0),
-      valor_em_aberto: num(openValue[0].total), caucao_retida: num(openValue[0].caucao),
+      valor_em_aberto: num(openValue[0].total),
+      valor_mensal: num(openValue[0].mensal),
+      caucao_retida: num(openValue[0].caucao),
       inadimplencia_qtd: num(inadimplencia[0].n),
       inadimplencia_valor: num(inadimplencia[0].total),
     },

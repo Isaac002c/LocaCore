@@ -396,10 +396,11 @@
    split conteúdo/lateral, feed de movimentos e alertas priorizados.
    ============================================================================= */
 
-/* Primeira dobra: número FIXO de colunas, para os 4 KPIs terem o mesmo peso. */
+/* Primeira dobra: número FIXO de colunas, para os KPIs terem o mesmo peso. */
+.nx-kpi-grid--5 { grid-template-columns: repeat(5, 1fr); }
 .nx-kpi-grid--4 { grid-template-columns: repeat(4, 1fr); }
 .nx-kpi-grid--3 { grid-template-columns: repeat(3, 1fr); }
-.nx-kpi-grid--4 .nx-kpi-value { font-size: 26px; }
+.nx-kpi-grid--5 .nx-kpi-value, .nx-kpi-grid--4 .nx-kpi-value { font-size: 26px; }
 
 /* Abas internas do Painel */
 .nx-tabs {
@@ -491,10 +492,10 @@
 
 @media (max-width: 1100px) {
   .nx-split { grid-template-columns: 1fr; }
-  .nx-kpi-grid--4 { grid-template-columns: repeat(2, 1fr); }
+  .nx-kpi-grid--5, .nx-kpi-grid--4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 720px) {
-  .nx-kpi-grid--4, .nx-kpi-grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .nx-kpi-grid--5, .nx-kpi-grid--4, .nx-kpi-grid--3 { grid-template-columns: repeat(2, 1fr); }
   .nx-movimento { grid-template-columns: 48px minmax(0, 1fr); row-gap: 2px; }
   .nx-mov-tipo, .nx-mov-num { grid-column: 2; }
   .nx-tab { padding: 9px 10px; font-size: 13px; }

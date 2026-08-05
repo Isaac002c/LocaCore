@@ -32,7 +32,7 @@ before(async () => {
   db.public.none(`
     CREATE TABLE vehicles ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, plate TEXT, brand TEXT, model TEXT, status TEXT DEFAULT 'disponivel' );
     CREATE TABLE clients ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, name TEXT );
-    CREATE TABLE rentals ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, rental_number TEXT, client_id UUID, vehicle_id UUID, status TEXT DEFAULT 'em_andamento', start_date DATE, end_date DATE, total_amount NUMERIC(15,2) DEFAULT 0, deposit_amount NUMERIC(15,2) DEFAULT 0 );
+    CREATE TABLE rentals ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, rental_number TEXT, client_id UUID, vehicle_id UUID, status TEXT DEFAULT 'em_andamento', start_date DATE, end_date DATE, daily_rate NUMERIC(15,2) DEFAULT 0, total_amount NUMERIC(15,2) DEFAULT 0, deposit_amount NUMERIC(15,2) DEFAULT 0 );
     CREATE TABLE rental_fines ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, total_amount NUMERIC(15,2) DEFAULT 0, status TEXT DEFAULT 'identificada', due_date DATE );
     CREATE TABLE inventory_items ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, active BOOLEAN DEFAULT TRUE, quantity NUMERIC(15,3) DEFAULT 0, min_quantity NUMERIC(15,3) DEFAULT 0 );
     CREATE TABLE service_billings ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id TEXT, client_id UUID, rental_id UUID, description TEXT, final_amount NUMERIC(15,2) DEFAULT 0, paid_amount NUMERIC(15,2) DEFAULT 0, due_date DATE, financial_status TEXT DEFAULT 'faturado', created_at TIMESTAMPTZ DEFAULT NOW() );
@@ -56,16 +56,16 @@ before(async () => {
 
   // Locações: 1 em andamento (retirada hoje), 1 reservada (no veículo livre), 1 atrasada
   const loc1 = (await pool.query(
-    `INSERT INTO rentals (tenant_id,rental_number,client_id,vehicle_id,status,start_date,end_date,total_amount,deposit_amount)
-     VALUES ($1,'LOC-1',$2,$3,'em_andamento',$4,$5,900,300) RETURNING *`,
+    `INSERT INTO rentals (tenant_id,rental_number,client_id,vehicle_id,status,start_date,end_date,daily_rate,total_amount,deposit_amount)
+     VALUES ($1,'LOC-1',$2,$3,'em_andamento',$4,$5,30,900,300) RETURNING *`,
     [T, cli.id, alugado.id, hoje(), shift(5)])).rows[0];
   await pool.query(
-    `INSERT INTO rentals (tenant_id,rental_number,client_id,vehicle_id,status,start_date,end_date,total_amount,deposit_amount)
-     VALUES ($1,'LOC-2',$2,$3,'reservado',$4,$5,400,100)`,
+    `INSERT INTO rentals (tenant_id,rental_number,client_id,vehicle_id,status,start_date,end_date,daily_rate,total_amount,deposit_amount)
+     VALUES ($1,'LOC-2',$2,$3,'reservado',$4,$5,99,400,100)`,
     [T, cli.id, livre.id, shift(3), shift(8)]);
   await pool.query(
-    `INSERT INTO rentals (tenant_id,rental_number,client_id,status,start_date,end_date,total_amount)
-     VALUES ($1,'LOC-3',$2,'atrasado',$3,$4,250)`,
+    `INSERT INTO rentals (tenant_id,rental_number,client_id,status,start_date,end_date,daily_rate,total_amount)
+     VALUES ($1,'LOC-3',$2,'atrasado',$3,$4,10,250)`,
     [T, cli.id, shift(-10), hoje()]);
 
   // Financeiro: 1 faturamento pago pela metade no período + 1 vencido (inadimplência)
@@ -89,7 +89,7 @@ before(async () => {
 
   // ── Ruído de OUTRO tenant (não pode vazar em nenhum indicador) ────────────
   await pool.query(`INSERT INTO vehicles (tenant_id,plate,status) VALUES ($1,'ZZZ9Z99','alugado')`, [OUTRO]);
-  await pool.query(`INSERT INTO rentals (tenant_id,rental_number,status,start_date,end_date,total_amount) VALUES ($1,'X-1','atrasado',$2,$2,9999)`, [OUTRO, hoje()]);
+  await pool.query(`INSERT INTO rentals (tenant_id,rental_number,status,start_date,end_date,daily_rate,total_amount) VALUES ($1,'X-1','atrasado',$2,$2,999,9999)`, [OUTRO, hoje()]);
   await pool.query(`INSERT INTO service_billings (tenant_id,description,final_amount,paid_amount,due_date,financial_status) VALUES ($1,'ruido',7777,0,$2,'faturado')`, [OUTRO, shift(-30)]);
   await pool.query(`INSERT INTO message_outbox (tenant_id,status) VALUES ($1,'failed')`, [OUTRO]);
 });
@@ -141,6 +141,7 @@ test('financeiro: faturado, recebido, pendente e inadimplência', async () => {
   assert.equal(o.financeiro.inadimplencia_qtd, 1, 'só a cobrança vencida com saldo');
   assert.equal(o.financeiro.inadimplencia_valor, 400, '500 - 100');
   assert.equal(o.financeiro.valor_em_aberto, 1550, 'reservado + em andamento + atrasado');
+  assert.equal(o.financeiro.valor_mensal, 1200, '30 dias apenas de em andamento + atrasado');
   assert.equal(o.financeiro.caucao_retida, 400);
 });
 

@@ -272,8 +272,8 @@ export default function Painel() {
         />
       ) : (
         <>
-          {/* ── PRIMEIRA DOBRA: exatamente 4 indicadores (§2) ─────────────── */}
-          <div className="nx-kpi-grid nx-kpi-grid--4">
+          {/* ── PRIMEIRA DOBRA: indicadores operacionais e financeiros ───── */}
+          <div className="nx-kpi-grid nx-kpi-grid--5">
             <MetricCard
               title="Disponíveis"
               value={f.disponivel ?? 0}
@@ -302,6 +302,13 @@ export default function Painel() {
               subtitle={fin.inadimplencia_valor ? `${fmtMoney(fin.inadimplencia_valor)} vencido` : 'Nada vencido'}
               direction={fin.inadimplencia_valor ? 'down' : undefined}
               tooltip="Total dos contratos ativos"
+              onClick={() => go('locacoes')}
+            />
+            <MetricCard
+              title="Valor mensal (30 dias)"
+              value={fmtMoney(fin.valor_mensal ?? 0)}
+              subtitle="Locações em curso"
+              tooltip="Soma das diárias por 30 dias nas locações em andamento ou atrasadas"
               onClick={() => go('locacoes')}
             />
           </div>
