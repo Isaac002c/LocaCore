@@ -180,12 +180,19 @@ test('locação: devolução finaliza e registra data/hodômetro', async () => {
   assert.equal(Number(closed.return_odometer), 12345);
 });
 
-test('locação: stats agregam valores em aberto por tenant', async () => {
+test('locação: stats agregam valor total e projeção mensal por tenant', async () => {
+  const before = await rentalModels.getRentalStats(A);
+  await rentalModels.createRental({
+    tenant_id: A, client_id: cliA.id, vehicle_id: vehA.id,
+    status: 'em_andamento', days: 10, daily_rate: 80,
+  });
   const s = await rentalModels.getRentalStats(A);
-  assert.ok(Number(s.total) >= 2);
-  assert.equal(Number(s.finalizado), 1);         // rentA finalizada
-  // rentA (520) finalizada não conta em "em aberto"; o r de 0.50 (reservado) conta.
-  assert.equal(Number(s.valor_em_aberto), 0.5);
+  assert.equal(Number(s.total), Number(before.total) + 1);
+  assert.equal(Number(s.valor_em_aberto) - Number(before.valor_em_aberto), 800);
+  assert.equal(Number(s.valor_mensal) - Number(before.valor_mensal), 2400); // 80 × 30 dias
+
+  const otherTenant = await rentalModels.getRentalStats(B);
+  assert.equal(Number(otherTenant.valor_mensal), 0); // reserva de B não entra na projeção
 });
 
 // ─────────────────────────── VÍNCULO FINANCEIRO ───────────────────────────

@@ -355,6 +355,7 @@ const getRentalStats = async (tenant_id, db = pool) => {
         COUNT(CASE WHEN status = 'cancelado'    THEN 1 END)::int            AS cancelado,
         COALESCE(SUM(CASE WHEN status <> 'cancelado' THEN total_amount ELSE 0 END), 0)                               AS valor_total,
         COALESCE(SUM(CASE WHEN status IN ('reservado','em_andamento','atrasado') THEN total_amount ELSE 0 END), 0)   AS valor_em_aberto,
+        COALESCE(SUM(CASE WHEN status IN ('em_andamento','atrasado') THEN daily_rate * 30 ELSE 0 END), 0)            AS valor_mensal,
         COALESCE(SUM(CASE WHEN status IN ('em_andamento','atrasado') THEN deposit_amount ELSE 0 END), 0)             AS caucao_retida
        FROM rentals WHERE tenant_id = $1`,
     [tenant_id]

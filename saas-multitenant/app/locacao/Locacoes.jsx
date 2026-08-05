@@ -388,7 +388,7 @@ export default function Locacoes() {
 
   return (
     <div className="clients-page">
-      <div className="clients-summary">
+      <div className="clients-summary locacoes-summary">
         <div className="clients-summary-card all" onClick={() => onFilterStatus('')} style={{ cursor: 'pointer' }}>
           <span className="summary-number">{stats?.total ?? rentals.length}</span>
           <span className="summary-label">Total de Locações</span>
@@ -404,6 +404,10 @@ export default function Locacoes() {
         <div className="clients-summary-card fechado" onClick={() => onFilterStatus('')} style={{ cursor: 'default' }}>
           <span className="summary-number" style={{ fontSize: 20 }}>{fmtMoney(stats?.valor_em_aberto || 0)}</span>
           <span className="summary-label">Valor em aberto</span>
+        </div>
+        <div className="clients-summary-card fechado" style={{ cursor: 'default' }}>
+          <span className="summary-number" style={{ fontSize: 20 }}>{fmtMoney(stats?.valor_mensal || 0)}</span>
+          <span className="summary-label">Valor mensal (30 dias)</span>
         </div>
       </div>
 

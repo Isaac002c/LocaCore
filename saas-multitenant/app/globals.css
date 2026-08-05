@@ -4599,6 +4599,10 @@ html, body {
   gap: 16px;
 }
 
+.clients-summary.locacoes-summary {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
 .clients-summary-card {
   background: var(--surface);
   border-radius: 12px;
