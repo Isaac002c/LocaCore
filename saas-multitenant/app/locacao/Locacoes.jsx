@@ -6,7 +6,7 @@ import {
   setRentalStatus, returnRental, cancelRental, faturarRental, getRentalBillings, deleteRental,
   generateReceipt, getRentalExtras, addRentalExtra, deleteRentalExtra,
   getRentalDocuments, addRentalDocument, deleteRentalDocument,
-  generateContract, contractPdfUrl,
+  generateContract, contractPdfUrl, getEditableContractData, generateEditableContract,
 } from '../lib/rentalsAPI';
 import { getVehicles } from '../lib/vehiclesAPI';
 import { getClients } from '../lib/clientsAPI';
@@ -36,6 +36,15 @@ const DOC_LABELS = {
   comprovante_residencia: 'Comprovante de residência', vistoria_retirada: 'Vistoria de retirada',
   vistoria_devolucao: 'Vistoria de devolução', comprovante_pagamento: 'Comprovante de pagamento',
   multa: 'Multa', manutencao: 'Manutenção', outro: 'Outro',
+};
+
+const DOCX_FIELD_LABELS = {
+  QUALIFICACAO_MOTORISTA: 'Qualificação do motorista',
+  DADOS_VEICULO: 'Cláusula 1 — dados do carro',
+  DATA_INICIO: 'Cláusula 5 — início do contrato',
+  DATA_FIM: 'Cláusula 5 — fim do contrato',
+  VALOR_SEMANAL: 'Cláusula 7 — valor semanal',
+  DATA_FINAL_CONTRATO: 'Data final após a Cláusula 13',
 };
 
 export default function Locacoes() {
@@ -69,6 +78,10 @@ export default function Locacoes() {
   // o usuário via o diálogo fechar e "nada acontecer".
   const [dialogError, setDialogError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [docxOpen, setDocxOpen] = useState(false);
+  const [docxFields, setDocxFields] = useState(null);
+  const [docxBusy, setDocxBusy] = useState(false);
+  const [docxError, setDocxError] = useState(null);
 
   // Adicionais / documentos da locação selecionada
   const [extras, setExtras] = useState([]);
@@ -290,6 +303,27 @@ export default function Locacoes() {
       setNotice('Contrato gerado — abrindo PDF.');
     } catch (err) { setError(err.message); }
     finally { setDrawerBusy(false); }
+  };
+
+  const openEditableContract = async () => {
+    if (!selected) return;
+    try {
+      setDocxBusy(true); setDocxError(null);
+      const fields = await getEditableContractData(selected.id);
+      setDocxFields(fields); setDocxOpen(true);
+    } catch (err) { setError(err.message); }
+    finally { setDocxBusy(false); }
+  };
+
+  const downloadEditableContract = async (e) => {
+    e.preventDefault();
+    if (!selected || !docxFields) return;
+    try {
+      setDocxBusy(true); setDocxError(null);
+      await generateEditableContract(selected.id, docxFields);
+      setDocxOpen(false); setNotice('Contrato editável gerado e baixado em DOCX.');
+    } catch (err) { setDocxError(err.message); }
+    finally { setDocxBusy(false); }
   };
 
   const doCancel = async (reason) => {
@@ -592,6 +626,7 @@ export default function Locacoes() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
             <button className="btn-secondary" onClick={() => { const r = selected; closeDrawer(); openEdit(r); }}>Editar</button>
             <button className="btn-secondary" disabled={drawerBusy} onClick={doContract}>Contrato (PDF)</button>
+            <button className="btn-secondary" disabled={drawerBusy || docxBusy} onClick={openEditableContract}>Contrato editável (DOCX)</button>
             {selected.status === 'reservado' && <button className="btn-primary" disabled={drawerBusy} onClick={() => doStatus('em_andamento')}>Iniciar locação</button>}
             {(selected.status === 'em_andamento' || selected.status === 'atrasado') && !returnMode && <button className="btn-primary" disabled={drawerBusy} onClick={() => setReturnMode(true)}>Registrar devolução</button>}
             {selected.status !== 'cancelado' && selected.status !== 'finalizado' && <button className="btn-secondary" disabled={drawerBusy} onClick={() => { setDialogError(null); setConfirmCancel(true); }}>Cancelar locação</button>}
@@ -746,8 +781,8 @@ export default function Locacoes() {
                   </select>
                 </div>
                 <div className="form-group" style={{ flex: 1.6 }}>
-                  <label>Arquivo (PDF/JPG/PNG)</label>
-                  <input ref={fileRef} type="file" accept="application/pdf,image/*" disabled={uploading} onChange={doUploadDoc} />
+                  <label>Arquivo (PDF/JPG/PNG/DOCX)</label>
+                  <input ref={fileRef} type="file" accept="application/pdf,image/*,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={uploading} onChange={doUploadDoc} />
                 </div>
               </div>
               {uploading && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Enviando arquivo…</p>}
@@ -755,6 +790,37 @@ export default function Locacoes() {
           </div>
         )}
       </Drawer>
+
+      {docxOpen && docxFields && (
+        <div className="modal-overlay" onClick={() => !docxBusy && setDocxOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Gerar contrato editável">
+            <div className="modal-header">
+              <div>
+                <h2 style={{ fontSize: 18, fontWeight: 700 }}>Gerar contrato editável</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Confira e ajuste os dados antes de baixar o DOCX.</p>
+              </div>
+              <button type="button" className="btn-close" onClick={() => setDocxOpen(false)} disabled={docxBusy}>✕</button>
+            </div>
+            {docxError && <div className="error-message" role="alert" style={{ marginBottom: 12 }}>{docxError}</div>}
+            <form onSubmit={downloadEditableContract} className="modal-form">
+              {Object.entries(DOCX_FIELD_LABELS).map(([field, label]) => (
+                <div className="form-group" key={field}>
+                  <label>{label}</label>
+                  {(field === 'QUALIFICACAO_MOTORISTA' || field === 'DADOS_VEICULO') ? (
+                    <textarea rows={3} value={docxFields[field] || ''} onChange={(e) => setDocxFields((current) => ({ ...current, [field]: e.target.value }))} />
+                  ) : (
+                    <input type="text" value={docxFields[field] || ''} onChange={(e) => setDocxFields((current) => ({ ...current, [field]: e.target.value }))} />
+                  )}
+                </div>
+              ))}
+              <div className="form-actions">
+                <button type="button" className="btn-secondary" onClick={() => setDocxOpen(false)} disabled={docxBusy}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={docxBusy}>{docxBusy ? 'Gerando…' : 'Baixar DOCX editável'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmCancel}

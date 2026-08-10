@@ -10,6 +10,7 @@ const storageObjects = require('../models/storageObjectModels');
 const ALLOWED_MIMES = [
   'application/pdf',
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -31,7 +32,7 @@ const upload = multer({
   limits: { fileSize: MAX_SIZE },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIMES.includes(file.mimetype)) {
-      return cb(new Error('Tipo de arquivo não permitido. Use PDF, JPG ou PNG.'));
+      return cb(new Error('Tipo de arquivo não permitido. Use PDF, JPG, PNG ou DOCX.'));
     }
     cb(null, true);
   },

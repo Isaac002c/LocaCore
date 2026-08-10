@@ -19,8 +19,45 @@ const DEFAULT_CLAUSES = [
 ];
 
 const getSettings = async (tenant_id) => {
-  const r = await pool.query('SELECT * FROM tenant_contract_settings WHERE tenant_id = $1', [tenant_id]);
+  const r = await pool.query(
+    `SELECT tenant_id, header, clauses, footer, updated_at,
+            docx_template_name, docx_template_size, docx_template_sha256,
+            docx_template_fields, docx_template_updated_at,
+            (docx_template IS NOT NULL) AS has_docx_template
+       FROM tenant_contract_settings WHERE tenant_id = $1`,
+    [tenant_id]
+  );
   return r.rows[0] || { tenant_id, header: null, clauses: DEFAULT_CLAUSES.join('\n'), footer: null };
+};
+
+const saveDocxTemplate = async (tenant_id, { buffer, name, size, sha256, fields }) => {
+  const r = await pool.query(
+    `INSERT INTO tenant_contract_settings
+       (tenant_id, docx_template, docx_template_name, docx_template_size,
+        docx_template_sha256, docx_template_fields, docx_template_updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6::jsonb,NOW())
+     ON CONFLICT (tenant_id) DO UPDATE SET
+       docx_template=EXCLUDED.docx_template,
+       docx_template_name=EXCLUDED.docx_template_name,
+       docx_template_size=EXCLUDED.docx_template_size,
+       docx_template_sha256=EXCLUDED.docx_template_sha256,
+       docx_template_fields=EXCLUDED.docx_template_fields,
+       docx_template_updated_at=NOW(), updated_at=NOW()
+     RETURNING docx_template_name, docx_template_size, docx_template_sha256,
+               docx_template_fields, docx_template_updated_at, true AS has_docx_template`,
+    [tenant_id, buffer, name, size, sha256, JSON.stringify(fields)]
+  );
+  return r.rows[0];
+};
+
+const getDocxTemplate = async (tenant_id) => {
+  const r = await pool.query(
+    `SELECT docx_template, docx_template_name, docx_template_size, docx_template_sha256,
+            docx_template_fields, docx_template_updated_at
+       FROM tenant_contract_settings WHERE tenant_id=$1 AND docx_template IS NOT NULL`,
+    [tenant_id]
+  );
+  return r.rows[0];
 };
 
 const upsertSettings = async (tenant_id, { header, clauses, footer }) => {
@@ -28,7 +65,10 @@ const upsertSettings = async (tenant_id, { header, clauses, footer }) => {
     `INSERT INTO tenant_contract_settings (tenant_id, header, clauses, footer)
      VALUES ($1,$2,$3,$4)
      ON CONFLICT (tenant_id) DO UPDATE SET header=EXCLUDED.header, clauses=EXCLUDED.clauses, footer=EXCLUDED.footer, updated_at=NOW()
-     RETURNING *`,
+     RETURNING tenant_id, header, clauses, footer, updated_at,
+               docx_template_name, docx_template_size, docx_template_sha256,
+               docx_template_fields, docx_template_updated_at,
+               (docx_template IS NOT NULL) AS has_docx_template`,
     [tenant_id, header || null, clauses || null, footer || null]
   );
   return r.rows[0];
@@ -60,4 +100,7 @@ const getById = async (id, tenant_id) => {
   return r.rows[0];
 };
 
-module.exports = { DEFAULT_CLAUSES, getSettings, upsertSettings, create, listByRental, getById };
+module.exports = {
+  DEFAULT_CLAUSES, getSettings, upsertSettings, saveDocxTemplate, getDocxTemplate,
+  create, listByRental, getById,
+};

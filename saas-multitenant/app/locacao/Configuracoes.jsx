@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getCompanySettings, saveCompanySettings,
   getContractSettings, saveContractSettings,
+  uploadContractDocxTemplate, downloadContractDocxTemplate,
   getRoles, getIntegrationsReadiness,
 } from '../lib/settingsAPI';
 import { getOptions, createOption, updateOption } from '../lib/configOptionsAPI';
@@ -269,6 +270,8 @@ function AbaContratos() {
   const [erro, setErro] = useState(null);
   const [ok, setOk] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const templateRef = useRef(null);
 
   const load = useCallback(async () => {
     try { setLoading(true); setErro(null); setForm((await getContractSettings()) || {}); }
@@ -287,6 +290,23 @@ function AbaContratos() {
     } catch (err) { setErro(err.message); } finally { setSaving(false); }
   };
 
+  const trocarModeloDocx = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true); setErro(null); setOk(null);
+      await uploadContractDocxTemplate(file);
+      setOk('Modelo DOCX validado e salvo. As seis informações podem ser editadas ao gerar o contrato.');
+      await load();
+    } catch (err) { setErro(err.message); }
+    finally { setUploading(false); if (templateRef.current) templateRef.current.value = ''; }
+  };
+
+  const baixarModeloDocx = async () => {
+    try { setErro(null); await downloadContractDocxTemplate(); }
+    catch (err) { setErro(err.message); }
+  };
+
   if (loading) return <PageLoading label="Carregando modelo de contrato..." compact />;
   if (!form) return <PageError message="Não foi possível carregar o modelo de contrato." onRetry={load} />;
 
@@ -297,6 +317,26 @@ function AbaContratos() {
         Texto usado no PDF do contrato de locação. Cada contrato gerado guarda uma CÓPIA deste
         texto (versionada), então alterar aqui não muda contratos já emitidos.
       </p>
+      <section className="nx-form-section" style={{ marginBottom: 18 }}>
+        <div className="nx-form-section-title">Contrato editável (DOCX)</div>
+        <p className="nx-cfg-hint" style={{ marginTop: 0 }}>
+          O modelo é preenchido pela locação e continua editável no Word. Campos: qualificação do motorista,
+          dados do carro, início, fim, valor semanal e data final do contrato.
+        </p>
+        {form.has_docx_template ? (
+          <div className="nx-resumo" style={{ marginBottom: 12 }}>
+            <strong>{form.docx_template_name}</strong>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {Math.ceil(Number(form.docx_template_size || 0) / 1024)} KB · modelo ativo
+            </span>
+          </div>
+        ) : <p className="nx-cfg-hint">Nenhum modelo DOCX configurado.</p>}
+        <input ref={templateRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={trocarModeloDocx} disabled={uploading} />
+        <div className="form-actions" style={{ justifyContent: 'flex-start', marginTop: 10 }}>
+          {form.has_docx_template && <button type="button" className="btn-secondary" onClick={baixarModeloDocx}>Baixar modelo limpo</button>}
+          <span className="nx-cfg-hint">{uploading ? 'Validando e enviando…' : 'Somente DOCX com os seis campos configurados.'}</span>
+        </div>
+      </section>
       <div className="form-group"><label>Cabeçalho</label>
         <textarea rows={3} value={form.header || ''} onChange={set('header')} placeholder="Identificação da empresa, CNPJ, endereço..." /></div>
       <div className="form-group"><label>Cláusulas</label>

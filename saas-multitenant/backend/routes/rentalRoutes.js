@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const crypto = require('crypto');
 const rentalModel = require('../models/rentalModels');
 const clientModel = require('../models/clientModels');
 const vehicleModel = require('../models/vehicleModels');
@@ -12,6 +14,7 @@ const tenantModel = require('../models/tenantModels');
 const userModel = require('../models/userModels');
 const contractModel = require('../models/rentalContractModels');
 const { buildRentalContractPdf } = require('../services/finance/rentalContractPdf');
+const { REQUIRED_FIELDS, validateTemplate, fillTemplate } = require('../services/contracts/editableDocx');
 const rentalService = require('../services/rentalService');
 const receiptService = require('../services/finance/receiptService');
 const { resolveBranding } = require('../services/finance/branding');
@@ -71,6 +74,47 @@ router.put('/contract-settings', checkPermission('contracts:generate'), async (r
   catch (err) { handleErr(res, err, 'Erro ao salvar config de contrato:'); }
 });
 
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const templateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = file.mimetype === DOCX_MIME || /\.docx$/i.test(file.originalname || '');
+    cb(ok ? null : new Error('Envie um arquivo DOCX.'), ok);
+  },
+}).single('file');
+
+router.post('/contract-settings/docx-template', checkPermission('contracts:generate'), (req, res) => {
+  templateUpload(req, res, async (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ success: false, error: uploadErr.code === 'LIMIT_FILE_SIZE' ? 'Arquivo muito grande. Tamanho máximo: 10MB.' : uploadErr.message });
+    try {
+      if (!req.file) return res.status(400).json({ success: false, error: 'Selecione um arquivo DOCX.' });
+      const validation = validateTemplate(req.file.buffer);
+      const saved = await contractModel.saveDocxTemplate(req.tenantId, {
+        buffer: req.file.buffer,
+        name: req.file.originalname,
+        size: req.file.size,
+        sha256: crypto.createHash('sha256').update(req.file.buffer).digest('hex'),
+        fields: validation.fields,
+      });
+      activityLog.logUpdate(req.tenantId, req.userId, 'tenant_contract_settings', req.tenantId,
+        `Modelo DOCX de contrato atualizado: ${req.file.originalname}`, {}, { fields: REQUIRED_FIELDS }).catch(() => {});
+      return res.json({ success: true, data: saved });
+    } catch (err) { return handleErr(res, err, 'Erro ao salvar modelo DOCX:'); }
+  });
+});
+
+router.get('/contract-settings/docx-template/download', checkPermission('rentals:read'), async (req, res) => {
+  try {
+    const template = await contractModel.getDocxTemplate(req.tenantId);
+    if (!template) return res.status(404).json({ success: false, error: 'Nenhum modelo DOCX configurado.' });
+    res.setHeader('Content-Type', DOCX_MIME);
+    res.setHeader('Content-Disposition', `attachment; filename="${String(template.docx_template_name || 'modelo-contrato.docx').replace(/["\r\n]/g, '')}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.send(template.docx_template);
+  } catch (err) { return handleErr(res, err, 'Erro ao baixar modelo DOCX:'); }
+});
+
 // Monta os dados do contrato (locação + cliente + veículo + adicionais + branding).
 async function contractData(rentalId, tenantId) {
   const rental = await rentalModel.getRentalById(rentalId, tenantId);
@@ -85,6 +129,69 @@ async function contractData(rentalId, tenantId) {
   ]);
   return { rental, client: client || {}, vehicle: vehicle || {}, extras, settings, branding: resolveBranding({ tenant, settings: finSettings }) };
 }
+
+const brDateLong = (value) => {
+  if (!value) return '';
+  const iso = value instanceof Date
+    ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+    : String(value).substring(0, 10);
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return '';
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, day)));
+};
+
+const brMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value) || 0);
+const present = (label, value) => value ? `${label} ${value}` : null;
+
+const editableContractDefaults = (data) => {
+  const c = data.client || {};
+  const v = data.vehicle || {};
+  const qualification = [c.name, present('CPF', c.cpf), present('CNH', c.cnh), present('nascido(a) em', brDateLong(c.birth_date)), present('residente em', c.address)].filter(Boolean).join(', ');
+  const vehicle = [[v.brand, v.model].filter(Boolean).join(' '), present('ano', v.year), present('cor', v.color), present('RENAVAM', v.renavam), present('placa', v.plate)].filter(Boolean).join(', ');
+  return {
+    QUALIFICACAO_MOTORISTA: qualification,
+    DADOS_VEICULO: vehicle,
+    DATA_INICIO: brDateLong(data.rental.start_date),
+    DATA_FIM: brDateLong(data.rental.end_date),
+    VALOR_SEMANAL: brMoney((Number(data.rental.daily_rate) || 0) * 7),
+    DATA_FINAL_CONTRATO: brDateLong(new Date()),
+  };
+};
+
+router.get('/:id/contract.docx-data', checkPermission('rentals:read'), async (req, res) => {
+  try {
+    const data = await contractData(req.params.id, req.tenantId);
+    if (!data) return res.status(404).json({ success: false, error: 'Locação não encontrada' });
+    const template = await contractModel.getDocxTemplate(req.tenantId);
+    if (!template) return res.status(404).json({ success: false, error: 'Configure primeiro o modelo DOCX em Configurações > Contratos.' });
+    return res.json({ success: true, data: editableContractDefaults(data) });
+  } catch (err) { return handleErr(res, err, 'Erro ao preparar contrato DOCX:'); }
+});
+
+router.post('/:id/contract.docx', checkPermission('contracts:generate'), async (req, res) => {
+  try {
+    const data = await contractData(req.params.id, req.tenantId);
+    if (!data) return res.status(404).json({ success: false, error: 'Locação não encontrada' });
+    const template = await contractModel.getDocxTemplate(req.tenantId);
+    if (!template) return res.status(404).json({ success: false, error: 'Configure primeiro o modelo DOCX em Configurações > Contratos.' });
+    const defaults = editableContractDefaults(data);
+    const values = Object.fromEntries(REQUIRED_FIELDS.map((field) => [field, String(req.body?.[field] ?? defaults[field] ?? '').trim()]));
+    const output = fillTemplate(template.docx_template, values);
+    const snapshot = {
+      rental_number: data.rental.rental_number, client_name: data.client.name,
+      vehicle_plate: data.vehicle.plate, total_amount: data.rental.total_amount,
+      generated_at: new Date().toISOString(), format: 'docx', editable_fields: values,
+    };
+    const contract = await contractModel.create({ tenant_id: req.tenantId, rental_id: req.params.id, snapshot, created_by: req.userId });
+    activityLog.logCreate(req.tenantId, req.userId, 'rental_contract', contract.id,
+      `Contrato DOCX ${contract.number} gerado (v${contract.version})`, {}).catch(() => {});
+    const safeNumber = String(data.rental.rental_number || req.params.id).replace(/[^a-zA-Z0-9_-]/g, '-');
+    res.setHeader('Content-Type', DOCX_MIME);
+    res.setHeader('Content-Disposition', `attachment; filename="contrato-${safeNumber}.docx"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.send(output);
+  } catch (err) { return handleErr(res, err, 'Erro ao gerar contrato DOCX:'); }
+});
 
 // POST /:id/contract — gera nova VERSÃO do contrato (snapshot; não sobrescreve)
 router.post('/:id/contract', checkPermission('contracts:generate'), async (req, res) => {

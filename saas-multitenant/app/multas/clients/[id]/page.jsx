@@ -1187,7 +1187,7 @@ export default function ClientDetail() {
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-secondary)', border: docFile ? '1px solid #bbf7d0' : '1px dashed var(--text-muted)', borderRadius: 8, cursor: 'pointer' }}>
                   <input
                     type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept=".pdf,.jpg,.jpeg,.png,.docx"
                     style={{ display: 'none' }}
                     onChange={e => { setDocFile(e.target.files[0] || null); if (e.target.files[0] && !docForm.name) setDocForm(prev => ({ ...prev, name: e.target.files[0].name })); }}
                   />
@@ -1330,7 +1330,7 @@ function ProtocolItemForm({ form, setForm, onSubmit, onCancel, submitting, uploa
           </div>
         ) : (
           <label style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'var(--surface)', border:'1px dashed var(--border-strong)', borderRadius:6, cursor:'pointer' }}>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:'none' }} onChange={e=>handleFileUpload(e, setForm)} disabled={uploadingId==='uploading'} />
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" style={{ display:'none' }} onChange={e=>handleFileUpload(e, setForm)} disabled={uploadingId==='uploading'} />
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span style={{ fontSize:11, color:'var(--text-muted)' }}>{uploadingId==='uploading'?'Enviando...':'Anexar PDF, JPG ou PNG (máx. 10 MB)'}</span>
           </label>

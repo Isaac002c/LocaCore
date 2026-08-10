@@ -58,6 +58,24 @@ export const generateContract = async (id) =>
   (await apiRequest(`${BASE}/${id}/contract`, { method: 'POST' })).data;
 export const contractPdfUrl = (id) => `${BASE}/${id}/contract.pdf`;
 
+export const getEditableContractData = async (id) =>
+  (await apiRequest(`${BASE}/${id}/contract.docx-data`)).data;
+
+export const generateEditableContract = async (id, fields) => {
+  const response = await apiRequest(`${BASE}/${id}/contract.docx`, { method: 'POST', body: fields, raw: true });
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || `contrato-${id}.docx`;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 // ── Adicionais (extras) ──────────────────────────────────────────────────────
 export const getRentalExtras = async (id) =>
   (await apiRequest(`${BASE}/${id}/extras`)).data;
