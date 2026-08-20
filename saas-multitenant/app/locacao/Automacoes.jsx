@@ -6,7 +6,11 @@ import {
   runBilling, runDunning, runOutbox, runFiscalBatch,
   getMessages, retryMessage, getFiscalDocs, retryFiscal, getCosts,
   getConsole, getDeadLetter, cancelDeadLetter, manualDeadLetter,
+  getReadiness, runDryRun, getCharges, retryCharge, getAutomationAudit,
+  saveIntegrationSecrets, testIntegration, getFiscalCertificate, uploadFiscalCertificate,
+  getTemplates, saveTemplate, confirmChargeManually, getChargeTimeline,
 } from '../lib/automationsAPI';
+import { getRentals } from '../lib/rentalsAPI';
 import { MetricCard, PageHead, EmptyState } from '../components/ui';
 import { fmtMoney, fmtDate } from './shared';
 import { PageLoading, InlineError } from '../components/states';
@@ -14,11 +18,15 @@ import { PageLoading, InlineError } from '../components/states';
 const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const TABS = [
   { key: 'painel', label: 'Painel' },
+  { key: 'prontidao', label: 'Prontidão' },
+  { key: 'cobrancas', label: 'Cobranças' },
   { key: 'execucoes', label: 'Execuções' },
   { key: 'mensagens', label: 'Mensagens' },
+  { key: 'templates', label: 'Templates' },
   { key: 'deadletter', label: 'Dead-letter' },
   { key: 'fiscal', label: 'Notas Fiscais' },
   { key: 'custos', label: 'Custos' },
+  { key: 'auditoria', label: 'Auditoria' },
   { key: 'config', label: 'Configurações' },
 ];
 
@@ -41,6 +49,33 @@ const fmtDuracao = (ini, fim) => {
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
 };
 const fmtCost = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(Number(v) || 0);
+const localYmd = () => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const p = Object.fromEntries(parts.map((item) => [item.type, item.value]));
+  return `${p.year}-${p.month}-${p.day}`;
+};
+const shiftYmd = (ymd, days) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return date.toISOString().slice(0, 10);
+};
+const chargeFilters = (preset) => {
+  const today = localYmd();
+  if (preset === 'today') return { date_from: today, date_to: today };
+  if (preset === 'week') {
+    const [y, m, d] = today.split('-').map(Number);
+    const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    const start = shiftYmd(today, weekday === 0 ? -6 : 1 - weekday);
+    return { date_from: start, date_to: shiftYmd(start, 6) };
+  }
+  if (preset === 'upcoming') return { status: 'waiting_payment', date_from: today };
+  if (preset === 'overdue') return { status: 'overdue' };
+  if (preset === 'paid') return { status: 'paid' };
+  if (preset === 'failed') return { status: 'failed' };
+  return {};
+};
 
 export default function Automacoes() {
   const [tab, setTab] = useState('painel');
@@ -58,6 +93,19 @@ export default function Automacoes() {
   const [msgFilter, setMsgFilter] = useState('');
   const [consoleData, setConsoleData] = useState(null);
   const [dead, setDead] = useState([]);
+  const [readiness, setReadiness] = useState(null);
+  const [dryResult, setDryResult] = useState(null);
+  const [charges, setCharges] = useState([]);
+  const [chargeFilter, setChargeFilter] = useState('');
+  const [auditRows, setAuditRows] = useState([]);
+  const [activeRentals, setActiveRentals] = useState([]);
+  const [secretDraft, setSecretDraft] = useState({});
+  const [certificateFile, setCertificateFile] = useState(null);
+  const [certificatePassword, setCertificatePassword] = useState('');
+  const [certificate, setCertificate] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [confirmModal, setConfirmModal] = useState(null); // { charge, amount, payment_date, payment_method, notes }
+  const [timeline, setTimeline] = useState(null); // { charge, rows }
 
   useEffect(() => { loadPanel(); }, []);
 
@@ -65,12 +113,14 @@ export default function Automacoes() {
     try {
       setLoading(true); setError(null);
       // O console traz tudo numa chamada; o status legado fica de reserva.
-      const [c, s, r] = await Promise.all([
+      const [c, s, r, ready] = await Promise.all([
         getConsole().catch(() => null),
         getAutomationStatus(),
         getRuns().catch(() => []),
+        getReadiness().catch(() => null),
       ]);
       setConsoleData(c); setStatus(s); setSettings(c?.settings || s.settings); setRuns(c?.ultimas_execucoes || r);
+      setReadiness(ready);
       if (c?.fiscal_validation) setValidation(c.fiscal_validation);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
@@ -83,11 +133,28 @@ export default function Automacoes() {
     catch (err) { setError(err.message); }
   };
   const loadConfig = async () => {
-    try { const d = await getSettings(); setSettings(d.settings); setValidation(d.fiscal_validation); } catch (err) { setError(err.message); }
+    try {
+      const [d, rentals, cert] = await Promise.all([
+        getSettings(), getRentals().catch(() => []), getFiscalCertificate().catch(() => null),
+      ]);
+      setSettings(d.settings); setValidation(d.fiscal_validation);
+      setActiveRentals((rentals || []).filter((r) => ['em_andamento', 'atrasado'].includes(r.status)));
+      setCertificate(cert);
+    } catch (err) { setError(err.message); }
   };
   const loadMessages = async () => { try { setMessages(await getMessages({ status: msgFilter })); } catch (err) { setError(err.message); } };
   const loadFiscal = async () => { try { setFiscal(await getFiscalDocs({})); } catch (err) { setError(err.message); } };
   const loadCosts = async () => { try { setCosts(await getCosts()); } catch (err) { setError(err.message); } };
+  const loadReadiness = async () => {
+    try {
+      const mode = settings?.automation_mode === 'off' ? 'global' : settings?.automation_mode;
+      const ids = mode === 'pilot' ? (settings?.pilot_rental_ids || []) : [];
+      setReadiness(await getReadiness({ mode, rental_ids: ids }));
+    } catch (err) { setError(err.message); }
+  };
+  const loadCharges = async () => { try { setCharges(await getCharges(chargeFilters(chargeFilter))); } catch (err) { setError(err.message); } };
+  const loadAudit = async () => { try { setAuditRows(await getAutomationAudit({ limit: 200 })); } catch (err) { setError(err.message); } };
+  const loadTemplates = async () => { try { setTemplates(await getTemplates()); } catch (err) { setError(err.message); } };
 
   const onTab = (k) => {
     setTab(k); setNotice(null); setError(null);
@@ -98,6 +165,10 @@ export default function Automacoes() {
     if (k === 'painel') loadPanel();
     if (k === 'execucoes') loadPanel();
     if (k === 'deadletter') loadDead();
+    if (k === 'prontidao') loadReadiness();
+    if (k === 'cobrancas') loadCharges();
+    if (k === 'auditoria') loadAudit();
+    if (k === 'templates') loadTemplates();
   };
 
   const doRun = async (fn, label) => {
@@ -106,13 +177,92 @@ export default function Automacoes() {
   };
 
   const saveSettings = async (patch) => {
-    try { setBusy(true); const d = await updateSettings(patch); setSettings(d.settings); setValidation(d.fiscal_validation); setNotice('Configurações salvas.'); }
+    try {
+      setBusy(true);
+      const targetMode = patch.automation_mode;
+      const needsActivation = ['pilot', 'staged', 'global'].includes(targetMode);
+      const d = await updateSettings(needsActivation ? { ...patch, automation_mode: 'off' } : patch);
+      setSettings(needsActivation ? { ...d.settings, automation_mode: targetMode } : d.settings);
+      setValidation(d.fiscal_validation);
+      setNotice(needsActivation
+        ? 'Configurações salvas com a automação desligada. Valide a prontidão para ativar.'
+        : 'Configurações salvas.');
+    }
     catch (err) { setError(err.message); } finally { setBusy(false); }
   };
   const setField = (k) => (e) => {
     const v = e.target.type === 'checkbox' ? e.target.checked : (e.target.type === 'number' ? Number(e.target.value) : e.target.value);
     setSettings((s) => ({ ...s, [k]: v }));
   };
+  const setNestedField = (root, key) => (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setSettings((s) => ({ ...s, [root]: { ...(s[root] || {}), [key]: value } }));
+  };
+
+  const executeDryRun = async () => {
+    try {
+      setBusy(true); setError(null); setNotice(null);
+      const ids = settings?.automation_mode === 'pilot' ? settings.pilot_rental_ids : null;
+      const result = await runDryRun(ids);
+      setDryResult(result); setNotice(`Simulação concluída: ${result.summary.ready} prontas e ${result.summary.blocked} bloqueadas.`);
+      await loadReadiness();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  const activate = async () => {
+    try {
+      setBusy(true); setError(null);
+      const d = await updateSettings({ automation_mode: settings.automation_mode });
+      setSettings(d.settings); setNotice(`Automação ativada em modo ${d.settings.automation_mode}.`); await loadPanel();
+    } catch (err) { setError(err.message); await loadReadiness(); } finally { setBusy(false); }
+  };
+
+  const saveSecrets = async (kind, names) => {
+    try {
+      setBusy(true); const values = {};
+      names.forEach((name) => { const value = secretDraft[`${kind}:${name}`]; if (value) values[name] = value; });
+      await saveIntegrationSecrets(kind, values);
+      setSecretDraft((prev) => { const next = { ...prev }; names.forEach((name) => delete next[`${kind}:${name}`]); return next; });
+      setNotice(`Credenciais de ${kind} armazenadas com criptografia.`); await loadReadiness();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  const testProvider = async (kind) => {
+    try { setBusy(true); const result = await testIntegration(kind); setNotice(`${kind}: conexão validada (${JSON.stringify(result)}).`); }
+    catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  const uploadCertificate = async () => {
+    if (!certificateFile || !certificatePassword) return setError('Selecione o certificado e informe a senha.');
+    try {
+      setBusy(true); const meta = await uploadFiscalCertificate(certificateFile, certificatePassword);
+      setCertificate(meta); setCertificatePassword(''); setCertificateFile(null);
+      setNotice('Certificado validado e armazenado com criptografia.'); await loadReadiness();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  // Confirmação manual do pagamento (§49) — dispara o mesmo pipeline do webhook.
+  const openConfirm = (charge) => setConfirmModal({ charge, amount: charge.amount, payment_date: localYmd(), payment_method: 'pix', notes: '' });
+  const submitConfirm = async () => {
+    if (!confirmModal) return;
+    try {
+      setBusy(true); setError(null);
+      const r = await confirmChargeManually(confirmModal.charge.id, {
+        amount: confirmModal.amount, payment_date: confirmModal.payment_date,
+        payment_method: confirmModal.payment_method, notes: confirmModal.notes,
+      });
+      setConfirmModal(null);
+      setNotice(r.kind === 'receipt' ? `Pagamento confirmado. Recibo ${r.document?.numero || ''} gerado.`
+        : r.kind === 'nfse' ? `Pagamento confirmado. NFS-e ${r.fiscal_status === 'authorized' ? 'emitida' : 'em processamento'}.`
+        : 'Pagamento confirmado. Ative recibo/NFS-e nas Configurações para gerar o documento.');
+      await loadCharges();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+  const openTimeline = async (charge) => {
+    try { setBusy(true); setError(null); const rows = await getChargeTimeline(charge.id); setTimeline({ charge, rows: rows || [] }); }
+    catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+  const CONFIRMABLE = new Set(['waiting_payment', 'overdue', 'needs_attention', 'processing']);
 
   if (loading) return <PageLoading label="Carregando automações..." />;
 
@@ -216,6 +366,101 @@ export default function Automacoes() {
       )}
 
       {/* ── EXECUÇÕES ──────────────────────────────────────────── */}
+      {tab === 'prontidao' && (
+        <div>
+          <div className="nx-form-section" style={{ borderColor: readiness?.ready ? 'var(--success)' : 'var(--warning)' }}>
+            <div className="nx-form-section-title" style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <span>Prontidão da automação</span><strong>{readiness?.percentage ?? 0}%</strong>
+            </div>
+            <p className="nx-cfg-hint">A validação também acontece no backend. O botão de ativação permanece bloqueado enquanto existir pendência crítica.</p>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {(readiness?.checks || []).map((check) => (
+                <div key={check.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 10px', borderRadius: 8, background: 'var(--surface-secondary)' }}>
+                  <span>{check.ok ? '✓' : '✕'} {check.label}</span>
+                  {!check.ok && <strong style={{ color: 'var(--danger)' }}>{check.count != null ? check.count : 'Pendente'}</strong>}
+                </div>
+              ))}
+            </div>
+            {(readiness?.activation?.blockers || []).length > 0 && (
+              <div style={{ marginTop: 12, color: 'var(--danger)', fontSize: 13 }}>
+                Bloqueios: {readiness.activation.blockers.map((b) => b.count ? `${b.label} (${b.count})` : b.label).join('; ')}.
+              </div>
+            )}
+            <div className="form-actions" style={{ marginTop: 14 }}>
+              <button className="btn-secondary" disabled={busy} onClick={executeDryRun}>Executar Dry Run</button>
+              <button className="btn-primary" disabled={busy || !readiness?.activation?.allowed || !['pilot', 'staged', 'global'].includes(settings?.automation_mode)} onClick={activate}>
+                {readiness?.activation?.allowed ? 'Ativar automação' : 'Ativar automação — bloqueado'}
+              </button>
+              <button className="btn-secondary" disabled={busy} onClick={loadReadiness}>Atualizar prontidão</button>
+            </div>
+          </div>
+
+          {dryResult && (
+            <div className="nx-form-section">
+              <div className="nx-form-section-title">Resultado da simulação</div>
+              <div className="nx-kpi-grid">
+                <MetricCard title="Locações" value={dryResult.summary.total} />
+                <MetricCard title="Prontas" value={dryResult.summary.ready} />
+                <MetricCard title="Bloqueadas" value={dryResult.summary.blocked} direction={dryResult.summary.blocked ? 'down' : undefined} />
+                <MetricCard title="Valor previsto" value={fmtMoney(dryResult.summary.total_amount)} />
+              </div>
+              <div className="clients-table-wrap"><table className="data-table">
+                <thead><tr><th>Cliente/locação</th><th>Veículo</th><th>Valor</th><th>Vencimento</th><th>Ações previstas</th><th>Bloqueios</th></tr></thead>
+                <tbody>{dryResult.plans.map((p) => <tr key={p.rental_id}>
+                  <td><strong>{p.client_name || '—'}</strong><div>{p.rental_number}</div></td><td>{p.vehicle_plate || '—'}</td>
+                  <td>{p.amount ? fmtMoney(p.amount) : '—'}</td><td>{p.due_date}</td>
+                  <td>
+                    Pix {p.actions.checkout ? `✓ (${p.actions.checkout_provider})` : '—'} · NF {p.actions.fiscal ? `✓ (${p.actions.fiscal_trigger})` : '—'} · WhatsApp {p.actions.whatsapp ? '✓' : '—'}
+                    {p.actions.whatsapp && <div>{p.actions.whatsapp_to || 'sem telefone'} · {p.actions.whatsapp_template || 'template ausente'}</div>}
+                  </td>
+                  <td style={{ color: p.ready ? 'var(--success)' : 'var(--danger)' }}>{p.ready ? 'Pronta' : p.blockers.map((b) => b.message).join('; ')}</td>
+                </tr>)}</tbody>
+              </table></div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'cobrancas' && (
+        <div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+            <select value={chargeFilter} onChange={(e) => setChargeFilter(e.target.value)} className="clients-filter-select">
+              <option value="">Todas</option>
+              <option value="today">Hoje</option><option value="week">Semana</option><option value="upcoming">A vencer</option>
+              <option value="overdue">Vencidas</option><option value="paid">Pagas</option><option value="failed">Falharam</option>
+            </select>
+            <button className="btn-secondary" onClick={loadCharges}>Filtrar</button>
+          </div>
+          <div className="clients-table-wrap"><table className="data-table">
+            <thead><tr><th>ID</th><th>Cliente</th><th>Locação/veículo</th><th>Período</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Pix</th><th>NF</th><th>WhatsApp</th><th>Próxima tentativa</th><th>Ações</th></tr></thead>
+            <tbody>{charges.length === 0 ? <tr><td colSpan="12"><EmptyState small title="Sem cobranças" description="As cobranças reais aparecem aqui depois do piloto." /></td></tr> : charges.map((charge) => <tr key={charge.id}>
+              <td><strong>{charge.public_id || '—'}</strong></td><td>{charge.client_name || '—'}</td>
+              <td>{charge.rental_number || '—'}<div>{charge.vehicle_plate || '—'}</div></td>
+              <td>{fmtDate(charge.period_start)} a {fmtDate(charge.period_end)}</td><td>{fmtMoney(charge.amount)}</td><td>{fmtDate(charge.due_date)}</td>
+              <td><span className="client-status-badge">{charge.status}</span>{charge.error_message && <div style={{ color: 'var(--danger)', maxWidth: 220 }}>{charge.error_message}</div>}</td>
+              <td>{charge.payment_link ? <a href={charge.payment_link} target="_blank" rel="noreferrer">Abrir</a> : charge.pix_code ? 'Código disponível' : '—'}</td>
+              <td>{charge.has_fiscal ? '✓' : '—'}</td><td>{charge.whatsapp_status || '—'}<div>{fmtDataHora(charge.last_message_at)}</div></td>
+              <td>{fmtDataHora(charge.next_attempt_at)}</td>
+              <td><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {charge.status === 'failed' && <button className="btn-secondary" onClick={async () => { try { await retryCharge(charge.id); await loadCharges(); } catch (e) { setError(e.message); } }}>Reprocessar</button>}
+                {CONFIRMABLE.has(charge.status) && <button className="btn-secondary" disabled={busy} onClick={() => openConfirm(charge)}>Confirmar pgto</button>}
+                <button className="btn-secondary" disabled={busy} onClick={() => openTimeline(charge)}>Linha do tempo</button>
+              </div></td>
+            </tr>)}</tbody>
+          </table></div>
+        </div>
+      )}
+
+      {tab === 'auditoria' && (
+        <div className="clients-table-wrap"><table className="data-table">
+          <thead><tr><th>Data</th><th>Evento</th><th>Status</th><th>Locação</th><th>Cobrança</th><th>Valor</th><th>Provider</th><th>Tentativa</th><th>Erro</th></tr></thead>
+          <tbody>{auditRows.length === 0 ? <tr><td colSpan="9"><EmptyState small title="Sem eventos" description="A trilha será criada a cada simulação e execução." /></td></tr> : auditRows.map((row) => <tr key={row.id}>
+            <td>{fmtDataHora(row.created_at)}</td><td>{row.event_type}</td><td>{row.status}</td><td>{row.rental_id || '—'}</td><td>{row.charge_id || '—'}</td>
+            <td>{row.amount ? fmtMoney(row.amount) : '—'}</td><td>{row.provider || '—'}</td><td>{row.attempt}</td><td style={{ color: 'var(--danger)' }}>{row.error_message || '—'}</td>
+          </tr>)}</tbody>
+        </table></div>
+      )}
+
       {tab === 'execucoes' && (
         <div>
           <p className="nx-cfg-hint">Cada execução do scheduler, com duração, registros processados e resultado.</p>
@@ -302,12 +547,27 @@ export default function Automacoes() {
       {tab === 'config' && settings && (
         <div style={{ maxWidth: 760 }}>
           <div className="nx-form-section">
+            <div className="nx-form-section-title">Ativação gradual</div>
+            <div className="form-row">
+              <div className="form-group"><label>Modo</label><select value={settings.automation_mode || 'off'} onChange={setField('automation_mode')}>
+                <option value="off">Desligado</option><option value="dry_run">Somente simulação</option><option value="pilot">Piloto (1 locação)</option><option value="staged">Lote controlado</option><option value="global">Todas as locações</option>
+              </select></div>
+              {settings.automation_mode === 'pilot' && <div className="form-group"><label>Locação piloto</label><select value={settings.pilot_rental_ids?.[0] || ''} onChange={(e) => setSettings((s) => ({ ...s, pilot_rental_ids: e.target.value ? [e.target.value] : [] }))}>
+                <option value="">Selecione uma locação</option>{activeRentals.map((r) => <option key={r.id} value={r.id}>{r.rental_number} — {r.client_name}</option>)}
+              </select></div>}
+              {settings.automation_mode === 'staged' && <div className="form-group"><label>Quantidade do lote</label><select value={settings.rollout_limit || 1} onChange={setField('rollout_limit')}><option value={1}>1</option><option value={5}>5</option><option value={10}>10</option></select></div>}
+            </div>
+            <p className="nx-cfg-hint">Salve as configurações, execute o Dry Run na aba Prontidão e só então ative o piloto. Produção nunca é habilitada automaticamente.</p>
+          </div>
+
+          <div className="nx-form-section">
             <div className="nx-form-section-title">Cobrança semanal</div>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.billing_enabled} onChange={setField('billing_enabled')} /> Ativar cobrança automática</label>
             <div className="form-row">
               <div className="form-group"><label>Dia da semana</label><select value={settings.billing_weekday} onChange={setField('billing_weekday')}>{WEEKDAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}</select></div>
               <div className="form-group"><label>Hora</label><input type="number" min="0" max="23" value={settings.billing_hour} onChange={setField('billing_hour')} /></div>
               <div className="form-group"><label>Vencimento (dias)</label><input type="number" min="0" value={settings.billing_due_days} onChange={setField('billing_due_days')} /></div>
+              <div className="form-group"><label>Fuso horário</label><input type="text" value={settings.billing_timezone || 'America/Sao_Paulo'} onChange={setField('billing_timezone')} /></div>
             </div>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={!!settings.billing_auto_create} onChange={setField('billing_auto_create')} /> Gerar cobrança automaticamente (senão, apenas fatura para revisão)</label>
           </div>
@@ -316,7 +576,7 @@ export default function Automacoes() {
             <div className="nx-form-section-title">WhatsApp</div>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.whatsapp_enabled} onChange={setField('whatsapp_enabled')} /> Ativar envio de mensagens</label>
             <div className="form-row">
-              <div className="form-group"><label>Provedor</label><select value={settings.whatsapp_provider} onChange={setField('whatsapp_provider')}><option value="null">Sandbox (sem envio real)</option><option value="meta">Meta (WhatsApp Cloud API)</option><option value="twilio">Twilio</option></select></div>
+              <div className="form-group"><label>Provedor</label><select value={settings.whatsapp_provider} onChange={setField('whatsapp_provider')}><option value="null">Nenhum</option><option value="meta">Meta (Cloud API oficial)</option><option value="evolution">Evolution API</option></select></div>
               <div className="form-group"><label>Remetente</label><input type="text" value={settings.whatsapp_from || ''} onChange={setField('whatsapp_from')} placeholder="+55..." /></div>
             </div>
             <div className="form-row">
@@ -324,28 +584,107 @@ export default function Automacoes() {
               <div className="form-group"><label>Janela fim (h)</label><input type="number" min="1" max="24" value={settings.whatsapp_send_end_hour} onChange={setField('whatsapp_send_end_hour')} /></div>
               <div className="form-group"><label>Máx. lembretes</label><input type="number" min="0" value={settings.reminder_max} onChange={setField('reminder_max')} /></div>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Credenciais do provedor não ficam no banco — configuradas por variável de ambiente. O sandbox simula o envio para homologação.</p>
+            <div className="form-row">
+              <div className="form-group"><label>API URL (Evolution)</label><input type="url" value={settings.whatsapp_config?.api_url || ''} onChange={setNestedField('whatsapp_config', 'api_url')} placeholder="https://..." /></div>
+              <div className="form-group"><label>Instância</label><input type="text" value={settings.whatsapp_config?.instance || ''} onChange={setNestedField('whatsapp_config', 'instance')} /></div>
+              <div className="form-group"><label>Phone Number ID</label><input type="text" value={settings.whatsapp_config?.phone_number_id || ''} onChange={setNestedField('whatsapp_config', 'phone_number_id')} /></div>
+              <div className="form-group"><label>WABA ID</label><input type="text" value={settings.whatsapp_config?.waba_id || ''} onChange={setNestedField('whatsapp_config', 'waba_id')} /></div>
+            </div>
+            <div className="form-row">
+              {(settings.whatsapp_provider === 'evolution' ? ['API_KEY', 'APP_SECRET', 'VERIFY_TOKEN'] : ['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN']).map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`whatsapp:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`whatsapp:${name}`]: e.target.value }))} placeholder="••••••••" /></div>)}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}><button className="btn-secondary" type="button" disabled={busy || settings.whatsapp_provider === 'null'} onClick={() => saveSecrets('whatsapp', settings.whatsapp_provider === 'evolution' ? ['API_KEY', 'APP_SECRET', 'VERIFY_TOKEN'] : ['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN'])}>Salvar credenciais</button><button className="btn-secondary" type="button" disabled={busy || settings.whatsapp_provider === 'null'} onClick={() => testProvider('whatsapp')}>Testar conexão</button></div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tokens são criptografados no servidor e nunca retornam ao navegador. O modo Evolution/Cloud exige templates aprovados.</p>
           </div>
 
           <div className="nx-form-section">
             <div className="nx-form-section-title">Pagamento (cobrança/PIX)</div>
-            <div className="form-group" style={{ maxWidth: 320 }}><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Sandbox (PIX fictício)</option><option value="asaas">Asaas</option><option value="mercadopago">Mercado Pago</option></select></div>
+            <div className="form-row">
+              <div className="form-group"><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Nenhum</option><option value="infinitepay">InfinitePay</option><option value="asaas">Asaas (legado)</option></select></div>
+              <div className="form-group"><label>InfiniteTag</label><input type="text" value={settings.payment_config?.handle || ''} onChange={setNestedField('payment_config', 'handle')} placeholder="sua-infinite-tag" /></div>
+              <div className="form-group"><label>URL de retorno</label><input type="url" value={settings.payment_config?.redirect_url || ''} onChange={setNestedField('payment_config', 'redirect_url')} placeholder="https://..." /></div>
+            </div>
+            {settings.payment_provider === 'asaas' && <div className="form-row">{['KEY', 'WEBHOOK_TOKEN'].map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`payment:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`payment:${name}`]: e.target.value }))} /></div>)}</div>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {settings.payment_provider === 'asaas' && <button className="btn-secondary" type="button" disabled={busy} onClick={() => saveSecrets('payment', ['KEY', 'WEBHOOK_TOKEN'])}>Salvar credenciais</button>}
+              <button className="btn-secondary" type="button" disabled={busy || settings.payment_provider === 'null'} onClick={() => testProvider('payment')}>Testar configuração</button>
+            </div>
           </div>
 
           <div className="nx-form-section">
             <div className="nx-form-section-title">Fiscal</div>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.fiscal_enabled} onChange={setField('fiscal_enabled')} /> Ativar emissão fiscal</label>
             <div className="form-row">
-              <div className="form-group"><label>Modo</label><select value={settings.fiscal_mode} onChange={setField('fiscal_mode')}><option value="after_payment">Após o pagamento</option><option value="weekly_batch">Lote semanal</option><option value="manual">Manual</option></select></div>
+              <div className="form-group"><label>Modo</label><select value={settings.fiscal_mode} onChange={setField('fiscal_mode')}><option value="on_charge">Na geração da cobrança</option><option value="on_due_date">No vencimento</option><option value="after_payment">Após o pagamento</option><option value="weekly_batch">Lote semanal</option><option value="manual">Manual</option></select></div>
               <div className="form-group"><label>Tipo de documento</label><select value={settings.fiscal_document_type || ''} onChange={setField('fiscal_document_type')}><option value="">— definir com contador —</option><option value="nfse">NFS-e</option><option value="nfe">NF-e</option></select></div>
               <div className="form-group"><label>Ambiente</label><select value={settings.fiscal_environment} onChange={setField('fiscal_environment')}><option value="homologacao">Homologação</option><option value="producao">Produção</option></select></div>
             </div>
-            <div className="form-group" style={{ maxWidth: 320 }}><label>Provedor fiscal</label><select value={settings.fiscal_provider} onChange={setField('fiscal_provider')}><option value="null">Nenhum (pendente)</option><option value="focusnfe">Focus NFe</option><option value="nfeio">NFe.io</option></select></div>
+            <div className="form-group" style={{ maxWidth: 360 }}><label>Provedor fiscal</label><select value={settings.fiscal_provider} onChange={setField('fiscal_provider')}><option value="null">Nenhum (pendente)</option><option value="nfse_nacional">NFS-e Nacional / SEFIN</option><option value="focusnfe">Focus NFe</option></select></div>
+            <div className="form-row">
+              <div className="form-group"><label>CNPJ</label><input value={settings.fiscal_config?.cnpj || ''} onChange={setNestedField('fiscal_config', 'cnpj')} /></div>
+              <div className="form-group"><label>Razão social</label><input value={settings.fiscal_config?.razao_social || ''} onChange={setNestedField('fiscal_config', 'razao_social')} /></div>
+              <div className="form-group"><label>Nome fantasia</label><input value={settings.fiscal_config?.nome_fantasia || ''} onChange={setNestedField('fiscal_config', 'nome_fantasia')} /></div>
+              <div className="form-group"><label>Inscrição municipal</label><input value={settings.fiscal_config?.inscricao_municipal || ''} onChange={setNestedField('fiscal_config', 'inscricao_municipal')} /></div>
+              <div className="form-group"><label>Inscrição estadual</label><input value={settings.fiscal_config?.inscricao_estadual || ''} onChange={setNestedField('fiscal_config', 'inscricao_estadual')} /></div>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>CNAEs (separados por vírgula)</label><input value={Array.isArray(settings.fiscal_config?.cnaes) ? settings.fiscal_config.cnaes.join(', ') : ''} onChange={(e) => setSettings((s) => ({ ...s, fiscal_config: { ...(s.fiscal_config || {}), cnaes: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) } }))} /></div>
+              <div className="form-group"><label>E-mail fiscal</label><input type="email" value={settings.fiscal_config?.email_fiscal || ''} onChange={setNestedField('fiscal_config', 'email_fiscal')} /></div>
+              <div className="form-group"><label>Telefone</label><input value={settings.fiscal_config?.telefone || ''} onChange={setNestedField('fiscal_config', 'telefone')} /></div>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>Logradouro</label><input value={settings.fiscal_config?.logradouro || ''} onChange={setNestedField('fiscal_config', 'logradouro')} /></div>
+              <div className="form-group"><label>Número</label><input value={settings.fiscal_config?.numero || ''} onChange={setNestedField('fiscal_config', 'numero')} /></div>
+              <div className="form-group"><label>Complemento</label><input value={settings.fiscal_config?.complemento || ''} onChange={setNestedField('fiscal_config', 'complemento')} /></div>
+              <div className="form-group"><label>Bairro</label><input value={settings.fiscal_config?.bairro || ''} onChange={setNestedField('fiscal_config', 'bairro')} /></div>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>CEP</label><input value={settings.fiscal_config?.cep || ''} onChange={setNestedField('fiscal_config', 'cep')} /></div>
+              <div className="form-group"><label>Município</label><input value={settings.fiscal_config?.nome_municipio || ''} onChange={setNestedField('fiscal_config', 'nome_municipio')} /></div>
+              <div className="form-group"><label>UF</label><input maxLength={2} value={settings.fiscal_config?.uf || ''} onChange={setNestedField('fiscal_config', 'uf')} /></div>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>Código IBGE</label><input value={settings.fiscal_config?.municipio || ''} onChange={setNestedField('fiscal_config', 'municipio')} /></div>
+              <div className="form-group"><label>Regime tributário</label><input value={settings.fiscal_config?.regime_tributario || ''} onChange={setNestedField('fiscal_config', 'regime_tributario')} /></div>
+              <div className="form-group"><label>Código nacional</label><input value={settings.fiscal_config?.codigo_tributacao_nacional || ''} onChange={setNestedField('fiscal_config', 'codigo_tributacao_nacional')} placeholder="Ex.: 99.04.01 — confirmar contador" /></div>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label>Código municipal</label><input value={settings.fiscal_config?.codigo_servico || ''} onChange={setNestedField('fiscal_config', 'codigo_servico')} /></div>
+              <div className="form-group"><label>Alíquota</label><input type="number" step="0.0001" value={settings.fiscal_config?.aliquota ?? ''} onChange={setNestedField('fiscal_config', 'aliquota')} /></div>
+              <div className="form-group"><label>CST IBS/CBS</label><input value={settings.fiscal_config?.cst_ibs_cbs || ''} onChange={setNestedField('fiscal_config', 'cst_ibs_cbs')} /></div>
+              <div className="form-group"><label>Classificação tributária</label><input value={settings.fiscal_config?.classificacao_tributaria || ''} onChange={setNestedField('fiscal_config', 'classificacao_tributaria')} /></div>
+              <div className="form-group"><label>Tratamento ISS</label><input value={settings.fiscal_config?.tratamento_iss || ''} onChange={setNestedField('fiscal_config', 'tratamento_iss')} /></div>
+            </div>
+            {settings.fiscal_provider === 'nfse_nacional' && <div className="form-row">
+              <div className="form-group"><label>API URL nacional</label><input type="url" value={settings.fiscal_config?.api_url || ''} onChange={setNestedField('fiscal_config', 'api_url')} /></div>
+              <div className="form-group"><label>Caminho de emissão</label><input value={settings.fiscal_config?.issue_path || ''} onChange={setNestedField('fiscal_config', 'issue_path')} placeholder="Definido pela API homologada" /></div>
+              <div className="form-group"><label>Caminho de consulta</label><input value={settings.fiscal_config?.status_path || ''} onChange={setNestedField('fiscal_config', 'status_path')} /></div>
+            </div>}
+            {settings.fiscal_provider === 'focusnfe' && <div className="form-row"><div className="form-group"><label>Token Focus NFe</label><input type="password" autoComplete="new-password" value={secretDraft['fiscal:TOKEN'] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, 'fiscal:TOKEN': e.target.value }))} /></div><button className="btn-secondary" type="button" disabled={busy} onClick={() => saveSecrets('fiscal', ['TOKEN'])}>Salvar token</button></div>}
+            <div className="form-row" style={{ alignItems: 'flex-end' }}>
+              <div className="form-group"><label>Certificado A1 (.pfx/.p12)</label><input type="file" accept=".pfx,.p12,application/x-pkcs12" onChange={(e) => setCertificateFile(e.target.files?.[0] || null)} /></div>
+              <div className="form-group"><label>Senha do certificado</label><input type="password" autoComplete="new-password" value={certificatePassword} onChange={(e) => setCertificatePassword(e.target.value)} /></div>
+              <button className="btn-secondary" type="button" disabled={busy || !certificateFile || !certificatePassword} onClick={uploadCertificate}>Validar e armazenar</button>
+            </div>
+            {certificate && <p className="nx-cfg-hint">Certificado armazenado: {certificate.filename}. Validade: {fmtDate(certificate.valid_until)}. O arquivo e a senha não podem ser baixados.</p>}
+            <button className="btn-secondary" type="button" disabled={busy || settings.fiscal_provider === 'null'} onClick={() => testProvider('fiscal')}>Validar configuração fiscal</button>
             {validation && !validation.ok && (
               <div style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 38%, transparent)', color: 'var(--warning)', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
                 Emissão fiscal pendente de configuração. Faltando: {validation.missing.join(', ')}. Definir com o contador; sem provedor/credenciais válidos, nenhuma nota produtiva é emitida.
               </div>
             )}
+          </div>
+
+          <div className="nx-form-section">
+            <div className="nx-form-section-title">Recibos e documentos fiscais</div>
+            <p className="nx-cfg-hint">Regra do contador: até a data de obrigatoriedade, o pagamento confirmado gera <strong>recibo</strong>; a partir dela, <strong>NFS-e</strong>. A emissão é sempre depois do pagamento (§7/§8/§9).</p>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.receipts_enabled} onChange={setField('receipts_enabled')} /> Gerar recibo automático após o pagamento <span style={{ color: 'var(--text-muted)' }}>(funciona já, sem InfinitePay/certificado)</span></label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.nfse_enabled} onChange={setField('nfse_enabled')} /> Emitir NFS-e automática a partir da data <span style={{ color: 'var(--text-muted)' }}>(exige certificado A1 + provedor fiscal)</span></label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.payments_enabled} onChange={setField('payments_enabled')} /> Criar cobrança no provedor externo (InfinitePay)</label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={settings.document_auto_send !== false} onChange={setField('document_auto_send')} /> Enviar o recibo/NFS-e ao cliente pelo WhatsApp</label>
+            <div className="form-row">
+              <div className="form-group"><label>NFS-e obrigatória a partir de</label><input type="date" value={String(settings.nfse_mandatory_from || '').slice(0, 10)} onChange={setField('nfse_mandatory_from')} /></div>
+            </div>
           </div>
 
           <div className="nx-form-section">
@@ -362,6 +701,22 @@ export default function Automacoes() {
       )}
 
       {/* ── MENSAGENS ──────────────────────────────────────────── */}
+      {tab === 'templates' && (
+        <div>
+          <p className="nx-cfg-hint">Cadastre o nome aprovado no provedor. Os nomes não são fixos no código e podem variar por tenant.</p>
+          {templates.map((template, index) => <div className="nx-form-section" key={template.id || template.kind}>
+            <div className="nx-form-section-title">{({ billing: 'Cobrança', reminder: 'Lembrete', payment_confirmed: 'Pagamento confirmado', document: 'Recibo / documento fiscal' })[template.kind] || template.kind}</div>
+            <div className="form-row">
+              <div className="form-group"><label>Nome interno</label><input value={template.name || ''} onChange={(e) => setTemplates((rows) => rows.map((row, i) => i === index ? { ...row, name: e.target.value } : row))} /></div>
+              <div className="form-group"><label>Template aprovado no provedor</label><input value={template.provider_template_id || ''} onChange={(e) => setTemplates((rows) => rows.map((row, i) => i === index ? { ...row, provider_template_id: e.target.value } : row))} placeholder="Ex.: cobranca_locacao" /></div>
+              <div className="form-group"><label>Idioma</label><input value={template.language || 'pt_BR'} onChange={(e) => setTemplates((rows) => rows.map((row, i) => i === index ? { ...row, language: e.target.value } : row))} /></div>
+            </div>
+            <div className="form-group"><label>Texto usado no sandbox/fallback</label><textarea rows={4} value={template.body || ''} onChange={(e) => setTemplates((rows) => rows.map((row, i) => i === index ? { ...row, body: e.target.value } : row))} /></div>
+            <button className="btn-secondary" disabled={busy} onClick={async () => { try { setBusy(true); await saveTemplate(template); setNotice('Template salvo.'); await loadTemplates(); } catch (e) { setError(e.message); } finally { setBusy(false); } }}>Salvar template</button>
+          </div>)}
+        </div>
+      )}
+
       {tab === 'mensagens' && (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -418,6 +773,46 @@ export default function Automacoes() {
           </table>
           <p style={{ marginTop: 10, fontWeight: 700 }}>Total: {fmtCost(costs.total)}</p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cobrado separadamente da mensalidade, conforme o consumo.</p>
+        </div>
+      )}
+
+      {/* ── Confirmação manual do pagamento (§49) ─────────────────── */}
+      {confirmModal && (
+        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => !busy && setConfirmModal(null)}>
+          <div style={{ background: 'var(--surface, #16161f)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, maxWidth: 460, width: '90%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Confirmar pagamento — {confirmModal.charge.public_id || confirmModal.charge.id}</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Registra o recebimento e dispara recibo/NFS-e + envio do documento ao cliente.</p>
+            <div className="form-group"><label>Valor (R$)</label><input type="number" step="0.01" min="0" value={confirmModal.amount} onChange={(e) => setConfirmModal((m) => ({ ...m, amount: e.target.value }))} /></div>
+            <div className="form-row">
+              <div className="form-group"><label>Data</label><input type="date" value={confirmModal.payment_date} onChange={(e) => setConfirmModal((m) => ({ ...m, payment_date: e.target.value }))} /></div>
+              <div className="form-group"><label>Forma</label><select value={confirmModal.payment_method} onChange={(e) => setConfirmModal((m) => ({ ...m, payment_method: e.target.value }))}><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="cartao">Cartão</option><option value="transferencia">Transferência</option><option value="boleto">Boleto</option></select></div>
+            </div>
+            <div className="form-group"><label>Observação</label><input value={confirmModal.notes} onChange={(e) => setConfirmModal((m) => ({ ...m, notes: e.target.value }))} placeholder="opcional" /></div>
+            <div className="form-actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setConfirmModal(null)} disabled={busy}>Cancelar</button>
+              <button className="btn-primary" onClick={submitConfirm} disabled={busy || !(Number(confirmModal.amount) > 0)}>Confirmar pagamento</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Linha do tempo da cobrança (§38) ──────────────────────── */}
+      {timeline && (
+        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setTimeline(null)}>
+          <div style={{ background: 'var(--surface, #16161f)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, maxWidth: 640, width: '92%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Linha do tempo — {timeline.charge.public_id || timeline.charge.id}</h3>
+            {timeline.rows.length === 0 ? <EmptyState small title="Sem eventos" description="Nenhum evento registrado para esta cobrança." /> : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 420, overflowY: 'auto' }}>
+                {timeline.rows.map((row) => (
+                  <li key={row.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtDataHora(row.created_at)}</div>
+                    <div><strong>{row.event_type}</strong> — {row.status}{row.error_message ? <span style={{ color: 'var(--danger)' }}> · {row.error_message}</span> : ''}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="form-actions" style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="btn-secondary" onClick={() => setTimeline(null)}>Fechar</button></div>
+          </div>
         </div>
       )}
     </div>

@@ -153,7 +153,7 @@ const editableContractDefaults = (data) => {
     DADOS_VEICULO: vehicle,
     DATA_INICIO: brDateLong(data.rental.start_date),
     DATA_FIM: brDateLong(data.rental.end_date),
-    VALOR_SEMANAL: brMoney((Number(data.rental.daily_rate) || 0) * 7),
+    VALOR_SEMANAL: brMoney(data.rental.weekly_rate != null ? data.rental.weekly_rate : (Number(data.rental.daily_rate) || 0) * 7),
     DATA_FINAL_CONTRATO: brDateLong(new Date()),
   };
 };

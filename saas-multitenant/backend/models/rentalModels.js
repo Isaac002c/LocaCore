@@ -31,6 +31,9 @@ const money2 = (v) => {
   const c = cents(v);
   return (c < 0 ? 0 : c / 100).toFixed(2);
 };
+const nullableMoney2 = (v) => (v === '' || v === undefined || v === null ? null : money2(v));
+const BILLING_SOURCES = ['auto', 'weekly', 'daily', 'total'];
+const BILLING_FREQUENCIES = ['weekly', 'daily', 'one_time', 'manual'];
 // Vistoria (§8): normaliza para JSON string (jsonb) ou null. Aceita objeto ou string.
 const toJsonOrNull = (v) => {
   if (v === '' || v === undefined || v === null) return null;
@@ -141,21 +144,34 @@ const createRental = async (input, db = pool) => {
   const total = computeTotal({ ...input, days });
   const status = STATUSES.includes(input.status) ? input.status : 'reservado';
 
-  const r = await db.query(
+  const baseValues = [
+    tenant_id, number, toStrOrNull(input.client_id), toStrOrNull(input.vehicle_id), status,
+    toDateOrNull(input.start_date), toDateOrNull(input.end_date), money2(input.daily_rate), days,
+    money2(input.extras_amount), money2(input.discount_amount), total, money2(input.deposit_amount),
+    toIntOrNull(input.pickup_odometer), toStrOrNull(input.pickup_location), toStrOrNull(input.notes),
+    toStrOrNull(input.created_by), toJsonOrNull(input.pickup_inspection),
+  ];
+  const hasBillingFields = input.weekly_rate !== undefined || input.billing_value_source !== undefined || input.billing_frequency !== undefined;
+  const r = hasBillingFields ? await db.query(
     `INSERT INTO rentals
        (tenant_id, rental_number, client_id, vehicle_id, status, start_date, end_date,
         daily_rate, days, extras_amount, discount_amount, total_amount, deposit_amount,
-        pickup_odometer, pickup_location, notes, created_by, pickup_inspection)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        pickup_odometer, pickup_location, notes, created_by, pickup_inspection,
+        weekly_rate,billing_value_source,billing_frequency)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
      RETURNING *`,
     [
-      tenant_id, number, toStrOrNull(input.client_id), toStrOrNull(input.vehicle_id), status,
-      toDateOrNull(input.start_date), toDateOrNull(input.end_date),
-      money2(input.daily_rate), days, money2(input.extras_amount), money2(input.discount_amount),
-      total, money2(input.deposit_amount),
-      toIntOrNull(input.pickup_odometer), toStrOrNull(input.pickup_location),
-      toStrOrNull(input.notes), toStrOrNull(input.created_by), toJsonOrNull(input.pickup_inspection),
+      ...baseValues,
+      nullableMoney2(input.weekly_rate), BILLING_SOURCES.includes(input.billing_value_source) ? input.billing_value_source : 'auto',
+      BILLING_FREQUENCIES.includes(input.billing_frequency) ? input.billing_frequency : 'weekly',
     ]
+  ) : await db.query(
+    `INSERT INTO rentals
+       (tenant_id,rental_number,client_id,vehicle_id,status,start_date,end_date,daily_rate,days,
+        extras_amount,discount_amount,total_amount,deposit_amount,pickup_odometer,pickup_location,
+        notes,created_by,pickup_inspection)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+    baseValues,
   );
   return r.rows[0];
 };
@@ -245,25 +261,34 @@ const updateRental = async (id, payload, tenant_id, db = pool) => {
     extras_amount: merged.extras_amount, discount_amount: merged.discount_amount,
   });
 
-  const r = await db.query(
+  const baseValues = [
+    toStrOrNull(m('rental_number', current.rental_number)), toStrOrNull(m('client_id', current.client_id)),
+    toStrOrNull(m('vehicle_id', current.vehicle_id)), STATUSES.includes(payload.status) ? payload.status : current.status,
+    toDateOrNull(merged.start_date), toDateOrNull(merged.end_date), money2(merged.daily_rate), days,
+    money2(merged.extras_amount), money2(merged.discount_amount), total,
+    money2(m('deposit_amount', current.deposit_amount)), toIntOrNull(m('pickup_odometer', current.pickup_odometer)),
+    toStrOrNull(m('pickup_location', current.pickup_location)), toStrOrNull(m('notes', current.notes)),
+  ];
+  const hasBillingFields = payload.weekly_rate !== undefined || payload.billing_value_source !== undefined || payload.billing_frequency !== undefined;
+  const r = hasBillingFields ? await db.query(
     `UPDATE rentals SET
         rental_number=$1, client_id=$2, vehicle_id=$3, status=$4, start_date=$5, end_date=$6,
         daily_rate=$7, days=$8, extras_amount=$9, discount_amount=$10, total_amount=$11,
-        deposit_amount=$12, pickup_odometer=$13, pickup_location=$14, notes=$15, updated_at=NOW()
-      WHERE id=$16 AND tenant_id=$17 RETURNING *`,
+        deposit_amount=$12, pickup_odometer=$13, pickup_location=$14, notes=$15,
+        weekly_rate=$16,billing_value_source=$17,billing_frequency=$18,updated_at=NOW()
+      WHERE id=$19 AND tenant_id=$20 RETURNING *`,
     [
-      toStrOrNull(m('rental_number', current.rental_number)),
-      toStrOrNull(m('client_id', current.client_id)),
-      toStrOrNull(m('vehicle_id', current.vehicle_id)),
-      STATUSES.includes(payload.status) ? payload.status : current.status,
-      toDateOrNull(merged.start_date), toDateOrNull(merged.end_date),
-      money2(merged.daily_rate), days, money2(merged.extras_amount), money2(merged.discount_amount),
-      total, money2(m('deposit_amount', current.deposit_amount)),
-      toIntOrNull(m('pickup_odometer', current.pickup_odometer)),
-      toStrOrNull(m('pickup_location', current.pickup_location)),
-      toStrOrNull(m('notes', current.notes)),
+      ...baseValues,
+      nullableMoney2(m('weekly_rate', current.weekly_rate)),
+      BILLING_SOURCES.includes(m('billing_value_source', current.billing_value_source)) ? m('billing_value_source', current.billing_value_source) : 'auto',
+      BILLING_FREQUENCIES.includes(m('billing_frequency', current.billing_frequency)) ? m('billing_frequency', current.billing_frequency) : 'weekly',
       id, tenant_id,
     ]
+  ) : await db.query(
+    `UPDATE rentals SET rental_number=$1,client_id=$2,vehicle_id=$3,status=$4,start_date=$5,end_date=$6,
+       daily_rate=$7,days=$8,extras_amount=$9,discount_amount=$10,total_amount=$11,deposit_amount=$12,
+       pickup_odometer=$13,pickup_location=$14,notes=$15,updated_at=NOW()
+     WHERE id=$16 AND tenant_id=$17 RETURNING *`, [...baseValues, id, tenant_id],
   );
   return r.rows[0];
 };

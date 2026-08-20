@@ -10,28 +10,34 @@ const toStrOrNull = (value) => (value === '' || value === undefined ? null : val
 
 // CREATE - Criar novo cliente
 const createClient = async ({
-  tenant_id, name, birth_date, cpf, cnh, first_cnh, phone, email, address, notes, status
+  tenant_id, name, birth_date, cpf, cnh, first_cnh, phone, email, address, notes, status,
+  address_zip, address_street, address_number, address_complement, address_neighborhood,
+  address_city, address_state, municipality_ibge,
 }) => {
   if (!tenant_id) {
     throw new Error('tenant_id é obrigatório para criar um cliente');
   }
 
-  const result = await pool.query(
-    `INSERT INTO clients(tenant_id, name, birth_date, cpf, cnh, first_cnh, phone, email, address, notes, status)
-     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+  const fiscalAddressProvided = [address_zip, address_street, address_number, address_complement,
+    address_neighborhood, address_city, address_state, municipality_ibge].some((value) => value !== undefined && value !== null && value !== '');
+  const baseValues = [
+    tenant_id, name, toDateOrNull(birth_date), toStrOrNull(cpf), toStrOrNull(cnh),
+    toDateOrNull(first_cnh), toStrOrNull(phone), toStrOrNull(email), toStrOrNull(address),
+    toStrOrNull(notes), status || 'negociacao',
+  ];
+  const result = fiscalAddressProvided ? await pool.query(
+    `INSERT INTO clients(tenant_id,name,birth_date,cpf,cnh,first_cnh,phone,email,address,notes,status,
+       address_zip,address_street,address_number,address_complement,address_neighborhood,address_city,address_state,municipality_ibge)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
     [
-      tenant_id,
-      name,
-      toDateOrNull(birth_date),
-      toStrOrNull(cpf),
-      toStrOrNull(cnh),
-      toDateOrNull(first_cnh),
-      toStrOrNull(phone),
-      toStrOrNull(email),
-      toStrOrNull(address),
-      toStrOrNull(notes),
-      status || 'negociacao',
+      ...baseValues,
+      toStrOrNull(address_zip), toStrOrNull(address_street), toStrOrNull(address_number),
+      toStrOrNull(address_complement), toStrOrNull(address_neighborhood), toStrOrNull(address_city),
+      toStrOrNull(address_state)?.toUpperCase(), toStrOrNull(municipality_ibge),
     ]
+  ) : await pool.query(
+    `INSERT INTO clients(tenant_id,name,birth_date,cpf,cnh,first_cnh,phone,email,address,notes,status)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`, baseValues,
   );
 
   return result.rows[0];
@@ -93,26 +99,31 @@ const countClients = async (tenant_id) => {
 };
 
 // UPDATE - Atualizar cliente
-const updateClient = async (id, { name, birth_date, cpf, cnh, first_cnh, phone, email, address, notes, status }, tenant_id) => {
-  const result = await pool.query(
+const updateClient = async (id, { name, birth_date, cpf, cnh, first_cnh, phone, email, address, notes, status,
+  address_zip, address_street, address_number, address_complement, address_neighborhood,
+  address_city, address_state, municipality_ibge }, tenant_id) => {
+  const fiscalAddressProvided = [address_zip, address_street, address_number, address_complement,
+    address_neighborhood, address_city, address_state, municipality_ibge].some((value) => value !== undefined);
+  const baseValues = [name, toDateOrNull(birth_date), toStrOrNull(cpf), toStrOrNull(cnh),
+    toDateOrNull(first_cnh), toStrOrNull(phone), toStrOrNull(email), toStrOrNull(address),
+    toStrOrNull(notes), status || 'negociacao'];
+  const result = fiscalAddressProvided ? await pool.query(
     `UPDATE clients
      SET name = $1, birth_date = $2, cpf = $3, cnh = $4, first_cnh = $5,
-         phone = $6, email = $7, address = $8, notes = $9, status = $10, updated_at = NOW()
-     WHERE id = $11 AND tenant_id = $12 RETURNING *`,
+         phone=$6,email=$7,address=$8,notes=$9,status=$10,
+         address_zip=$11,address_street=$12,address_number=$13,address_complement=$14,
+         address_neighborhood=$15,address_city=$16,address_state=$17,municipality_ibge=$18,updated_at=NOW()
+     WHERE id=$19 AND tenant_id=$20 RETURNING *`,
     [
-      name,
-      toDateOrNull(birth_date),
-      toStrOrNull(cpf),
-      toStrOrNull(cnh),
-      toDateOrNull(first_cnh),
-      toStrOrNull(phone),
-      toStrOrNull(email),
-      toStrOrNull(address),
-      toStrOrNull(notes),
-      status || 'negociacao',
-      id,
-      tenant_id,
+      ...baseValues,
+      toStrOrNull(address_zip), toStrOrNull(address_street), toStrOrNull(address_number),
+      toStrOrNull(address_complement), toStrOrNull(address_neighborhood), toStrOrNull(address_city),
+      toStrOrNull(address_state)?.toUpperCase(), toStrOrNull(municipality_ibge), id, tenant_id,
     ]
+  ) : await pool.query(
+    `UPDATE clients SET name=$1,birth_date=$2,cpf=$3,cnh=$4,first_cnh=$5,phone=$6,email=$7,
+       address=$8,notes=$9,status=$10,updated_at=NOW() WHERE id=$11 AND tenant_id=$12 RETURNING *`,
+    [...baseValues, id, tenant_id],
   );
   return result.rows[0];
 };

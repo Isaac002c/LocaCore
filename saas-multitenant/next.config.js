@@ -12,6 +12,7 @@ const API_PUBLIC_ORIGIN = process.env.API_PUBLIC_ORIGIN || '';
 
 const nextConfig = {
   reactStrictMode: true,
+  turbopack: { root: __dirname },
 
   async rewrites() {
     return [
@@ -23,6 +24,10 @@ const nextConfig = {
       {
         source: '/auth/:path*',
         destination: `${BACKEND_URL}/auth/:path*`,
+      },
+      {
+        source: '/webhooks/:path*',
+        destination: `${BACKEND_URL}/webhooks/:path*`,
       },
     ];
   },

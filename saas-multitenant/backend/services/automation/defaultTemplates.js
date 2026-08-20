@@ -27,6 +27,14 @@ module.exports = [
     name: 'Pagamento confirmado',
     language: 'pt_BR',
     body:
-      'Pagamento confirmado.\n\nLocação: {{numero_locacao}}\nValor: {{valor}}\nData: {{data_pagamento}}\n\nObrigado.',
+      'Pagamento confirmado ✅\n\nRecebemos o pagamento de {{valor}} referente à locação {{numero_locacao}} ({{periodo}}).\n\nObrigado.',
+  },
+  {
+    kind: 'document',
+    name: 'Recibo / documento fiscal',
+    language: 'pt_BR',
+    body:
+      'Olá, {{nome_cliente}}. Seu recibo/documento fiscal referente ao pagamento da locação {{numero_locacao}} já está disponível.\n\n' +
+      'Documento: {{document_numero}}\n{{document_link}}',
   },
 ];

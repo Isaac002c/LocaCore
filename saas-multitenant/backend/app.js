@@ -48,6 +48,7 @@ const reportRoutes        = require('./routes/reportRoutes');
 const importRoutes        = require('./routes/importRoutes');
 const automationRoutes    = require('./routes/automationRoutes');
 const automationWebhookRoutes = require('./routes/automationWebhookRoutes');
+const publicDocumentRoutes = require('./routes/publicDocumentRoutes');
 
 const app = express();
 
@@ -135,6 +136,10 @@ app.use(globalLimiter);
 // preservar o CORPO BRUTO (necessário para validar a assinatura HMAC). Fora de
 // /api → sem JWT; segurança por assinatura + idempotência.
 app.use('/webhooks', automationWebhookRoutes);
+
+// Documentos públicos do cliente (recibo/NFS-e) — sem JWT, autorizados por token
+// HMAC assinado na URL (capability link). Fora de /api de propósito.
+app.use('/public', publicDocumentRoutes);
 
 // ============================================
 // MIDDLEWARES

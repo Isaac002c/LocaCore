@@ -317,6 +317,12 @@ function AbaContratos() {
         Texto usado no PDF do contrato de locação. Cada contrato gerado guarda uma CÓPIA deste
         texto (versionada), então alterar aqui não muda contratos já emitidos.
       </p>
+      <section className="nx-integracao" style={{ borderColor: dados.ready ? 'var(--success)' : 'var(--warning)' }}>
+        <header className="nx-integracao-head"><strong>Prontidão geral: {dados.percentage ?? 0}%</strong>
+          <span className="nx-integracao-status" style={{ color: dados.ready ? 'var(--success)' : 'var(--warning)' }}>{dados.ready ? 'PRONTO' : 'BLOQUEADO'}</span>
+        </header>
+        <p className="nx-cfg-hint">Locações sem valor: {dados.counts?.rentals_without_value ?? 0} · clientes sem telefone: {dados.counts?.clients_without_phone ?? 0} · clientes sem CPF/CNPJ: {dados.counts?.clients_without_document ?? 0} · veículos sem NCM: {dados.counts?.vehicles_without_ncm ?? 0}.</p>
+      </section>
       <section className="nx-form-section" style={{ marginBottom: 18 }}>
         <div className="nx-form-section-title">Contrato editável (DOCX)</div>
         <p className="nx-cfg-hint" style={{ marginTop: 0 }}>
@@ -466,7 +472,7 @@ function AbaIntegracoes() {
                   <span className="nx-checklist-marca" aria-hidden="true">{i.ok ? '✓' : '○'}</span>
                   <span className="nx-checklist-corpo">
                     <span className="nx-checklist-label">{i.label}</span>
-                    {i.detalhe && <span className="nx-checklist-detalhe">{i.detalhe}</span>}
+                    {(i.detalhe || i.detail) && <span className="nx-checklist-detalhe">{i.detalhe || i.detail}</span>}
                     {!i.ok && i.env && <span className="nx-checklist-env">Falta a variável <code>{i.env}</code> no servidor</span>}
                     {!i.ok && i.depende && <span className="nx-checklist-depende">Depende de: {i.depende}</span>}
                   </span>

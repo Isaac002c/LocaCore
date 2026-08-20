@@ -9,13 +9,30 @@ const dunning = require('./dunningService');
 const outbox = require('./outboxService');
 const fiscal = require('./fiscalService');
 const rentalModel = require('../../models/rentalModels');
+const { isScheduledNow } = require('./timezone');
+
+const REAL_MODES = "('pilot','staged','global')";
 
 const tenantsWith = async (flagColumn) => {
-  const r = await pool.query(`SELECT tenant_id FROM automation_settings WHERE ${flagColumn} = TRUE`);
+  const allowed = new Set(['whatsapp_enabled', 'fiscal_enabled', 'billing_enabled']);
+  if (!allowed.has(flagColumn)) throw new Error('Flag de automacao invalida.');
+  let r;
+  try {
+    r = await pool.query(`SELECT tenant_id FROM automation_settings WHERE ${flagColumn}=TRUE AND automation_mode IN ${REAL_MODES}`);
+  } catch (err) {
+    if (!/automation_mode|column .* does not exist/i.test(err.message)) throw err;
+    r = await pool.query(`SELECT tenant_id FROM automation_settings WHERE ${flagColumn}=TRUE`);
+  }
   return r.rows.map((x) => x.tenant_id);
 };
 const billingTenants = async () => {
-  const r = await pool.query('SELECT tenant_id, billing_weekday, billing_hour FROM automation_settings WHERE billing_enabled = TRUE');
+  let r;
+  try {
+    r = await pool.query(`SELECT tenant_id,billing_weekday,billing_hour,billing_timezone FROM automation_settings WHERE billing_enabled=TRUE AND automation_mode IN ${REAL_MODES}`);
+  } catch (err) {
+    if (!/automation_mode|column .* does not exist/i.test(err.message)) throw err;
+    r = await pool.query('SELECT tenant_id,billing_weekday,billing_hour,billing_timezone FROM automation_settings WHERE billing_enabled=TRUE');
+  }
   return r.rows;
 };
 const rentalTenants = async () => {
@@ -47,8 +64,11 @@ async function runBillingAll({ now = new Date() } = {}) {
   const rows = await billingTenants();
   const res = [];
   for (const s of rows) {
-    if (Number(s.billing_weekday) !== now.getDay()) continue;
-    if (now.getHours() < Number(s.billing_hour)) continue;
+    if (!isScheduledNow(now, {
+      weekday: s.billing_weekday,
+      hour: s.billing_hour,
+      timeZone: s.billing_timezone || 'America/Sao_Paulo',
+    })) continue;
     res.push({ tenant: s.tenant_id, ...(await billing.runBilling(s.tenant_id, { now }).catch((e) => ({ error: e.message }))) });
   }
   return res;
@@ -58,6 +78,15 @@ async function runDunningAll({ now = new Date() } = {}) {
   const tenants = await tenantsWith('whatsapp_enabled');
   const res = [];
   for (const t of tenants) res.push({ tenant: t, ...(await dunning.runDunning(t, { now }).catch((e) => ({ error: e.message }))) });
+  return res;
+}
+
+async function retryChargesAll({ now = new Date(), limit = 20 } = {}) {
+  const tenants = await tenantsWith('billing_enabled');
+  const res = [];
+  for (const tenant of tenants) {
+    res.push({ tenant, ...(await billing.retryDueCharges(tenant, { now, limit }).catch((e) => ({ error: e.message }))) });
+  }
   return res;
 }
 
@@ -75,4 +104,4 @@ async function fiscalBatchAll() {
   return res;
 }
 
-module.exports = { heartbeat, processOutboxAll, runBillingAll, runDunningAll, flagOverdueAll, fiscalBatchAll, tenantsWith };
+module.exports = { heartbeat, processOutboxAll, runBillingAll, runDunningAll, retryChargesAll, flagOverdueAll, fiscalBatchAll, tenantsWith };

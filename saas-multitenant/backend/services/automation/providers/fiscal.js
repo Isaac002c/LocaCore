@@ -10,6 +10,7 @@
 
 const { getSecret } = require('../secrets');
 const { isProduction } = require('./guard');
+const https = require('node:https');
 
 // Campos mínimos que o tipo de documento exige (parametrizados; validados pela empresa).
 function validateConfig(settings = {}) {
@@ -24,6 +25,17 @@ function validateConfig(settings = {}) {
     if (!cfg.inscricao_municipal) missing.push('inscricao_municipal');
     if (!cfg.codigo_servico) missing.push('codigo_servico');
     if (cfg.aliquota === undefined || cfg.aliquota === null || cfg.aliquota === '') missing.push('aliquota');
+    if ((settings.fiscal_provider || '').toLowerCase() === 'nfse_nacional') {
+      if (!cfg.razao_social) missing.push('razao_social');
+      if (!cfg.uf) missing.push('uf');
+      if (!cfg.cep) missing.push('cep');
+      if (!cfg.codigo_tributacao_nacional) missing.push('codigo_tributacao_nacional');
+      if (!cfg.cst_ibs_cbs) missing.push('cst_ibs_cbs');
+      if (!cfg.classificacao_tributaria) missing.push('classificacao_tributaria');
+      if (!cfg.tratamento_iss) missing.push('tratamento_iss');
+      if (!cfg.api_url) missing.push('api_url');
+      if (!cfg.issue_path) missing.push('issue_path');
+    }
   }
   return { ok: missing.length === 0, missing };
 }
@@ -107,6 +119,146 @@ function buildNfsePayload({ amount, client, settings }) {
       codigo_tributario_municipio: cfg.codigo_tributario_municipio || undefined,
       valor_servicos: Number(amount) || 0,
     },
+  };
+}
+
+function buildNationalDpsPayload({ ref, amount, client, rental, vehicle, settings }) {
+  const cfg = settings.fiscal_config || {};
+  const document = onlyDigits(client && client.cpf);
+  return {
+    referencia: ref,
+    ambiente: settings.fiscal_environment || 'homologacao',
+    emitente: {
+      cnpj: onlyDigits(cfg.cnpj), razao_social: cfg.razao_social,
+      nome_fantasia: cfg.nome_fantasia || undefined,
+      inscricao_municipal: cfg.inscricao_municipal,
+      inscricao_estadual: cfg.inscricao_estadual || undefined,
+      regime_tributario: cfg.regime_tributario,
+      cnaes: Array.isArray(cfg.cnaes) ? cfg.cnaes : undefined,
+      endereco: {
+        logradouro: cfg.logradouro, numero: cfg.numero, complemento: cfg.complemento || undefined,
+        bairro: cfg.bairro, cep: onlyDigits(cfg.cep), codigo_ibge: onlyDigits(cfg.municipio),
+        municipio: cfg.nome_municipio, uf: cfg.uf,
+      },
+      email: cfg.email_fiscal || undefined, telefone: cfg.telefone || undefined,
+    },
+    tomador: document ? {
+      [document.length > 11 ? 'cnpj' : 'cpf']: document,
+      nome: client?.name, email: client?.email || undefined, telefone: client?.phone || undefined,
+      endereco: {
+        cep: onlyDigits(client?.address_zip), logradouro: client?.address_street,
+        numero: client?.address_number, complemento: client?.address_complement,
+        bairro: client?.address_neighborhood, municipio: client?.address_city,
+        uf: client?.address_state, codigo_ibge: onlyDigits(client?.municipality_ibge),
+      },
+    } : undefined,
+    item: {
+      categoria: 'locacao', valor: Number(amount),
+      descricao: vehicle?.fiscal_description || cfg.discriminacao || 'Locacao de veiculo',
+      codigo_tributacao_nacional: cfg.codigo_tributacao_nacional,
+      codigo_servico_municipal: cfg.codigo_servico,
+      ncm: vehicle?.ncm || undefined,
+      cst_ibs_cbs: cfg.cst_ibs_cbs,
+      classificacao_tributaria: cfg.classificacao_tributaria,
+      tratamento_iss: cfg.tratamento_iss,
+      aliquota: Number(cfg.aliquota),
+    },
+    locacao: rental ? {
+      id: rental.id, numero: rental.rental_number,
+      periodo_inicio: rental.start_date, periodo_fim: rental.end_date,
+      veiculo_placa: vehicle?.plate,
+    } : undefined,
+  };
+}
+
+function mtlsJsonRequest({ url, method = 'POST', body, certificate, token }) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    if (target.protocol !== 'https:') return reject(Object.assign(new Error('Endpoint fiscal deve usar HTTPS.'), { code: 'INSECURE_ENDPOINT' }));
+    const payload = body === undefined ? null : Buffer.from(JSON.stringify(body));
+    const req = https.request({
+      protocol: target.protocol, hostname: target.hostname, port: target.port || 443,
+      path: `${target.pathname}${target.search}`, method,
+      pfx: certificate?.buffer, passphrase: certificate?.password,
+      headers: {
+        Accept: 'application/json', ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': payload.length } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      timeout: 30000,
+    }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        let data = {};
+        try { data = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch (_) { data = {}; }
+        resolve({ httpStatus: response.statusCode, data });
+      });
+    });
+    req.on('timeout', () => req.destroy(Object.assign(new Error('Timeout no provedor fiscal.'), { code: 'TIMEOUT' })));
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+// REALIDADE DA NFS-e NACIONAL (verificado na documentação oficial gov.br/nfse,
+// ago/2026): a emissão direta no Ambiente de Dados Nacional é
+//   POST https://sefin.nfse.gov.br/SefinNacional/nfse
+// com o corpo = DPS (Declaração de Prestação de Serviços) em XML ASSINADO
+// (XMLDSig com certificado ICP-Brasil A1/A3), COMPACTADO em GZip e em Base64,
+// sobre mTLS. O Rio de Janeiro aderiu ao sistema nacional (confirmado pela DANFSe
+// v2.0 real da Rental). Este adapter monta um PAYLOAD JSON para um endpoint
+// PARAMETRIZÁVEL (api_url/issue_path) — pronto para um intermediário que fale o
+// layout nacional. Para bater DIRETO no ADN é preciso um passo extra de
+// build+assinatura+gzip+base64 do XML da DPS (não incluído: exige certificado e
+// não pode ser testado sem ele). Ver relatório: recomendação de intermediário RJ
+// vs. construir o assinador da DPS. Nunca emite nota simulada (fail-closed).
+function nationalNfseProvider({ secretFn = getSecret, certificate = null, requestImpl = mtlsJsonRequest } = {}) {
+  const token = () => secretFn('FISCAL_NFSE_NACIONAL', 'TOKEN');
+  const joinUrl = (base, path, ref) => `${String(base).replace(/\/$/, '')}/${String(path).replace(/^\//, '').replace('{ref}', encodeURIComponent(ref))}`;
+  const map = (ref, result) => {
+    const data = result.data || {};
+    const raw = String(data.status || data.situacao || '').toLowerCase();
+    const authorized = ['autorizada', 'autorizado', 'authorized', 'emitida'].includes(raw) || (result.httpStatus >= 200 && result.httpStatus < 300 && (data.numero || data.chave_acesso));
+    if (authorized) return {
+      status: 'authorized', external_id: data.id || data.chave_acesso || ref,
+      number: data.numero || data.numero_nfse, series: data.serie,
+      verification_code: data.codigo_verificacao || data.chave_acesso,
+      pdf_url: data.pdf_url || data.url_danfse, xml_url: data.xml_url,
+    };
+    if (result.httpStatus === 202 || ['processando', 'processing', 'recebida'].includes(raw)) {
+      return { status: 'processing', external_id: data.id || ref };
+    }
+    return { status: 'error', external_id: data.id || ref,
+      error_code: data.codigo || `HTTP_${result.httpStatus}`,
+      error_message: data.mensagem || data.message || 'Documento fiscal rejeitado pelo provedor.' };
+  };
+  return {
+    name: 'nfse_nacional', isSandbox: false, requiresConfiguration: true,
+    validateConfiguration: validateConfig,
+    async issueDocument({ ref, amount, document_type, client, rental, vehicle, settings }) {
+      if (document_type !== 'nfse') return { status: 'pending_configuration', error_code: 'UNSUPPORTED_DOCUMENT', error_message: 'O adapter nacional emite somente NFS-e.' };
+      if (!certificate) return { status: 'pending_configuration', error_code: 'NO_CERTIFICATE', error_message: 'Certificado A1 ausente.' };
+      const cfg = settings.fiscal_config || {};
+      try {
+        const result = await requestImpl({
+          url: joinUrl(cfg.api_url, cfg.issue_path, ref), method: 'POST', certificate, token: token(),
+          body: buildNationalDpsPayload({ ref, amount, client, rental, vehicle, settings }),
+        });
+        return map(ref, result);
+      } catch (err) {
+        return { status: err.code === 'INSECURE_ENDPOINT' ? 'pending_configuration' : 'failed',
+          error_code: err.code || 'PROVIDER_ERROR', error_message: err.message };
+      }
+    },
+    async getDocumentStatus({ ref, settings }) {
+      const cfg = settings.fiscal_config || {};
+      if (!cfg.status_path) return { status: 'processing' };
+      try { return map(ref, await requestImpl({ url: joinUrl(cfg.api_url, cfg.status_path, ref), method: 'GET', certificate, token: token() })); }
+      catch (err) { return { status: 'processing', error_message: err.message }; }
+    },
+    async cancelDocument() { return { status: 'cancellation_pending' }; },
+    estimateIssueCost(settings) { return Number(settings?.cost_per_fiscal || 0); },
   };
 }
 
@@ -201,8 +353,12 @@ function getFiscalProvider(settings = {}, deps = {}) {
   const p = (settings.fiscal_provider || 'null').toLowerCase();
   if (p === 'null' || !p) return nullProvider;
   if (p === 'focusnfe') return focusNfeProvider(deps);
+  if (p === 'nfse_nacional') return nationalNfseProvider(deps);
   if (p === 'nfeio')    return realStub('nfeio', 'FISCAL_NFEIO');
   return realStub(p, `FISCAL_${p}`);
 }
 
-module.exports = { getFiscalProvider, nullProvider, focusNfeProvider, validateConfig };
+module.exports = {
+  getFiscalProvider, nullProvider, focusNfeProvider, nationalNfseProvider,
+  validateConfig, buildNationalDpsPayload, mtlsJsonRequest,
+};

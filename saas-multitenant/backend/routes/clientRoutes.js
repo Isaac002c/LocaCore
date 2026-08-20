@@ -93,6 +93,7 @@ router.post('/', async (req, res) => {
     }
 
     const client = await clientModel.createClient({
+      ...req.body,
       tenant_id: tenantId,
       name: name.trim(), birth_date, cpf: cpfNormalized, cnh, first_cnh,
       phone, email, address, notes,
@@ -146,6 +147,8 @@ router.put('/:id', async (req, res) => {
     }
 
     const client = await clientModel.updateClient(id, {
+      ...existingClient,
+      ...req.body,
       name: name.trim(), birth_date, cpf: cpfNormalized, cnh, first_cnh,
       phone, email, address, notes,
       status: status || existingClient.status || 'negociacao',

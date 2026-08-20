@@ -13,7 +13,7 @@ import { PageLoading, InlineError } from '../components/states';
 const EMPTY_FORM = {
   plate: '', brand: '', model: '', year: '', color: '', category: '',
   renavam: '', chassi: '', fuel: '', transmission: '',
-  daily_rate: '', odometer: '', status: 'disponivel', notes: '',
+  daily_rate: '', odometer: '', status: 'disponivel', notes: '', ncm: '', fiscal_description: '',
 };
 
 export default function Frota() {
@@ -83,6 +83,7 @@ export default function Frota() {
   };
 
   const validateForm = () => {
+    if (formData.ncm && !/^\d{8}$/.test(String(formData.ncm).replace(/\D/g, ''))) return 'NCM deve conter 8 digitos.';
     if (!formData.brand.trim()) return 'Marca é obrigatória.';
     if (!formData.model.trim()) return 'Modelo é obrigatório.';
     if (formData.daily_rate !== '' && Number(formData.daily_rate) < 0) return 'Diária não pode ser negativa.';
@@ -124,6 +125,7 @@ export default function Frota() {
       color: v.color || '', category: v.category || '', renavam: v.renavam || '', chassi: v.chassi || '',
       fuel: v.fuel || '', transmission: v.transmission || '',
       daily_rate: v.daily_rate ?? '', odometer: v.odometer ?? '', status: v.status || 'disponivel', notes: v.notes || '',
+      ncm: v.ncm || '', fiscal_description: v.fiscal_description || '',
     });
     setShowModal(true);
   };
@@ -317,6 +319,11 @@ export default function Frota() {
               <div className="form-row">
                 <div className="form-group"><label>RENAVAM</label><input type="text" value={formData.renavam} onChange={set('renavam')} placeholder="Opcional" /></div>
                 <div className="form-group"><label>Chassi</label><input type="text" value={formData.chassi} onChange={set('chassi')} placeholder="Opcional" /></div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group"><label>NCM (8 digitos)</label><input type="text" inputMode="numeric" maxLength={8} value={formData.ncm} onChange={set('ncm')} placeholder="Definir com o contador" /></div>
+                <div className="form-group"><label>Descricao fiscal do bem</label><input type="text" maxLength={180} value={formData.fiscal_description} onChange={set('fiscal_description')} placeholder="Ex.: locacao de veiculo" /></div>
               </div>
 
               <div className="form-group"><label>Observações</label><textarea value={formData.notes} onChange={set('notes')} rows={3} placeholder="Anotações sobre o veículo..." /></div>

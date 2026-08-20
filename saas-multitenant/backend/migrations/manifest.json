@@ -11,6 +11,8 @@
     "migrate_chronostek_brand_to_telun.sql",
     "create_locacore_cycle6.sql",
     "create_locacore_cycle7.sql",
-    "create_locacore_cycle8.sql"
+    "create_locacore_cycle8.sql",
+    "create_locacore_cycle9.sql",
+    "create_locacore_cycle10.sql"
   ]
 }

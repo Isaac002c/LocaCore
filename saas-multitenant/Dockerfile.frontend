@@ -1,5 +1,5 @@
 # =============================================================================
-# LocaCore — Frontend (Next.js 14) para produção em container.
+# LocaCore — Frontend (Next.js 16) para produção em container.
 # (Em produção também pode ir para a Vercel; este Dockerfile é para VPS.)
 # =============================================================================
 FROM node:20-alpine AS deps

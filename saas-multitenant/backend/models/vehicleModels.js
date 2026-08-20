@@ -30,22 +30,31 @@ const STATUSES = ['disponivel', 'alugado', 'manutencao', 'inativo'];
 // CREATE
 const createVehicle = async ({
   tenant_id, plate, brand, model, year, color, category, renavam, chassi,
-  fuel, transmission, daily_rate, odometer, status, notes, created_by,
+  fuel, transmission, daily_rate, odometer, status, notes, created_by, ncm, fiscal_description,
 }) => {
   if (!tenant_id) throw new Error('tenant_id é obrigatório para criar um veículo');
-  const r = await pool.query(
+  const baseValues = [
+    tenant_id, upperOrNull(plate), toStrOrNull(brand), toStrOrNull(model), toIntOrNull(year),
+    toStrOrNull(color), toStrOrNull(category), toStrOrNull(renavam), toStrOrNull(chassi),
+    toStrOrNull(fuel), toStrOrNull(transmission), money2(daily_rate), toInt0(odometer),
+    STATUSES.includes(status) ? status : 'disponivel', toStrOrNull(notes), toStrOrNull(created_by),
+  ];
+  const hasFiscalFields = ncm !== undefined || fiscal_description !== undefined;
+  const r = hasFiscalFields ? await pool.query(
     `INSERT INTO vehicles
        (tenant_id, plate, brand, model, year, color, category, renavam, chassi,
-        fuel, transmission, daily_rate, odometer, status, notes, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        fuel, transmission, daily_rate, odometer, status, notes, created_by,ncm,fiscal_description)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
      RETURNING *`,
     [
-      tenant_id,
-      upperOrNull(plate), toStrOrNull(brand), toStrOrNull(model), toIntOrNull(year),
-      toStrOrNull(color), toStrOrNull(category), toStrOrNull(renavam), toStrOrNull(chassi),
-      toStrOrNull(fuel), toStrOrNull(transmission), money2(daily_rate), toInt0(odometer),
-      STATUSES.includes(status) ? status : 'disponivel', toStrOrNull(notes), toStrOrNull(created_by),
+      ...baseValues,
+      toStrOrNull(ncm) ? String(ncm).replace(/\D/g, '') : null, toStrOrNull(fiscal_description),
     ]
+  ) : await pool.query(
+    `INSERT INTO vehicles
+      (tenant_id,plate,brand,model,year,color,category,renavam,chassi,fuel,transmission,daily_rate,
+       odometer,status,notes,created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`, baseValues,
   );
   return r.rows[0];
 };
@@ -119,29 +128,32 @@ const updateVehicle = async (id, payload, tenant_id, db = pool) => {
   const current = await getVehicleById(id, tenant_id, db);
   if (!current) return undefined;
   const m = (k, fallback) => (payload[k] === undefined ? fallback : payload[k]);
-  const r = await db.query(
+  const baseValues = [
+    upperOrNull(m('plate', current.plate)), toStrOrNull(m('brand', current.brand)),
+    toStrOrNull(m('model', current.model)), toIntOrNull(m('year', current.year)),
+    toStrOrNull(m('color', current.color)), toStrOrNull(m('category', current.category)),
+    toStrOrNull(m('renavam', current.renavam)), toStrOrNull(m('chassi', current.chassi)),
+    toStrOrNull(m('fuel', current.fuel)), toStrOrNull(m('transmission', current.transmission)),
+    money2(m('daily_rate', current.daily_rate)), toInt0(m('odometer', current.odometer)),
+    STATUSES.includes(payload.status) ? payload.status : current.status, toStrOrNull(m('notes', current.notes)),
+  ];
+  const hasFiscalFields = payload.ncm !== undefined || payload.fiscal_description !== undefined;
+  const r = hasFiscalFields ? await db.query(
     `UPDATE vehicles SET
         plate=$1, brand=$2, model=$3, year=$4, color=$5, category=$6, renavam=$7,
         chassi=$8, fuel=$9, transmission=$10, daily_rate=$11, odometer=$12,
-        status=$13, notes=$14, updated_at=NOW()
-      WHERE id=$15 AND tenant_id=$16 RETURNING *`,
+        status=$13, notes=$14,ncm=$15,fiscal_description=$16,updated_at=NOW()
+      WHERE id=$17 AND tenant_id=$18 RETURNING *`,
     [
-      upperOrNull(m('plate', current.plate)),
-      toStrOrNull(m('brand', current.brand)),
-      toStrOrNull(m('model', current.model)),
-      toIntOrNull(m('year', current.year)),
-      toStrOrNull(m('color', current.color)),
-      toStrOrNull(m('category', current.category)),
-      toStrOrNull(m('renavam', current.renavam)),
-      toStrOrNull(m('chassi', current.chassi)),
-      toStrOrNull(m('fuel', current.fuel)),
-      toStrOrNull(m('transmission', current.transmission)),
-      money2(m('daily_rate', current.daily_rate)),
-      toInt0(m('odometer', current.odometer)),
-      STATUSES.includes(payload.status) ? payload.status : current.status,
-      toStrOrNull(m('notes', current.notes)),
+      ...baseValues,
+      toStrOrNull(m('ncm', current.ncm)) ? String(m('ncm', current.ncm)).replace(/\D/g, '') : null,
+      toStrOrNull(m('fiscal_description', current.fiscal_description)),
       id, tenant_id,
     ]
+  ) : await db.query(
+    `UPDATE vehicles SET plate=$1,brand=$2,model=$3,year=$4,color=$5,category=$6,renavam=$7,
+       chassi=$8,fuel=$9,transmission=$10,daily_rate=$11,odometer=$12,status=$13,notes=$14,updated_at=NOW()
+     WHERE id=$15 AND tenant_id=$16 RETURNING *`, [...baseValues, id, tenant_id],
   );
   return r.rows[0];
 };

@@ -19,7 +19,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.1.1",
-    "nodemailer": "^6.10.1",
+    "node-forge": "^1.4.0",
+    "nodemailer": "^9.0.5",
     "pdfkit": "^0.15.0",
     "pg": "^8.11.3"
   },

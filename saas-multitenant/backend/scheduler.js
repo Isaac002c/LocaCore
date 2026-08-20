@@ -31,6 +31,7 @@ const JOBS = [
   { name: 'outbox',  every: env('SCHED_OUTBOX_MS',  min(5)),   ttl: 60,  run: () => runner.processOutboxAll({ limit: 100 }) },
   { name: 'dunning', every: env('SCHED_DUNNING_MS', min(60 * 6)), ttl: 300, run: () => runner.runDunningAll({}) },
   { name: 'billing', every: env('SCHED_BILLING_MS', min(60)),  ttl: 600, run: () => runner.runBillingAll({}) },
+  { name: 'charge-retry', every: env('SCHED_CHARGE_RETRY_MS', min(15)), ttl: 300, run: () => runner.retryChargesAll({ limit: 20 }) },
   { name: 'fiscal',  every: env('SCHED_FISCAL_MS',  min(60 * 12)), ttl: 600, run: () => runner.fiscalBatchAll() },
 ];
 

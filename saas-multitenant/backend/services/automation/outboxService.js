@@ -6,6 +6,10 @@
 
 const M = require('../../models/automationModels');
 const { getWhatsAppProvider } = require('./providers/whatsapp');
+const tenantModel = require('../../models/tenantModels');
+const secretStore = require('./secretStore');
+const { zonedParts } = require('./timezone');
+const audit = require('./auditService');
 
 // Backoff progressivo (minutos): 1, 2, 4, 8, ... limitado a 60.
 const backoffMinutes = (attempts) => Math.min(60, 2 ** Math.max(0, attempts - 1));
@@ -15,10 +19,18 @@ const enqueue = (tenant_id, msg, db) => M.insertOutbox({ tenant_id, ...msg }, db
 // Processa a fila do tenant. Retorna contadores. `now` injetável para testes.
 async function process(tenant_id, { limit = 25, now = new Date() } = {}) {
   const settings = await M.getSettings(tenant_id) || {};
-  const provider = getWhatsAppProvider(settings);
+  if (settings.automation_mode !== undefined && !['pilot', 'staged', 'global'].includes(settings.automation_mode)) {
+    return { processed: 0, sent: 0, failed: 0, skipped: 0, reason: 'automation_not_active' };
+  }
+  const providerName = settings.whatsapp_provider || 'null';
+  const [stored, tenant] = await Promise.all([
+    secretStore.getSecrets(tenant_id, `whatsapp:${providerName}`),
+    tenantModel.getTenantById(tenant_id).catch(() => null),
+  ]);
+  const provider = getWhatsAppProvider(settings, { secretFn: secretStore.resolver(stored, tenant?.slug) });
   const startH = Number(settings.whatsapp_send_start_hour ?? 0);
   const endH = Number(settings.whatsapp_send_end_hour ?? 24);
-  const hour = now.getHours();
+  const hour = zonedParts(now, settings.billing_timezone || 'America/Sao_Paulo').hour;
   const inWindow = hour >= startH && hour < endH;
 
   const rows = await M.claimPendingOutbox(tenant_id, limit);
@@ -50,13 +62,19 @@ async function process(tenant_id, { limit = 25, now = new Date() } = {}) {
         status: r.status || 'sent', provider: provider.name, external_id: r.external_id || null,
         sent_at: now.toISOString(), cost_amount: cost, error: null,
       });
+      await audit.record({ tenant_id, event_type: 'whatsapp_sent', status: r.status || 'sent',
+        client_id: m.client_id, rental_id: m.rental_id, charge_id: m.charge_id,
+        provider: provider.name, request_id: r.external_id, attempt: Number(m.attempts || 0) + 1 });
       if (cost > 0) await M.recordCost({ tenant_id, kind: 'whatsapp_message', ref_id: m.id, provider: provider.name, unit_cost: cost });
       res.sent++;
     } catch (err) {
       const attempts = (m.attempts || 0) + 1;
       const dead = attempts >= (m.max_attempts || 5);
       const next = dead ? null : new Date(now.getTime() + backoffMinutes(attempts) * 60000).toISOString();
-      await M.updateOutbox(m.id, tenant_id, { status: 'failed', attempts, next_attempt_at: next, error: String(err.message).slice(0, 500) });
+      await M.updateOutbox(m.id, tenant_id, { status: dead ? 'dead' : 'failed', attempts, next_attempt_at: next, error: String(err.message).slice(0, 500) });
+      await audit.record({ tenant_id, event_type: 'whatsapp_failed', status: dead ? 'needs_attention' : 'failed',
+        client_id: m.client_id, rental_id: m.rental_id, charge_id: m.charge_id,
+        provider: provider.name, attempt: attempts, error_code: err.code || 'PROVIDER_ERROR', error_message: err.message });
       res.failed++;
     }
   }

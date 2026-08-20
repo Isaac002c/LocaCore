@@ -22,7 +22,8 @@ import { PageLoading, InlineError } from '../components/states';
 
 const EMPTY_FORM = {
   client_id: '', vehicle_id: '', start_date: '', end_date: '',
-  daily_rate: '', discount_amount: '', deposit_amount: '',
+  daily_rate: '', weekly_rate: '', billing_value_source: 'auto', billing_frequency: 'weekly',
+  discount_amount: '', deposit_amount: '',
   status: 'reservado', pickup_location: '', notes: '', pickup_inspection: EMPTY_VISTORIA,
 };
 
@@ -177,6 +178,7 @@ export default function Locacoes() {
         ...formData,
         days: formTotals.days,
         daily_rate: formData.daily_rate || 0,
+        weekly_rate: formData.weekly_rate === '' ? null : formData.weekly_rate,
         discount_amount: formData.discount_amount || 0,
         deposit_amount: formData.deposit_amount || 0,
         pickup_inspection: vistoriaHasContent(formData.pickup_inspection) ? formData.pickup_inspection : null,
@@ -202,6 +204,8 @@ export default function Locacoes() {
       client_id: r.client_id || '', vehicle_id: r.vehicle_id || '',
       start_date: toInputDate(r.start_date), end_date: toInputDate(r.end_date),
       daily_rate: r.daily_rate ?? '',
+      weekly_rate: r.weekly_rate ?? '', billing_value_source: r.billing_value_source || 'auto',
+      billing_frequency: r.billing_frequency || 'weekly',
       discount_amount: r.discount_amount ?? '', deposit_amount: r.deposit_amount ?? '',
       status: r.status || 'reservado', pickup_location: r.pickup_location || '', notes: r.notes || '',
       pickup_inspection: r.pickup_inspection || EMPTY_VISTORIA,
@@ -563,8 +567,18 @@ export default function Locacoes() {
 
               <div className="form-row">
                 <div className="form-group"><label>Diária (R$)</label><input type="number" step="0.01" min="0" value={formData.daily_rate} onChange={set('daily_rate')} placeholder="0,00" /></div>
+                <div className="form-group"><label>Semanal contratual (R$)</label><input type="number" step="0.01" min="0" value={formData.weekly_rate} onChange={set('weekly_rate')} placeholder="Não informado" /></div>
                 <div className="form-group"><label>Desconto (R$)</label><input type="number" step="0.01" min="0" value={formData.discount_amount} onChange={set('discount_amount')} placeholder="0,00" /></div>
                 <div className="form-group"><label>Caução (R$)</label><input type="number" step="0.01" min="0" value={formData.deposit_amount} onChange={set('deposit_amount')} placeholder="0,00" /></div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group"><label>Fonte da cobrança</label><select value={formData.billing_value_source} onChange={set('billing_value_source')}>
+                  <option value="auto">Semanal, depois diária</option><option value="weekly">Somente semanal</option><option value="daily">Somente diária</option><option value="total">Total explicitamente autorizado</option>
+                </select></div>
+                <div className="form-group"><label>Periodicidade</label><select value={formData.billing_frequency} onChange={set('billing_frequency')}>
+                  <option value="weekly">Semanal</option><option value="daily">Diária</option><option value="one_time">Única</option><option value="manual">Manual</option>
+                </select></div>
               </div>
 
               <div className="form-row">

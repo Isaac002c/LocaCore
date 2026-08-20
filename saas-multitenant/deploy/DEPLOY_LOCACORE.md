@@ -96,7 +96,7 @@ cp .env.prod.example .env.prod
 Gere os segredos:
 
 ```bash
-echo "JWT_SECRET=$(openssl rand -hex 64)" && echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+echo "JWT_SECRET=$(openssl rand -hex 64)" && echo "AUTOMATION_SECRETS_KEY=$(openssl rand -hex 32)" && echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
 ```
 
 Edite `.env.prod` (`nano .env.prod`) e preencha **no mínimo**:
@@ -109,6 +109,7 @@ Edite `.env.prod` (`nano .env.prod`) e preencha **no mínimo**:
 | `POSTGRES_PASSWORD` | o gerado acima |
 | `DATABASE_URL` | mesma senha do `POSTGRES_PASSWORD` |
 | `JWT_SECRET` | o gerado acima |
+| `AUTOMATION_SECRETS_KEY` | chave exclusiva de 32 bytes; mantenha backup seguro |
 | `BASE_URL` | `https://api.seudominio.com.br` |
 | `FRONTEND_URL` | preencher depois com a URL da Vercel (Parte 2) |
 
@@ -244,6 +245,11 @@ curl -sI https://locacore.vercel.app | head -1
 
 # 3. Proxy da Vercel chegando na API (deve retornar 401 — sem token é o esperado)
 curl -s -o /dev/null -w "%{http_code}\n" https://locacore.vercel.app/api/rentals
+
+# 4. Webhook publicado, sem executar integração (JSON inválido deve retornar 400)
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  -H 'Content-Type: application/json' --data '{' \
+  https://locacore.vercel.app/webhooks/infinitepay
 ```
 
 Depois, no navegador: **login → Painel → Frota → Locações**.
@@ -256,6 +262,8 @@ Checklist final:
 - [ ] Upload de documento (URL do arquivo usa o domínio da API, não `localhost`)
 - [ ] Banner de ambiente **não** aparece (é `production`)
 - [ ] Rodapé mostra **LocaCore · um produto TELUN**
+- [ ] `node scripts/migrate.js status` mostra `create_locacore_cycle9.sql` aplicada
+- [ ] Automações continuam em `off` até Dry Run e piloto aprovados
 
 ---
 
@@ -304,13 +312,15 @@ docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod exec proxy
 
 | Item | Bloqueio |
 | --- | --- |
-| WhatsApp (Meta) | Credenciais da Meta Cloud API |
-| Cobrança/PIX (Asaas) | Chave de API + token de webhook |
+| InfinitePay | InfiniteTag, conta validada e webhook público testado |
+| WhatsApp (Meta/Evolution) | Credenciais, instância/Phone Number ID e templates aprovados |
 | Emissão fiscal | Provedor + credenciais + **dados do contador** (segue `pending_configuration`) |
 | Renomear slug `chronostek` → `telun` | Ver `backend/migrations/MIGRATION_CHRONOSTEK_TO_TELUN.md` — exige banco real, backup e autorização |
 
-Ao ativar qualquer provedor, preencha as variáveis correspondentes no `.env.prod`
-e recrie `backend worker scheduler`. **Segredos nunca vão para o banco nem para a Vercel.**
+Credenciais por tenant são gravadas pela tela de Integrações com AES-256-GCM.
+Somente a chave mestra `AUTOMATION_SECRETS_KEY` fica no `.env.prod`; ela e os
+segredos nunca devem ser enviados à Vercel. Depois de configurar, execute o Dry
+Run e um piloto de uma locação antes de selecionar lote ou modo global.
 
 ---
 

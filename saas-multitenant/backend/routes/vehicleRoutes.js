@@ -76,6 +76,7 @@ router.get('/:id/rentals', checkPermission('fleet:read'), async (req, res) => {
 // Validação compartilhada (create/update). Placa opcional; quando presente,
 // deve ser única no tenant. daily_rate/odometer não podem ser negativos.
 const validate = (body) => {
+  if (body.ncm && !/^\d{8}$/.test(String(body.ncm).replace(/\D/g, ''))) return 'NCM deve conter 8 digitos.';
   if (!body.brand || !String(body.brand).trim()) return 'Marca é obrigatória.';
   if (!body.model || !String(body.model).trim()) return 'Modelo é obrigatório.';
   if (body.daily_rate !== undefined && Number(body.daily_rate) < 0) return 'Diária não pode ser negativa.';

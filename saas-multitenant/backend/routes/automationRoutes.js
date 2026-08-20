@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const M = require('../models/automationModels');
 const { checkPermission } = require('../middlewares/checkPermission');
 const { requireModule } = require('../middlewares/requireModule');
 const billingCycle = require('../services/automation/billingCycleService');
+const paymentConfirm = require('../services/automation/paymentConfirmService');
 const dunning = require('../services/automation/dunningService');
 const outbox = require('../services/automation/outboxService');
 const fiscalService = require('../services/automation/fiscalService');
@@ -11,6 +13,22 @@ const { validateConfig } = require('../services/automation/providers/fiscal');
 const { integrationsReadiness } = require('../services/automation/readiness');
 const tenantModel = require('../models/tenantModels');
 const activityLog = require('../services/activityLogService');
+const secretStore = require('../services/automation/secretStore');
+const certificateService = require('../services/automation/fiscalCertificateService');
+const audit = require('../services/automation/auditService');
+const { getWhatsAppProvider } = require('../services/automation/providers/whatsapp');
+
+const certificateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: certificateService.MAX_CERTIFICATE_SIZE, files: 1 },
+});
+
+const PROVIDERS = {
+  payment: new Set(['null', 'asaas', 'infinitepay']),
+  whatsapp: new Set(['null', 'meta', 'evolution']),
+  fiscal: new Set(['null', 'focusnfe', 'nfse_nacional']),
+};
+const ACTIVE_MODES = new Set(['pilot', 'staged', 'global']);
 
 // Automação exige o módulo "locacao" habilitado + tenantContext (global).
 router.use(requireModule('locacao'));
@@ -52,7 +70,25 @@ router.get('/settings', checkPermission('automations:read'), async (req, res) =>
 
 router.put('/settings', checkPermission('automations:manage'), async (req, res) => {
   try {
-    const settings = await M.updateSettings(req.tenantId, req.body || {});
+    const patch = req.body || {};
+    for (const [field, kind] of [['payment_provider', 'payment'], ['whatsapp_provider', 'whatsapp'], ['fiscal_provider', 'fiscal']]) {
+      if (patch[field] !== undefined && !PROVIDERS[kind].has(String(patch[field]).toLowerCase())) {
+        return res.status(400).json({ success: false, error: `Provedor ${patch[field]} nao implementado.` });
+      }
+    }
+    if (patch.automation_mode !== undefined && !['off', 'dry_run', 'pilot', 'staged', 'global'].includes(patch.automation_mode)) {
+      return res.status(400).json({ success: false, error: 'Modo de automacao invalido.' });
+    }
+    const current = await M.ensureSettings(req.tenantId);
+    const proposed = { ...current, ...patch };
+    if (ACTIVE_MODES.has(proposed.automation_mode)) {
+      const tenant = await tenantModel.getTenantById(req.tenantId).catch(() => null);
+      const readiness = await integrationsReadiness(proposed, tenant?.slug, { tenant_id: req.tenantId, mode: proposed.automation_mode });
+      if (!readiness.activation.allowed) {
+        return res.status(409).json({ success: false, error: 'Ativacao bloqueada pela prontidao.', data: readiness });
+      }
+    }
+    const settings = await M.updateSettings(req.tenantId, patch);
     activityLog.logGeneric(req.tenantId, req.userId, 'update', 'automation_settings', 'Configurações de automação atualizadas', {}).catch(() => {});
     res.json({ success: true, data: { settings, fiscal_validation: validateConfig(settings) } });
   } catch (err) { wrap(res, err, 'automations/settings PUT:'); }
@@ -67,8 +103,170 @@ router.get('/integrations', checkPermission('automations:read'), async (req, res
       M.ensureSettings(req.tenantId),
       tenantModel.getTenantById(req.tenantId).catch(() => null),
     ]);
-    res.json({ success: true, data: integrationsReadiness(settings, tenant?.slug) });
+    const rentalIds = typeof req.query.rental_ids === 'string'
+      ? req.query.rental_ids.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 100)
+      : null;
+    res.json({ success: true, data: await integrationsReadiness(settings, tenant?.slug, {
+      tenant_id: req.tenantId, mode: req.query.mode || settings.automation_mode, rental_ids: rentalIds,
+    }) });
   } catch (err) { wrap(res, err, 'automations/integrations:'); }
+});
+
+const SECRET_FIELDS = {
+  'payment:asaas': new Set(['KEY', 'WEBHOOK_TOKEN']),
+  'payment:infinitepay': new Set([]),
+  'whatsapp:meta': new Set(['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN']),
+  'whatsapp:evolution': new Set(['API_KEY', 'APP_SECRET', 'VERIFY_TOKEN']),
+  'fiscal:focusnfe': new Set(['TOKEN']),
+  'fiscal:nfse_nacional': new Set(['TOKEN']),
+};
+
+async function integrationScope(tenant_id, kind) {
+  const settings = await M.ensureSettings(tenant_id);
+  const field = kind === 'payment' ? 'payment_provider' : kind === 'whatsapp' ? 'whatsapp_provider' : kind === 'fiscal' ? 'fiscal_provider' : null;
+  if (!field) return null;
+  const provider = String(settings[field] || 'null').toLowerCase();
+  return { settings, provider, scope: `${kind}:${provider}`, allowed: SECRET_FIELDS[`${kind}:${provider}`] || new Set() };
+}
+
+router.get('/integrations/:kind/secrets', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const cfg = await integrationScope(req.tenantId, req.params.kind);
+    if (!cfg) return res.status(400).json({ success: false, error: 'Integracao invalida.' });
+    const present = await secretStore.secretPresence(req.tenantId, cfg.scope);
+    res.json({ success: true, data: { provider: cfg.provider, encryption_ready: secretStore.encryptionReady(), present } });
+  } catch (err) { wrap(res, err, 'automations/integration secrets GET:'); }
+});
+
+router.put('/integrations/:kind/secrets', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const cfg = await integrationScope(req.tenantId, req.params.kind);
+    if (!cfg || !cfg.allowed.size) return res.status(400).json({ success: false, error: 'Este provedor nao recebe secrets por esta tela.' });
+    const values = {};
+    for (const [rawName, value] of Object.entries(req.body || {})) {
+      const name = String(rawName).toUpperCase();
+      if (!cfg.allowed.has(name)) return res.status(400).json({ success: false, error: `Campo secreto ${name} nao permitido.` });
+      if (typeof value !== 'string' || value.length > 10000) return res.status(400).json({ success: false, error: `Valor invalido para ${name}.` });
+      if (value.trim()) values[name] = value;
+    }
+    const saved = await secretStore.setSecrets(req.tenantId, cfg.scope, values);
+    await audit.record({ tenant_id: req.tenantId, event_type: 'integration_secrets_updated', status: 'completed', provider: cfg.provider,
+      details: { source: req.params.kind } });
+    res.json({ success: true, data: { provider: cfg.provider, saved } });
+  } catch (err) {
+    if (/AUTOMATION_SECRETS_KEY/.test(err.message)) return res.status(503).json({ success: false, error: err.message });
+    wrap(res, err, 'automations/integration secrets PUT:');
+  }
+});
+
+router.post('/integrations/:kind/test', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const cfg = await integrationScope(req.tenantId, req.params.kind);
+    if (!cfg) return res.status(400).json({ success: false, error: 'Integracao invalida.' });
+    let result;
+    if (req.params.kind === 'payment') {
+      const provider = await billingCycle.providerForTenant(req.tenantId, cfg.settings);
+      result = await provider.testConnection();
+    } else if (req.params.kind === 'whatsapp') {
+      const [values, tenant] = await Promise.all([
+        secretStore.getSecrets(req.tenantId, cfg.scope),
+        tenantModel.getTenantById(req.tenantId).catch(() => null),
+      ]);
+      result = await getWhatsAppProvider(cfg.settings, { secretFn: secretStore.resolver(values, tenant?.slug) }).testConnection();
+    } else {
+      const provider = await fiscalService.providerForTenant(req.tenantId, cfg.settings);
+      const validation = provider.validateConfiguration(cfg.settings);
+      result = { ok: validation.ok, missing: validation.missing || [], provider: provider.name };
+    }
+    await audit.record({ tenant_id: req.tenantId, event_type: 'integration_connection_test',
+      status: result.ok ? 'completed' : 'failed', provider: cfg.provider, details: { source: req.params.kind } });
+    res.status(result.ok ? 200 : 422).json({ success: !!result.ok, data: result, error: result.ok ? undefined : result.error || 'Integracao incompleta.' });
+  } catch (err) {
+    res.status(422).json({ success: false, error: String(err.message).slice(0, 300) });
+  }
+});
+
+router.get('/fiscal/certificate', checkPermission('fiscal:read'), async (req, res) => {
+  try { res.json({ success: true, data: await certificateService.getCertificateMetadata(req.tenantId) }); }
+  catch (err) { wrap(res, err, 'automations/fiscal/certificate GET:'); }
+});
+router.post('/fiscal/certificate', checkPermission('fiscal:configure'), certificateUpload.single('certificate'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'Certificado A1 ausente.' });
+    const metadata = await certificateService.storeCertificate(req.tenantId, {
+      buffer: req.file.buffer, filename: req.file.originalname, mime_type: req.file.mimetype,
+      password: req.body?.password,
+    });
+    await audit.record({ tenant_id: req.tenantId, event_type: 'fiscal_certificate_updated', status: 'completed' });
+    res.json({ success: true, data: metadata });
+  } catch (err) {
+    const status = err.code === 'INVALID_CERTIFICATE' ? 400 : /AUTOMATION_SECRETS_KEY/.test(err.message) ? 503 : 400;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/dry-run', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const rentalIds = Array.isArray(req.body?.rental_ids) ? req.body.rental_ids : null;
+    res.json({ success: true, data: await billingCycle.dryRun(req.tenantId, { rental_ids: rentalIds }) });
+  } catch (err) { wrap(res, err, 'automations/dry-run:'); }
+});
+
+router.get('/charges', checkPermission('automations:read'), async (req, res) => {
+  try { res.json({ success: true, data: await M.listCharges(req.tenantId, req.query || {}) }); }
+  catch (err) { wrap(res, err, 'automations/charges:'); }
+});
+router.post('/charges/:id/retry', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const row = await billingCycle.retryCharge(req.tenantId, req.params.id, { request_id: req.headers['x-request-id'] || null });
+    if (!row) return res.status(404).json({ success: false, error: 'Cobranca nao encontrada.' });
+    res.json({ success: true, data: row });
+  } catch (err) {
+    if (err.statusCode === 409) return res.status(409).json({ success: false, error: err.message });
+    wrap(res, err, 'automations/charges retry:');
+  }
+});
+
+// POST /charges/:id/confirm — confirmação manual do pagamento (§49). Aciona o
+// MESMO pipeline pós-pagamento (recibo/NFS-e → documento → WhatsApp).
+router.post('/charges/:id/confirm', checkPermission('automations:manage'), async (req, res) => {
+  try {
+    const b = req.body || {};
+    const result = await paymentConfirm.confirmManual(req.tenantId, req.params.id, {
+      amount: b.amount, payment_date: b.payment_date, payment_method: b.payment_method || 'pix',
+      notes: b.notes, created_by: req.userId, created_by_name: req.userName || null,
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    wrap(res, err, 'automations/charges confirm:');
+  }
+});
+
+// GET /charges/:id/timeline — linha do tempo da cobrança (§38), da trilha de auditoria.
+router.get('/charges/:id/timeline', checkPermission('automations:read'), async (req, res) => {
+  try {
+    const events = await audit.list(req.tenantId, { charge_id: req.params.id, limit: 100 });
+    res.json({ success: true, data: events });
+  } catch (err) { wrap(res, err, 'automations/charges timeline:'); }
+});
+
+router.get('/audit', checkPermission('automations:read'), async (req, res) => {
+  try { res.json({ success: true, data: await audit.list(req.tenantId, { limit: req.query.limit, charge_id: req.query.charge_id }) }); }
+  catch (err) { wrap(res, err, 'automations/audit:'); }
+});
+
+router.get('/fiscal/categories', checkPermission('fiscal:read'), async (req, res) => {
+  try { res.json({ success: true, data: await M.ensureDefaultFiscalCategories(req.tenantId) }); }
+  catch (err) { wrap(res, err, 'automations/fiscal/categories:'); }
+});
+router.put('/fiscal/categories/:key', checkPermission('fiscal:configure'), async (req, res) => {
+  try {
+    const allowedKeys = new Set(['locacao', 'multa', 'juros', 'caucao', 'manutencao', 'avaria', 'combustivel', 'servico_adicional']);
+    if (!allowedKeys.has(req.params.key)) return res.status(400).json({ success: false, error: 'Categoria fiscal invalida.' });
+    const row = await M.upsertFiscalCategoryMapping(req.tenantId, { ...req.body, category_key: req.params.key, label: req.body?.label || req.params.key });
+    res.json({ success: true, data: row });
+  } catch (err) { wrap(res, err, 'automations/fiscal/categories PUT:'); }
 });
 
 // ── CONSOLE OPERACIONAL (§8) ────────────────────────────────────────────────
