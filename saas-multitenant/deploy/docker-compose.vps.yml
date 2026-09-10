@@ -96,6 +96,72 @@ services:
       resources:
         limits: { memory: 256m }
 
+  # Evolution API dedicada ao LocaCore. O profile evita iniciar a integração
+  # em instalações que não usam WhatsApp. Postgres e Redis ficam em uma rede
+  # interna; somente a API entra também na rede do backend.
+  evolution-postgres:
+    profiles: ["evolution"]
+    image: postgres:16-alpine
+    container_name: locacore-evolution-db
+    env_file: [.env.evolution]
+    volumes:
+      - locacore-evolution-postgres:/var/lib/postgresql/data
+    networks: [locacore-evolution-private]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  evolution-redis:
+    profiles: ["evolution"]
+    image: redis:7-alpine
+    container_name: locacore-evolution-redis
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - locacore-evolution-redis:/data
+    networks: [locacore-evolution-private]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 192m }
+
+  evolution-api:
+    profiles: ["evolution"]
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: locacore-evolution
+    env_file: [.env.evolution]
+    # A porta local existe apenas para manutenção via túnel SSH/QR Code.
+    ports: ["127.0.0.1:${EVOLUTION_LOCAL_PORT:-18091}:8080"]
+    volumes:
+      - locacore-evolution-instances:/evolution/instances
+    networks:
+      locacore-evolution-private:
+      locacore-network:
+        aliases: [locacore-evolution]
+    restart: unless-stopped
+    depends_on:
+      evolution-postgres: { condition: service_healthy }
+      evolution-redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/instance/fetchInstances',{headers:{apikey:process.env.AUTHENTICATION_API_KEY}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 8s
+      retries: 12
+      start_period: 60s
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
   # Backup diário do Postgres (pg_dump comprimido + retenção).
   backup:
     image: postgres:16-alpine
@@ -136,6 +202,10 @@ networks:
   locacore-network:
     name: locacore-network
     driver: bridge
+  locacore-evolution-private:
+    name: locacore-evolution-private
+    driver: bridge
+    internal: true
 
 volumes:
   locacore-postgres-data:
@@ -144,3 +214,9 @@ volumes:
     name: locacore-uploads
   locacore-backups:
     name: locacore-backups
+  locacore-evolution-postgres:
+    name: locacore-evolution-postgres
+  locacore-evolution-redis:
+    name: locacore-evolution-redis
+  locacore-evolution-instances:
+    name: locacore-evolution-instances
