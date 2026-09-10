@@ -111,7 +111,10 @@ async function runForPayment(tenant_id, {
       .issueForPayment(tenant_id, payment_id, { settings, created_by })
       .catch((err) => ({ status: 'failed', error_code: err.code || 'PROVIDER_ERROR', error_message: err.message }));
     if (fiscal && fiscal.status === 'authorized') {
-      documentInfo = { tipo: 'NFS-e', numero: fiscal.number || fiscal.external_id || fiscal.id, link: fiscal.pdf_url || null };
+      documentInfo = {
+        tipo: 'NFS-e', numero: fiscal.number || fiscal.external_id || fiscal.id,
+        link: fiscal.archived_document?.file_url || fiscal.pdf_url || fiscal.xml_url || null,
+      };
     }
     // Se pendente/falha: pagamento segue PAID; fiscal fica na fila (§9). Sem recibo por cima.
   } else if (kind === 'receipt') {

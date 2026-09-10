@@ -380,10 +380,24 @@ const updateFiscal = async (id, tenant_id, fields, db = pool) => {
 };
 const listFiscal = async (tenant_id, { status, limit = 100 } = {}) => {
   const params = [tenant_id]; let where = 'WHERE tenant_id=$1';
-  if (status) { params.push(status); where += ` AND status=$${params.length}`; }
+  if (status) { params.push(status); where += ` AND f.status=$${params.length}`; }
   params.push(Math.min(limit, 500));
-  const r = await pool.query(`SELECT * FROM fiscal_documents ${where} ORDER BY created_at DESC LIMIT $${params.length}`, params);
-  return r.rows;
+  try {
+    const scopedWhere = where.replace('WHERE tenant_id=', 'WHERE f.tenant_id=');
+    const r = await pool.query(
+      `SELECT f.*, d.id AS archived_document_id, d.file_url AS archived_document_url
+         FROM fiscal_documents f
+         LEFT JOIN documents d ON d.tenant_id=f.tenant_id AND d.fiscal_document_id=f.id
+         ${scopedWhere} ORDER BY f.created_at DESC LIMIT $${params.length}`,
+      params,
+    );
+    return r.rows;
+  } catch (err) {
+    if (!/fiscal_document_id|column .* does not exist/i.test(err.message)) throw err;
+    const legacyWhere = where.replace(/\bf\./g, '');
+    const r = await pool.query(`SELECT * FROM fiscal_documents ${legacyWhere} ORDER BY created_at DESC LIMIT $${params.length}`, params);
+    return r.rows;
+  }
 };
 
 const getFiscalCategoryMapping = async (tenant_id, category_key, db = pool) => {

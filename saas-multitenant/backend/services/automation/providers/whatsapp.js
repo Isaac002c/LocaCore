@@ -137,12 +137,13 @@ function evolutionProvider({ fetchImpl, secretFn = getSecret, settings = {} } = 
     isSandbox: false,
     providerMode: cfg.provider_mode || 'cloud',
     async sendTemplateMessage({ to, provider_template_id, language = 'pt_BR', variables = {}, body }) {
-      if (!provider_template_id && (cfg.provider_mode || 'cloud') === 'cloud') {
+      const mode = String(cfg.provider_mode || 'cloud').toLowerCase();
+      if (!provider_template_id && mode === 'cloud') {
         throw new Error('Template aprovado do WhatsApp ausente.');
       }
       const parameters = Object.values(variables || {}).map((value) => ({ type: 'text', text: String(value) }));
       let data;
-      if (provider_template_id) {
+      if (mode === 'cloud') {
         data = await call('POST', `/message/sendTemplate/${encodeURIComponent(instance)}`, {
           number: onlyDigits(to),
           name: provider_template_id,
@@ -150,8 +151,12 @@ function evolutionProvider({ fetchImpl, secretFn = getSecret, settings = {} } = 
           components: parameters.length ? [{ type: 'body', parameters }] : [],
         });
       } else {
+        if (cfg.unofficial_acknowledged !== true) {
+          throw new Error('O modo WhatsApp Web da Evolution exige reconhecimento explícito dos riscos.');
+        }
         // Baileys somente quando o administrador optou explicitamente pelo modo
-        // nao oficial. Readiness bloqueia ativacao sem acknowledgement.
+        // não oficial. Mesmo que exista um template cadastrado, envia o corpo
+        // renderizado para não chamar por engano a rota Cloud da Evolution.
         data = await call('POST', `/message/sendText/${encodeURIComponent(instance)}`, {
           number: onlyDigits(to), text: body,
         });

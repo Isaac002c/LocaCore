@@ -13,6 +13,7 @@ const audit = require('./auditService');
 const { getFiscalProvider } = require('./providers/fiscal');
 const { render, buildVars } = require('./render');
 const { zonedParts } = require('./timezone');
+const { archiveAuthorizedFiscal } = require('./fiscalArchiveService');
 
 const MAX_RETRIES = 5;
 const RETRYABLE = new Set(['failed', 'error']);
@@ -46,6 +47,27 @@ async function contextFor({ tenant_id, payment_id = null, billing_id = null, ren
   return { payment, billing, rental, client, vehicle,
     payment_id: payment?.id || payment_id, billing_id: billing?.id || resolvedBillingId,
     rental_id: rental?.id || resolvedRentalId, client_id: client?.id || resolvedClientId };
+}
+
+async function archiveFiscal(tenant_id, fiscal, context, created_by = null) {
+  try {
+    const result = await archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by });
+    await audit.record({
+      tenant_id, event_type: 'fiscal_archive', status: result.archived ? 'completed' : 'pending',
+      client_id: context.client_id, rental_id: context.rental_id, billing_id: context.billing_id,
+      payment_id: context.payment_id, fiscal_document_id: fiscal.id,
+      details: { reason: result.reason || null, document_id: result.document?.id || null, created: result.created === true },
+    }).catch(() => {});
+    return result;
+  } catch (err) {
+    await audit.record({
+      tenant_id, event_type: 'fiscal_archive', status: 'needs_attention',
+      client_id: context.client_id, rental_id: context.rental_id, billing_id: context.billing_id,
+      payment_id: context.payment_id, fiscal_document_id: fiscal.id,
+      error_code: err.code || 'FISCAL_ARCHIVE_FAILED', error_message: err.message,
+    }).catch(() => {});
+    return { archived: false, error_code: err.code || 'FISCAL_ARCHIVE_FAILED', error_message: err.message };
+  }
 }
 
 async function executeDocument(tenant_id, doc, context, settings) {
@@ -98,10 +120,17 @@ async function executeDocument(tenant_id, doc, context, settings) {
     patch.authorization_date = new Date().toISOString();
     const cost = provider.estimateIssueCost(settings);
     if (cost > 0) await M.recordCost({ tenant_id, kind: 'fiscal_document', ref_id: doc.id, provider: provider.name, unit_cost: cost });
+  }
+  const updated = await M.updateFiscal(doc.id, tenant_id, patch);
+  let archived = null;
+  if (status === 'authorized') {
+    // Primeiro persiste a autorização; uma falha de storage jamais desfaz a
+    // nota nem o pagamento. O erro fica auditado e pode ser tentado novamente.
+    archived = await archiveFiscal(tenant_id, updated, context, doc.created_by || null);
     // Envia a NFS-e ao cliente (§39), inclusive quando a autorização é ASSÍNCRONA
     // (o pipeline pós-pagamento só envia no caso síncrono). Mesma idempotency_key
     // por pagamento → nunca duplica com o envio do pipeline.
-    const link = result.pdf_url || result.xml_url || null;
+    const link = archived?.document?.file_url || result.pdf_url || result.xml_url || null;
     if (settings.whatsapp_enabled && settings.document_auto_send !== false
       && context.rental?.client_phone && link && context.payment_id) {
       const tpl = await M.getActiveTemplate(tenant_id, 'document').catch(() => null);
@@ -118,13 +147,13 @@ async function executeDocument(tenant_id, doc, context, settings) {
       }).catch(() => {});
     }
   }
-  const updated = await M.updateFiscal(doc.id, tenant_id, patch);
   await audit.record({ tenant_id, event_type: 'fiscal_issue', status,
     client_id: context.client_id, rental_id: context.rental_id, billing_id: context.billing_id,
     payment_id: context.payment_id, fiscal_document_id: doc.id, amount: doc.amount,
     provider: provider.name, attempt, error_code: result.error_code, error_message: result.error_message,
-    details: { document_type: doc.document_type, provider_status: result.provider_status || result.status } });
-  return updated;
+    details: { document_type: doc.document_type, provider_status: result.provider_status || result.status,
+      archived_in_client: archived?.archived === true, archive_error: archived?.error_code || null } });
+  return { ...updated, archived_document: archived?.document || null };
 }
 
 async function createAndIssue(tenant_id, contextInput, idempotency_key, amount, { settings, created_by } = {}) {
@@ -133,7 +162,13 @@ async function createAndIssue(tenant_id, contextInput, idempotency_key, amount, 
   const context = await contextFor({ tenant_id, ...contextInput });
   const docType = settings.fiscal_document_type || 'fiscal';
   const existing = await M.getFiscalByIdemp(tenant_id, idempotency_key);
-  if (existing) return existing;
+  if (existing) {
+    if (existing.status === 'authorized') {
+      const archived = await archiveFiscal(tenant_id, existing, context, created_by || existing.created_by || null);
+      return { ...existing, archived_document: archived?.document || null };
+    }
+    return existing;
+  }
   const provider = await providerForTenant(tenant_id, settings);
   const inserted = await M.insertFiscal({
     tenant_id, payment_id: context.payment_id, billing_id: context.billing_id,
@@ -197,10 +232,14 @@ async function runBatch(tenant_id, { limit = 100, now = new Date() } = {}) {
 async function retry(tenant_id, id) {
   const doc = await M.getFiscalById(tenant_id, id);
   if (!doc) return null;
-  if (!['failed', 'error', 'rejected', 'pending_configuration', 'needs_attention'].includes(doc.status)) return doc;
   const settings = await M.getSettings(tenant_id) || {};
   const context = await contextFor({ tenant_id, payment_id: doc.payment_id, billing_id: doc.billing_id,
     rental_id: doc.rental_id, client_id: doc.client_id });
+  if (doc.status === 'authorized') {
+    const archived = await archiveFiscal(tenant_id, doc, context, doc.created_by || null);
+    return { ...doc, archived_document: archived?.document || null };
+  }
+  if (!['failed', 'error', 'rejected', 'pending_configuration', 'needs_attention'].includes(doc.status)) return doc;
   const reset = await M.updateFiscal(id, tenant_id, { retry_count: 0, status: 'pending', next_attempt_at: null });
   return executeDocument(tenant_id, reset, context, settings);
 }

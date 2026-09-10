@@ -20,11 +20,22 @@ const ACTIVE_STATUSES = ['em_andamento', 'atrasado'];
 
 function selectForMode(rentals, settings) {
   const mode = settings.automation_mode || 'global';
+  const selectedIds = new Set(Array.isArray(settings.pilot_rental_ids)
+    ? settings.pilot_rental_ids.map(String)
+    : []);
   if (mode === 'pilot') {
-    const ids = new Set(Array.isArray(settings.pilot_rental_ids) ? settings.pilot_rental_ids.map(String) : []);
-    return rentals.filter((r) => ids.has(String(r.id)));
+    return rentals.filter((r) => selectedIds.has(String(r.id))).slice(0, 1);
   }
-  if (mode === 'staged') return rentals.slice(0, Math.max(1, Number(settings.rollout_limit || 1)));
+  if (mode === 'staged') {
+    const limit = Math.max(1, Number(settings.rollout_limit || 1));
+    // Quando há seleção explícita, nunca substitui o lote pelos primeiros
+    // registros da base. O fallback preserva tenants configurados antes desta
+    // opção existir.
+    const scope = selectedIds.size
+      ? rentals.filter((r) => selectedIds.has(String(r.id)))
+      : rentals;
+    return scope.slice(0, limit);
+  }
   if (mode === 'global') return rentals;
   return [];
 }
@@ -36,6 +47,12 @@ function planRental(rental, settings, { period_start, period_end, due_date }) {
   if (!rental.client_phone && settings.whatsapp_enabled) blockers.push({ code: 'MISSING_PHONE', message: 'Cliente sem telefone.' });
   if (!rental.client_cpf && settings.fiscal_enabled) blockers.push({ code: 'MISSING_DOCUMENT', message: 'Cliente sem CPF/CNPJ.' });
   if (!amount.ok) blockers.push({ code: amount.code, message: amount.reason });
+  if (settings.payment_provider === 'manual_pix' && !String(settings.payment_config?.pix_key || '').trim()) {
+    blockers.push({ code: 'MISSING_PIX_KEY', message: 'Chave PIX da cobrança manual ausente.' });
+  }
+  if (['infinitepay', 'asaas'].includes(settings.payment_provider) && settings.payments_enabled === false) {
+    blockers.push({ code: 'EXTERNAL_PAYMENT_DISABLED', message: 'Criação de cobrança no provedor externo está desativada.' });
+  }
   return {
     rental_id: rental.id,
     rental_number: rental.rental_number,
@@ -48,7 +65,8 @@ function planRental(rental, settings, { period_start, period_end, due_date }) {
     period_end,
     due_date,
     actions: {
-      checkout: !!settings.billing_auto_create,
+      checkout: !!settings.billing_auto_create && settings.payment_provider !== 'manual_pix',
+      pix_manual: settings.payment_provider === 'manual_pix',
       checkout_provider: settings.payment_provider || 'null',
       whatsapp: !!settings.whatsapp_enabled,
       whatsapp_provider: settings.whatsapp_provider || 'null',

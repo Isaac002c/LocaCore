@@ -148,7 +148,7 @@ export default function Automacoes() {
   const loadReadiness = async () => {
     try {
       const mode = settings?.automation_mode === 'off' ? 'global' : settings?.automation_mode;
-      const ids = mode === 'pilot' ? (settings?.pilot_rental_ids || []) : [];
+      const ids = ['pilot', 'staged'].includes(mode) ? (settings?.pilot_rental_ids || []) : [];
       setReadiness(await getReadiness({ mode, rental_ids: ids }));
     } catch (err) { setError(err.message); }
   };
@@ -202,7 +202,7 @@ export default function Automacoes() {
   const executeDryRun = async () => {
     try {
       setBusy(true); setError(null); setNotice(null);
-      const ids = settings?.automation_mode === 'pilot' ? settings.pilot_rental_ids : null;
+      const ids = ['pilot', 'staged'].includes(settings?.automation_mode) ? settings.pilot_rental_ids : null;
       const result = await runDryRun(ids);
       setDryResult(result); setNotice(`Simulação concluída: ${result.summary.ready} prontas e ${result.summary.blocked} bloqueadas.`);
       await loadReadiness();
@@ -443,7 +443,7 @@ export default function Automacoes() {
               <td>{fmtDataHora(charge.next_attempt_at)}</td>
               <td><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {charge.status === 'failed' && <button className="btn-secondary" onClick={async () => { try { await retryCharge(charge.id); await loadCharges(); } catch (e) { setError(e.message); } }}>Reprocessar</button>}
-                {CONFIRMABLE.has(charge.status) && <button className="btn-secondary" disabled={busy} onClick={() => openConfirm(charge)}>Confirmar pgto</button>}
+                {CONFIRMABLE.has(charge.status) && <button className="btn-secondary" disabled={busy} onClick={() => openConfirm(charge)}>{charge.client_name ? `${charge.client_name} — recebido` : 'Marcar recebido'}</button>}
                 <button className="btn-secondary" disabled={busy} onClick={() => openTimeline(charge)}>Linha do tempo</button>
               </div></td>
             </tr>)}</tbody>
@@ -555,8 +555,14 @@ export default function Automacoes() {
               {settings.automation_mode === 'pilot' && <div className="form-group"><label>Locação piloto</label><select value={settings.pilot_rental_ids?.[0] || ''} onChange={(e) => setSettings((s) => ({ ...s, pilot_rental_ids: e.target.value ? [e.target.value] : [] }))}>
                 <option value="">Selecione uma locação</option>{activeRentals.map((r) => <option key={r.id} value={r.id}>{r.rental_number} — {r.client_name}</option>)}
               </select></div>}
-              {settings.automation_mode === 'staged' && <div className="form-group"><label>Quantidade do lote</label><select value={settings.rollout_limit || 1} onChange={setField('rollout_limit')}><option value={1}>1</option><option value={5}>5</option><option value={10}>10</option></select></div>}
+              {settings.automation_mode === 'staged' && <div className="form-group"><label>Quantidade máxima</label><select value={settings.rollout_limit || 1} onChange={setField('rollout_limit')}><option value={1}>1</option><option value={3}>3</option><option value={5}>5</option><option value={10}>10</option></select></div>}
             </div>
+            {settings.automation_mode === 'staged' && <div className="form-group"><label>Locações deste lote</label><select multiple size={Math.min(8, Math.max(3, activeRentals.length))} value={settings.pilot_rental_ids || []} onChange={(e) => {
+              const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+              setSettings((s) => ({ ...s, pilot_rental_ids: selected }));
+            }}>
+              {activeRentals.map((r) => <option key={r.id} value={r.id}>{r.rental_number} — {r.client_name}{r.vehicle_plate ? ` — ${r.vehicle_plate}` : ''}</option>)}
+            </select><p className="nx-cfg-hint">Selecione somente os clientes autorizados para o teste. O scheduler não incluirá outros registros.</p></div>}
             <p className="nx-cfg-hint">Salve as configurações, execute o Dry Run na aba Prontidão e só então ative o piloto. Produção nunca é habilitada automaticamente.</p>
           </div>
 
@@ -590,6 +596,11 @@ export default function Automacoes() {
               <div className="form-group"><label>Phone Number ID</label><input type="text" value={settings.whatsapp_config?.phone_number_id || ''} onChange={setNestedField('whatsapp_config', 'phone_number_id')} /></div>
               <div className="form-group"><label>WABA ID</label><input type="text" value={settings.whatsapp_config?.waba_id || ''} onChange={setNestedField('whatsapp_config', 'waba_id')} /></div>
             </div>
+            {settings.whatsapp_provider === 'evolution' && <div className="form-row">
+              <div className="form-group"><label>Modo da Evolution</label><select value={settings.whatsapp_config?.provider_mode || 'cloud'} onChange={setNestedField('whatsapp_config', 'provider_mode')}><option value="cloud">Cloud API / templates oficiais</option><option value="baileys">WhatsApp Web / texto livre</option></select></div>
+              {settings.whatsapp_config?.provider_mode === 'baileys' && <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={settings.whatsapp_config?.unofficial_acknowledged === true} onChange={setNestedField('whatsapp_config', 'unofficial_acknowledged')} /> Estou ciente de que este modo não é a API oficial da Meta.</label>}
+            </div>}
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={settings.whatsapp_config?.send_payment_confirmation !== false} onChange={setNestedField('whatsapp_config', 'send_payment_confirmation')} /> Enviar mensagem de pagamento confirmado</label>
             <div className="form-row">
               {(settings.whatsapp_provider === 'evolution' ? ['API_KEY', 'APP_SECRET', 'VERIFY_TOKEN'] : ['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN']).map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`whatsapp:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`whatsapp:${name}`]: e.target.value }))} placeholder="••••••••" /></div>)}
             </div>
@@ -600,9 +611,9 @@ export default function Automacoes() {
           <div className="nx-form-section">
             <div className="nx-form-section-title">Pagamento (cobrança/PIX)</div>
             <div className="form-row">
-              <div className="form-group"><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Nenhum</option><option value="infinitepay">InfinitePay</option><option value="asaas">Asaas (legado)</option></select></div>
-              <div className="form-group"><label>InfiniteTag</label><input type="text" value={settings.payment_config?.handle || ''} onChange={setNestedField('payment_config', 'handle')} placeholder="sua-infinite-tag" /></div>
-              <div className="form-group"><label>URL de retorno</label><input type="url" value={settings.payment_config?.redirect_url || ''} onChange={setNestedField('payment_config', 'redirect_url')} placeholder="https://..." /></div>
+              <div className="form-group"><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Nenhum</option><option value="manual_pix">PIX direto — confirmar pelo botão Recebido</option><option value="infinitepay">InfinitePay</option><option value="asaas">Asaas (legado)</option></select></div>
+              {settings.payment_provider === 'manual_pix' && <><div className="form-group"><label>Chave PIX</label><input type="text" value={settings.payment_config?.pix_key || ''} onChange={setNestedField('payment_config', 'pix_key')} placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória" /></div><div className="form-group"><label>Favorecido</label><input type="text" value={settings.payment_config?.pix_receiver_name || ''} onChange={setNestedField('payment_config', 'pix_receiver_name')} placeholder="Nome exibido na mensagem" /></div></>}
+              {settings.payment_provider === 'infinitepay' && <><div className="form-group"><label>InfiniteTag</label><input type="text" value={settings.payment_config?.handle || ''} onChange={setNestedField('payment_config', 'handle')} placeholder="sua-infinite-tag" /></div><div className="form-group"><label>URL de retorno</label><input type="url" value={settings.payment_config?.redirect_url || ''} onChange={setNestedField('payment_config', 'redirect_url')} placeholder="https://..." /></div></>}
             </div>
             {settings.payment_provider === 'asaas' && <div className="form-row">{['KEY', 'WEBHOOK_TOKEN'].map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`payment:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`payment:${name}`]: e.target.value }))} /></div>)}</div>}
             <div style={{ display: 'flex', gap: 8 }}>
@@ -680,7 +691,8 @@ export default function Automacoes() {
             <p className="nx-cfg-hint">Regra do contador: até a data de obrigatoriedade, o pagamento confirmado gera <strong>recibo</strong>; a partir dela, <strong>NFS-e</strong>. A emissão é sempre depois do pagamento (§7/§8/§9).</p>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.receipts_enabled} onChange={setField('receipts_enabled')} /> Gerar recibo automático após o pagamento <span style={{ color: 'var(--text-muted)' }}>(funciona já, sem InfinitePay/certificado)</span></label>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.nfse_enabled} onChange={setField('nfse_enabled')} /> Emitir NFS-e automática a partir da data <span style={{ color: 'var(--text-muted)' }}>(exige certificado A1 + provedor fiscal)</span></label>
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.payments_enabled} onChange={setField('payments_enabled')} /> Criar cobrança no provedor externo (InfinitePay)</label>
+            {settings.payment_provider !== 'manual_pix' && <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.payments_enabled} onChange={setField('payments_enabled')} /> Criar cobrança no provedor externo (InfinitePay)</label>}
+            {settings.payment_provider === 'manual_pix' && <p className="nx-cfg-hint">O sistema enviará somente a chave PIX e aguardará um usuário autorizado clicar em “Recebido”. Nenhum webhook poderá dar baixa nesse modo.</p>}
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={settings.document_auto_send !== false} onChange={setField('document_auto_send')} /> Enviar o recibo/NFS-e ao cliente pelo WhatsApp</label>
             <div className="form-row">
               <div className="form-group"><label>NFS-e obrigatória a partir de</label><input type="date" value={String(settings.nfse_mandatory_from || '').slice(0, 10)} onChange={setField('nfse_mandatory_from')} /></div>
@@ -747,13 +759,14 @@ export default function Automacoes() {
         <div>
           {fiscal.length === 0 ? <EmptyState small title="Sem notas" description="Documentos fiscais aparecem aqui após pagamentos (quando a emissão estiver configurada)." /> : (
             <div className="clients-table-wrap"><table className="data-table">
-              <thead><tr><th>Tipo</th><th>Número</th><th>Valor</th><th>Status</th><th>Erro</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Tipo</th><th>Número</th><th>Valor</th><th>Status</th><th>Pasta do cliente</th><th>Erro</th><th>Ações</th></tr></thead>
               <tbody>{fiscal.map((f) => (
                 <tr key={f.id}>
                   <td>{f.document_type || '—'}</td><td>{f.number || '—'}</td><td>{fmtMoney(f.amount)}</td>
                   <td><span className="client-status-badge">{f.status}</span></td>
+                  <td>{f.archived_document_url ? <a href={f.archived_document_url} target="_blank" rel="noreferrer">Abrir documento</a> : 'Pendente'}</td>
                   <td style={{ fontSize: 12, color: 'var(--warning)', maxWidth: 260 }}>{f.error_message || '—'}</td>
-                  <td>{['failed', 'rejected', 'pending_configuration'].includes(f.status) && <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={async () => { try { await retryFiscal(f.id); await loadFiscal(); } catch (e) { setError(e.message); } }}>Reprocessar</button>}</td>
+                  <td>{(['failed', 'rejected', 'pending_configuration'].includes(f.status) || (f.status === 'authorized' && !f.archived_document_id)) && <button className="btn-secondary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={async () => { try { await retryFiscal(f.id); await loadFiscal(); } catch (e) { setError(e.message); } }}>{f.status === 'authorized' ? 'Arquivar novamente' : 'Reprocessar'}</button>}</td>
                 </tr>
               ))}</tbody>
             </table></div>

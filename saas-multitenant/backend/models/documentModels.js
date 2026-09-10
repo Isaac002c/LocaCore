@@ -9,7 +9,7 @@ const pool = require('../config/db');
 // existir (pré-migração), cai no INSERT legado para não quebrar o fluxo atual.
 const createDocument = async ({
   tenant_id, contract_id, client_id, company_id, vehicle_id, rental_id, vehicle_asset_id,
-  file_url, file_name, file_type, file_size, category, description, uploaded_by
+  fiscal_document_id, file_url, file_name, file_type, file_size, category, description, uploaded_by
 }) => {
   if (!tenant_id) {
     throw new Error('tenant_id é obrigatório para criar um documento');
@@ -18,17 +18,38 @@ const createDocument = async ({
   try {
     const result = await pool.query(
       `INSERT INTO documents(
-        tenant_id, contract_id, client_id, company_id, vehicle_id, rental_id, vehicle_asset_id,
+        tenant_id, contract_id, client_id, company_id, vehicle_id, rental_id, vehicle_asset_id, fiscal_document_id,
         file_url, file_name, file_type, file_size, category, description, uploaded_by
-      ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         tenant_id, contract_id || null, client_id || null, company_id || null, vehicle_id || null,
-        rental_id || null, vehicle_asset_id || null,
+        rental_id || null, vehicle_asset_id || null, fiscal_document_id || null,
         file_url, file_name, file_type, file_size, category, description, uploaded_by
       ]
     );
     return result.rows[0];
   } catch (err) {
+    // Ciclo 1 aplicado, mas Ciclo 11 ainda não: preserva os vínculos de
+    // locação/veículo enquanto o deploy executa a migration nova.
+    if (/fiscal_document_id/i.test(err.message)) {
+      try {
+        const result = await pool.query(
+          `INSERT INTO documents(
+            tenant_id, contract_id, client_id, company_id, vehicle_id, rental_id, vehicle_asset_id,
+            file_url, file_name, file_type, file_size, category, description, uploaded_by
+          ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+          [
+            tenant_id, contract_id || null, client_id || null, company_id || null, vehicle_id || null,
+            rental_id || null, vehicle_asset_id || null,
+            file_url, file_name, file_type, file_size, category, description, uploaded_by
+          ]
+        );
+        return result.rows[0];
+      } catch (compatErr) {
+        if (!/rental_id|vehicle_asset_id/i.test(compatErr.message)) throw compatErr;
+        err = compatErr;
+      }
+    }
     // Coluna rental_id/vehicle_asset_id ausente (migração do Ciclo 1 não aplicada):
     // preserva o comportamento legado.
     if (/rental_id|vehicle_asset_id/i.test(err.message)) {
@@ -44,6 +65,21 @@ const createDocument = async ({
       );
       return result.rows[0];
     }
+    throw err;
+  }
+};
+
+// Vínculo único nota → documento do cliente. Usado antes de arquivar para que
+// retentativas do provider fiscal não criem cópias duplicadas.
+const getDocumentByFiscal = async (fiscal_document_id, tenant_id) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM documents WHERE fiscal_document_id = $1 AND tenant_id = $2 LIMIT 1',
+      [fiscal_document_id, tenant_id]
+    );
+    return result.rows[0] || null;
+  } catch (err) {
+    if (/fiscal_document_id|column .* does not exist/i.test(err.message)) return null;
     throw err;
   }
 };
@@ -223,6 +259,7 @@ const deleteDocument = async (id, tenant_id) => {
 
 module.exports = {
   createDocument,
+  getDocumentByFiscal,
   getAllDocuments,
   getDocumentById,
   getDocumentsByContract,

@@ -57,11 +57,17 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
   let rentalIds = options.rental_ids || null;
   if (mode === 'pilot') rentalIds = options.rental_ids || settings.pilot_rental_ids || [];
   if (mode === 'staged' && !rentalIds) {
-    const selected = await pool.query(
-      `SELECT id FROM rentals WHERE tenant_id=$1 AND status IN ('em_andamento','atrasado') ORDER BY created_at ASC LIMIT $2`,
-      [tenant_id, Math.max(1, Number(settings.rollout_limit || 1))],
-    );
-    rentalIds = selected.rows.map((r) => r.id);
+    const configured = Array.isArray(settings.pilot_rental_ids)
+      ? settings.pilot_rental_ids.slice(0, Math.max(1, Number(settings.rollout_limit || 1)))
+      : [];
+    if (configured.length) rentalIds = configured;
+    else {
+      const selected = await pool.query(
+        `SELECT id FROM rentals WHERE tenant_id=$1 AND status IN ('em_andamento','atrasado') ORDER BY created_at ASC LIMIT $2`,
+        [tenant_id, Math.max(1, Number(settings.rollout_limit || 1))],
+      );
+      rentalIds = selected.rows.map((r) => r.id);
+    }
   }
 
   const paymentProvider = String(settings.payment_provider || 'null').toLowerCase();
@@ -85,6 +91,10 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
   const fiscalConfig = settings.fiscal_config || {};
   const infiniteHandle = paymentConfig.handle || paymentConfig.infinitepay_handle
     || hasEnv('PAYMENT_INFINITEPAY', 'HANDLE', slug);
+  const manualPix = paymentProvider === 'manual_pix';
+  const manualPixKey = String(paymentConfig.pix_key || '').trim();
+  const externalPaymentsEnabled = settings.payments_enabled !== false;
+  const waMode = waProvider === 'evolution' ? String(waConfig.provider_mode || 'cloud').toLowerCase() : 'cloud';
   const waKey = waProvider === 'evolution'
     ? hasStored(waSecrets, 'API_KEY') || hasEnv('EVOLUTION', 'API_KEY', slug)
     : hasStored(waSecrets, 'ACCESS_TOKEN') || hasEnv('META_WHATSAPP', 'ACCESS_TOKEN', slug);
@@ -94,9 +104,10 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
     : hasStored(waSecrets, 'APP_SECRET') || hasEnv('META', 'APP_SECRET', slug);
   const waVerifyToken = hasStored(waSecrets, 'VERIFY_TOKEN')
     || hasEnv(waProvider === 'evolution' ? 'EVOLUTION' : 'META_WHATSAPP', 'VERIFY_TOKEN', slug);
-  const templatesReady = ['billing', 'reminder', 'payment_confirmed'].every((kind) =>
-    templateMap[kind]?.provider_template_id,
-  );
+  const templateKinds = ['billing', 'reminder', 'payment_confirmed'];
+  const templatesReady = waMode === 'baileys'
+    ? templateKinds.every((kind) => !!templateMap[kind]?.body)
+    : templateKinds.every((kind) => !!templateMap[kind]?.provider_template_id);
   const fiscalCredential = fiscalProvider === 'nfse_nacional'
     ? !!certificate
     : hasStored(fiscalSecrets, 'TOKEN') || hasEnv(`FISCAL_${fiscalProvider.toUpperCase()}`, 'TOKEN', slug);
@@ -108,6 +119,9 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
   const checks = [
     item('pilot_selection', 'Modo piloto com exatamente uma locacao', mode !== 'pilot' || rentalIds.length === 1,
       mode === 'pilot' ? rentalIds.length : null, { critical: mode === 'pilot' }),
+    item('staged_selection', 'Lote controlado com locacoes selecionadas', mode !== 'staged' ||
+      (rentalIds.length > 0 && rentalIds.length <= Math.max(1, Number(settings.rollout_limit || 1))),
+    mode === 'staged' ? rentalIds.length : null, { critical: mode === 'staged' }),
     item('rental_value', 'Locacoes com valor seguro', counts.rentals_without_value === 0,
       counts.rentals_without_value, { critical: true, detail: 'Valor semanal, diario ou total explicitamente definido.' }),
     item('client_phone', 'Clientes com telefone', !settings.whatsapp_enabled || counts.clients_without_phone === 0,
@@ -116,10 +130,17 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
       counts.clients_without_document, { critical: !!settings.fiscal_enabled }),
     item('vehicle_ncm', 'Veiculos com NCM', !settings.fiscal_enabled || counts.vehicles_without_ncm === 0,
       counts.vehicles_without_ncm, { critical: !!settings.fiscal_enabled }),
-    item('infinitepay_provider', 'InfinitePay selecionada', paymentProvider === 'infinitepay', null, { critical: true }),
-    item('infinitepay_handle', 'InfiniteTag configurada', !!infiniteHandle, null, { critical: true }),
-    item('payment_webhook', 'Webhook publico de pagamento', webhookAvailable, null,
-      { critical: true, detail: publicBase ? `${publicBase}/webhooks/infinitepay` : 'BASE_URL ausente' }),
+    item('payment_provider', 'InfinitePay ou PIX com confirmacao manual selecionado',
+      ['infinitepay', 'manual_pix'].includes(paymentProvider), null, { critical: true }),
+    item('infinitepay_handle', 'InfiniteTag configurada', manualPix || !!infiniteHandle, null,
+      { critical: !manualPix }),
+    item('manual_pix_key', 'Chave PIX da confirmacao manual configurada', !manualPix || !!manualPixKey, null,
+      { critical: manualPix }),
+    item('external_payment_enabled', 'Criacao de cobranca externa habilitada',
+      manualPix || externalPaymentsEnabled, null, { critical: !manualPix }),
+    item('payment_webhook', 'Webhook publico de pagamento', manualPix || webhookAvailable, null,
+      { critical: !manualPix, detail: manualPix ? 'Baixa feita somente pelo botao Recebido.' :
+        (publicBase ? `${publicBase}/webhooks/infinitepay` : 'BASE_URL ausente') }),
     item('whatsapp_provider', 'WhatsApp Meta ou Evolution configurado', ['meta', 'evolution'].includes(waProvider), null,
       { critical: !!settings.whatsapp_enabled }),
     item('whatsapp_credentials', 'Credencial do WhatsApp armazenada', !settings.whatsapp_enabled ||
@@ -128,6 +149,9 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
     item('whatsapp_endpoint', 'URL e instancia/Phone Number ID', !settings.whatsapp_enabled ||
       (waProvider === 'evolution' ? !!waConfig.api_url && !!waConfig.instance : !!waConfig.phone_number_id), null,
       { critical: !!settings.whatsapp_enabled }),
+    item('whatsapp_unofficial_ack', 'Uso do modo WhatsApp Web explicitamente reconhecido',
+      !settings.whatsapp_enabled || waMode !== 'baileys' || waConfig.unofficial_acknowledged === true, null,
+      { critical: !!settings.whatsapp_enabled && waMode === 'baileys' }),
     item('whatsapp_webhook', 'Webhook publico do WhatsApp', !settings.whatsapp_enabled || webhookAvailable, null,
       { critical: !!settings.whatsapp_enabled,
         detail: publicBase ? `${publicBase}/webhooks/whatsapp/${waProvider}${waProvider === 'meta' ? `/${tenant_id}` : ''}` : 'BASE_URL ausente' }),
@@ -157,9 +181,10 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
     } : { configured: false, expired: false, expiring_soon: false },
     fiscal_validacao: fiscalValidation,
     integrations: [
-      { key: 'pagamento', nome: 'InfinitePay', provider: paymentProvider,
-        status: paymentProvider === 'infinitepay' && infiniteHandle && webhookAvailable ? 'pronto' : 'nao_configurado',
-        itens: checks.filter((x) => x.key.startsWith('infinitepay') || x.key === 'payment_webhook') },
+      { key: 'pagamento', nome: manualPix ? 'PIX com confirmacao manual' : 'InfinitePay', provider: paymentProvider,
+        status: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'external_payment_enabled', 'payment_webhook'].includes(x.key)).every((x) => x.ok)
+          ? 'pronto' : 'nao_configurado',
+        itens: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'external_payment_enabled', 'payment_webhook'].includes(x.key)) },
       { key: 'whatsapp', nome: waProvider === 'evolution' ? 'Evolution API / WhatsApp' : 'WhatsApp Cloud API', provider: waProvider,
         status: checks.filter((x) => x.key.startsWith('whatsapp')).every((x) => x.ok) ? 'pronto' : 'nao_configurado',
         itens: checks.filter((x) => x.key.startsWith('whatsapp')) },

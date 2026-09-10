@@ -11,9 +11,10 @@ const { newDb, DataType } = require('pg-mem');
 
 const { resolveWeeklyAmount } = require('../services/automation/billingAmount');
 const { zonedParts, weekBoundsInZone, isScheduledNow } = require('../services/automation/timezone');
-const { infinitePayProvider } = require('../services/automation/providers/payment');
+const { infinitePayProvider, manualPixProvider } = require('../services/automation/providers/payment');
 const { buildNationalDpsPayload, nationalNfseProvider, validateConfig } = require('../services/automation/providers/fiscal');
 const { selectForMode } = require('../services/automation/billingCycleService');
+const { evolutionProvider } = require('../services/automation/providers/whatsapp');
 const secretStore = require('../services/automation/secretStore');
 const automationModels = require('../models/automationModels');
 
@@ -44,8 +45,48 @@ test('rollout: piloto, escalonado, global e off selecionam somente o escopo auto
   const rentals = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
   assert.deepEqual(selectForMode(rentals, { automation_mode: 'pilot', pilot_rental_ids: ['b'] }), [{ id: 'b' }]);
   assert.deepEqual(selectForMode(rentals, { automation_mode: 'staged', rollout_limit: 2 }), rentals.slice(0, 2));
+  assert.deepEqual(selectForMode(rentals, { automation_mode: 'staged', rollout_limit: 3, pilot_rental_ids: ['c', 'a'] }), [{ id: 'a' }, { id: 'c' }]);
   assert.deepEqual(selectForMode(rentals, { automation_mode: 'global' }), rentals);
   assert.deepEqual(selectForMode(rentals, { automation_mode: 'off' }), []);
+});
+
+test('PIX direto cria cobrança auditável e exige confirmação manual', async () => {
+  const provider = manualPixProvider({ settings: { payment_config: {
+    pix_key: '45427279000122', pix_receiver_name: 'Rental Log Service',
+  } } });
+  const charge = await provider.createCharge({ amount: '650.00', due_date: '2026-09-04', public_id: 'COB-T-2026-000001' });
+  assert.equal(charge.external_id, 'manual:COB-T-2026-000001');
+  assert.equal(charge.pix_code, '45427279000122');
+  assert.equal(charge.status, 'waiting_payment');
+  assert.equal(charge.provider_metadata.confirmation_mode, 'manual');
+  await assert.rejects(() => provider.verifyPayment(), (err) => err.code === 'MANUAL_CONFIRMATION_REQUIRED');
+});
+
+test('Evolution em modo WhatsApp Web envia o texto renderizado somente após aceite explícito', async () => {
+  const calls = [];
+  const provider = evolutionProvider({
+    settings: { whatsapp_config: {
+      api_url: 'https://evolution.example', instance: 'rental-log',
+      provider_mode: 'baileys', unofficial_acknowledged: true,
+    } },
+    secretFn: (_scope, name) => name === 'API_KEY' ? 'test-key' : null,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body) });
+      return { ok: true, status: 200, json: async () => ({ key: { id: 'msg-1' } }) };
+    },
+  });
+  await provider.sendTemplateMessage({
+    to: '21 98326-2057', provider_template_id: 'ignorar-no-modo-texto',
+    body: 'Cobrança R$ 650 — PIX 45427279000122',
+  });
+  assert.equal(calls[0].url, 'https://evolution.example/message/sendText/rental-log');
+  assert.deepEqual(calls[0].body, { number: '21983262057', text: 'Cobrança R$ 650 — PIX 45427279000122' });
+
+  const blocked = evolutionProvider({
+    settings: { whatsapp_config: { api_url: 'https://evolution.example', instance: 'rental-log', provider_mode: 'baileys' } },
+    secretFn: () => 'test-key', fetchImpl: async () => { throw new Error('não deveria chamar'); },
+  });
+  await assert.rejects(() => blocked.sendTemplateMessage({ to: '5521983262057', body: 'teste' }), /reconhecimento explícito/);
 });
 
 test('identificador da cobrança é único também entre tenants', () => {

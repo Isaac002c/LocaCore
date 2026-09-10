@@ -119,6 +119,19 @@ test('readiness do piloto limita a auditoria à única locação selecionada', a
   assert.equal(result.activation.allowed, true);
 });
 
+test('readiness aceita PIX direto sem InfiniteTag/webhook financeiro e mantém baixa manual', async () => {
+  const result = await integrationsReadiness({
+    ...SETTINGS,
+    payment_provider: 'manual_pix', payments_enabled: false,
+    payment_config: { pix_key: '45427279000122', pix_receiver_name: 'Rental Log Service' },
+    pilot_rental_ids: ['r1'],
+  }, 'leandro', { tenant_id: 'tenant-leandro', mode: 'pilot', rental_ids: ['r1'] });
+  assert.equal(result.activation.allowed, true);
+  assert.equal(result.checks.find((item) => item.key === 'manual_pix_key').ok, true);
+  assert.equal(result.checks.find((item) => item.key === 'payment_webhook').critical, false);
+  assert.equal(result.integrations.find((item) => item.key === 'pagamento').nome, 'PIX com confirmacao manual');
+});
+
 test('readiness do piloto bloqueia seleção de zero ou mais de uma locação', async () => {
   const none = await integrationsReadiness(SETTINGS, 'leandro', {
     tenant_id: 'tenant-leandro', mode: 'pilot', rental_ids: [],

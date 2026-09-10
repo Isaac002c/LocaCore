@@ -24,7 +24,7 @@ const certificateUpload = multer({
 });
 
 const PROVIDERS = {
-  payment: new Set(['null', 'asaas', 'infinitepay']),
+  payment: new Set(['null', 'manual_pix', 'asaas', 'infinitepay']),
   whatsapp: new Set(['null', 'meta', 'evolution']),
   fiscal: new Set(['null', 'focusnfe', 'nfse_nacional']),
 };
@@ -113,6 +113,7 @@ router.get('/integrations', checkPermission('automations:read'), async (req, res
 });
 
 const SECRET_FIELDS = {
+  'payment:manual_pix': new Set([]),
   'payment:asaas': new Set(['KEY', 'WEBHOOK_TOKEN']),
   'payment:infinitepay': new Set([]),
   'whatsapp:meta': new Set(['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN']),

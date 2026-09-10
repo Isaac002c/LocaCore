@@ -262,8 +262,19 @@ Checklist final:
 - [ ] Upload de documento (URL do arquivo usa o domínio da API, não `localhost`)
 - [ ] Banner de ambiente **não** aparece (é `production`)
 - [ ] Rodapé mostra **LocaCore · um produto TELUN**
-- [ ] `node scripts/migrate.js status` mostra `create_locacore_cycle9.sql` aplicada
+- [ ] `node scripts/migrate.js status` mostra `create_locacore_cycle11.sql` aplicada
 - [ ] Automações continuam em `off` até Dry Run e piloto aprovados
+
+### Piloto Rental Log: PIX direto + Evolution
+
+Antes de enviar qualquer mensagem real:
+
+- selecione o modo `Lote controlado`, limite 3, e escolha explicitamente as três locações autorizadas;
+- configure `PIX direto`, chave e favorecido; nesse modo nenhum webhook pode dar baixa;
+- configure a instância Evolution e mantenha a confirmação de pagamento e o envio do documento desligados quando o teste for somente de cobrança;
+- mantenha emissão fiscal em `após confirmação do pagamento` e valide os dados fiscais com o contador;
+- execute o Dry Run, confira cliente, telefone, placa, valor e período de cada uma das três cobranças;
+- somente depois salve o lote. O pagamento é baixado pelo botão `<cliente> — recebido` e a nota autorizada é arquivada na pasta de documentos do cliente.
 
 ---
 
@@ -313,6 +324,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod exec proxy
 | Item | Bloqueio |
 | --- | --- |
 | InfinitePay | InfiniteTag, conta validada e webhook público testado |
+| Pix direto | Chave e favorecido; não depende de InfinitePay, mas exige confirmação manual por usuário autorizado |
 | WhatsApp (Meta/Evolution) | Credenciais, instância/Phone Number ID e templates aprovados |
 | Emissão fiscal | Provedor + credenciais + **dados do contador** (segue `pending_configuration`) |
 | Renomear slug `chronostek` → `telun` | Ver `backend/migrations/MIGRATION_CHRONOSTEK_TO_TELUN.md` — exige banco real, backup e autorização |

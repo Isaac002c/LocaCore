@@ -30,6 +30,7 @@ function reset() {
   state.confirmCalls = [];
   state.chargePatches = [];
   state.remindersCancelled = [];
+  state.settings = { receipts_enabled: true, whatsapp_enabled: true };
   state.existingReceipt = null;
   state.existingConfirmed = [];
   state.charge = {
@@ -43,7 +44,7 @@ let pipeline; let paymentConfirm; let publicLinks;
 
 before(() => {
   stub('../models/automationModels', {
-    getSettings: async () => ({ receipts_enabled: true, whatsapp_enabled: true }),
+    getSettings: async () => state.settings,
     getActiveTemplate: async () => null,
     insertOutbox: async (row) => { state.outbox.push(row); return { created: true, row: { id: 'msg1', ...row } }; },
     getChargeForUpdate: async () => (state.charge ? { ...state.charge } : null),
@@ -185,6 +186,21 @@ test('confirmação manual: confirma o pagamento, dá baixa na cobrança e roda 
   assert.deepEqual(state.remindersCancelled, ['chg1'], 'cancela lembretes futuros');
   assert.equal(state.receipts.length, 1, 'gerou recibo pelo pipeline');
   assert.equal(out.kind, 'receipt');
+});
+
+test('piloto pode enviar somente cobrança e não manda confirmação/documento após recebido', async () => {
+  state.settings = {
+    receipts_enabled: true,
+    whatsapp_enabled: true,
+    document_auto_send: false,
+    whatsapp_config: { send_payment_confirmation: false },
+  };
+  const out = await paymentConfirm.confirmManual('t1', 'chg1', {
+    amount: '700.00', payment_date: '2026-08-20', payment_method: 'pix', created_by: 'user1',
+  });
+  assert.equal(out.kind, 'receipt');
+  assert.equal(state.receipts.length, 1, 'o documento continua sendo gerado e arquivado');
+  assert.equal(state.outbox.length, 0, 'nenhuma mensagem pós-pagamento é enviada');
 });
 
 test('confirmação manual falha com 409 quando a cobrança não tem faturamento', async () => {

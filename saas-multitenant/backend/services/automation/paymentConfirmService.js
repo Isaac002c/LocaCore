@@ -129,7 +129,9 @@ async function handleWebhook(providerName, body, {
     const template = await M.getActiveTemplate(tenant_id, 'payment_confirmed');
     const variables = buildVars({ rental: rental || { rental_number: '', client_name: charge.client_id }, charge, payment });
     const message = template ? render(template.body, variables).text : `Pagamento confirmado. Valor ${variables.valor}.`;
-    if (settings.whatsapp_enabled && rental?.client_phone) {
+    if (settings.whatsapp_enabled
+      && settings.whatsapp_config?.send_payment_confirmation !== false
+      && rental?.client_phone) {
       await M.insertOutbox({
         tenant_id, client_id: charge.client_id, rental_id: charge.rental_id, charge_id: charge.id,
         template_kind: 'payment_confirmed', to_number: rental.client_phone, body: message, payload: variables,
@@ -196,7 +198,9 @@ async function confirmManual(tenant_id, charge_id, {
   await M.cancelRemindersForCharge(tenant_id, charge.id);
 
   const rental = charge.rental_id ? await rentalModel.getRentalById(charge.rental_id, tenant_id).catch(() => null) : null;
-  if (settings.whatsapp_enabled && rental?.client_phone) {
+  if (settings.whatsapp_enabled
+    && settings.whatsapp_config?.send_payment_confirmation !== false
+    && rental?.client_phone) {
     const template = await M.getActiveTemplate(tenant_id, 'payment_confirmed').catch(() => null);
     const variables = buildVars({ rental, charge, payment });
     const message = template ? render(template.body, variables).text : `Pagamento confirmado. Valor ${variables.valor}.`;

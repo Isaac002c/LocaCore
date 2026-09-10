@@ -55,6 +55,59 @@ const sandboxProvider = {
   async testConnection() { assertSandboxAllowed('Teste de cobranca'); return { ok: true, mode: 'sandbox' }; },
 };
 
+// PIX direto, sem checkout externo. O LocaCore gera a cobrança interna e envia
+// a chave configurada; a baixa só acontece pela confirmação manual de um
+// usuário autorizado. Não existe webhook nem tentativa de "adivinhar" o
+// pagamento, portanto este provider continua fail-closed.
+function manualPixProvider({ settings = {} } = {}) {
+  const cfg = settings.payment_config || {};
+  const pixKey = () => String(cfg.pix_key || '').trim();
+  const receiverName = () => String(cfg.pix_receiver_name || '').trim();
+  const assertConfigured = () => {
+    if (!pixKey() || pixKey().length > 140) {
+      throw providerError('Chave PIX para confirmação manual não configurada.', 'MISSING_PIX_KEY');
+    }
+  };
+
+  return {
+    name: 'manual_pix',
+    isSandbox: false,
+    supportsExternalCustomer: false,
+    requiresManualConfirmation: true,
+    async createCharge({ amount, due_date, public_id }) {
+      assertConfigured();
+      if (!public_id) throw providerError('Identificador interno da cobrança ausente.', 'MISSING_ORDER_NSU');
+      return {
+        external_id: `manual:${public_id}`,
+        status: 'waiting_payment',
+        pix_code: pixKey(),
+        payment_link: null,
+        expires_at: due_date ? new Date(`${toISODate(due_date)}T23:59:59Z`).toISOString() : null,
+        amount: money(amount),
+        provider_metadata: {
+          confirmation_mode: 'manual',
+          receiver_name: receiverName() || null,
+        },
+      };
+    },
+    verifyWebhookSignature() { return { valid: false, requiresProviderVerification: false }; },
+    parseWebhook() { return { external_event_id: null, status: 'waiting_payment' }; },
+    async verifyPayment() {
+      throw providerError('PIX direto exige confirmação manual por usuário autorizado.', 'MANUAL_CONFIRMATION_REQUIRED');
+    },
+    async testConnection() {
+      assertConfigured();
+      const key = pixKey();
+      return {
+        ok: true,
+        mode: 'manual_confirmation',
+        pix_key_masked: key.length <= 6 ? '***' : `${key.slice(0, 3)}***${key.slice(-3)}`,
+        receiver_name: receiverName() || null,
+      };
+    },
+  };
+}
+
 function asaasProvider({ fetchImpl, secretFn = getSecret } = {}) {
   const doFetch = fetchImpl || global.fetch;
   const base = secretFn('PAYMENT_ASAAS', 'BASE') || 'https://api.asaas.com/v3';
@@ -268,6 +321,7 @@ function infinitePayProvider({ fetchImpl, secretFn = getSecret, settings = {} } 
 function getPaymentProvider(settings = {}, deps = {}) {
   const p = String(settings.payment_provider || 'null').toLowerCase();
   if (p === 'null' || !p) return sandboxProvider;
+  if (p === 'manual_pix') return manualPixProvider({ settings });
   if (p === 'asaas') return asaasProvider(deps);
   if (p === 'infinitepay') return infinitePayProvider({ ...deps, settings });
   return {
@@ -281,6 +335,6 @@ function getPaymentProvider(settings = {}, deps = {}) {
 }
 
 module.exports = {
-  getPaymentProvider, sandboxProvider, asaasProvider, infinitePayProvider,
+  getPaymentProvider, sandboxProvider, manualPixProvider, asaasProvider, infinitePayProvider,
   providerError, toCents,
 };
