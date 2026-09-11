@@ -108,7 +108,7 @@ async function main() {
   const settingsPatch = {};
   for (const [k, v] of Object.entries(RENTAL_LOG.settings)) {
     const cur = settings[k];
-    const empty = cur === undefined || cur === null || cur === '' || cur === false
+    const empty = cur === undefined || cur === null || cur === '' || (cur === false && v === true)
       || (k.endsWith('_provider') && String(cur).toLowerCase() === 'null');
     if (empty || (args.force && String(cur) !== String(v))) { settingsPatch[k] = v; settingsChanges.push(`${k}: ${cur} -> ${v}`); }
   }
