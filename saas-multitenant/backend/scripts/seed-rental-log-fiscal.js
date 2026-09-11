@@ -28,6 +28,7 @@ const RENTAL_LOG = {
     razao_social: 'RENTAL LOG SERVICE LTDA',
     cnpj: '45427279000122',
     inscricao_municipal: '13761116',
+    inscricao_estadual: '12841728',
     regime_tributario: 'simples',            // Simples Nacional (optante ME/EPP)
     municipio: '3304557',                    // código IBGE - Rio de Janeiro/RJ
     nome_municipio: 'Rio de Janeiro',
@@ -107,7 +108,8 @@ async function main() {
   const settingsPatch = {};
   for (const [k, v] of Object.entries(RENTAL_LOG.settings)) {
     const cur = settings[k];
-    const empty = cur === undefined || cur === null || cur === '' || cur === false;
+    const empty = cur === undefined || cur === null || cur === '' || cur === false
+      || (k.endsWith('_provider') && String(cur).toLowerCase() === 'null');
     if (empty || (args.force && String(cur) !== String(v))) { settingsPatch[k] = v; settingsChanges.push(`${k}: ${cur} -> ${v}`); }
   }
 
