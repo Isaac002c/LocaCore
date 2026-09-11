@@ -14,7 +14,7 @@ const { zonedParts, weekBoundsInZone, isScheduledNow } = require('../services/au
 const { infinitePayProvider, manualPixProvider } = require('../services/automation/providers/payment');
 const { buildNationalDpsPayload, nationalNfseProvider, validateConfig } = require('../services/automation/providers/fiscal');
 const { selectForMode } = require('../services/automation/billingCycleService');
-const { evolutionProvider } = require('../services/automation/providers/whatsapp');
+const { evolutionProvider, normalizeWhatsAppNumber } = require('../services/automation/providers/whatsapp');
 const secretStore = require('../services/automation/secretStore');
 const automationModels = require('../models/automationModels');
 
@@ -80,13 +80,19 @@ test('Evolution em modo WhatsApp Web envia o texto renderizado somente após ace
     body: 'Cobrança R$ 650 — PIX 45427279000122',
   });
   assert.equal(calls[0].url, 'https://evolution.example/message/sendText/rental-log');
-  assert.deepEqual(calls[0].body, { number: '21983262057', text: 'Cobrança R$ 650 — PIX 45427279000122' });
+  assert.deepEqual(calls[0].body, { number: '5521983262057', text: 'Cobrança R$ 650 — PIX 45427279000122' });
 
   const blocked = evolutionProvider({
     settings: { whatsapp_config: { api_url: 'https://evolution.example', instance: 'rental-log', provider_mode: 'baileys' } },
     secretFn: () => 'test-key', fetchImpl: async () => { throw new Error('não deveria chamar'); },
   });
   await assert.rejects(() => blocked.sendTemplateMessage({ to: '5521983262057', body: 'teste' }), /reconhecimento explícito/);
+});
+
+test('WhatsApp normaliza telefone brasileiro para o formato internacional sem duplicar o DDI', () => {
+  assert.equal(normalizeWhatsAppNumber('(21) 98884-1509'), '5521988841509');
+  assert.equal(normalizeWhatsAppNumber('+55 21 98884-1509'), '5521988841509');
+  assert.equal(normalizeWhatsAppNumber('021988841509'), '5521988841509');
 });
 
 test('identificador da cobrança é único também entre tenants', () => {

@@ -7,6 +7,19 @@ const { assertSandboxAllowed, sandboxSignatureResult } = require('./guard');
 
 const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
 
+// WhatsApp exige o número no formato internacional, sem o sinal de "+".
+// Cadastros brasileiros normalmente guardam apenas DDD + número; nesses casos
+// acrescentamos o país configurado no tenant (Brasil por padrão). Números que
+// já chegam em E.164 são preservados.
+const normalizeWhatsAppNumber = (value, countryCode = '55') => {
+  let digits = onlyDigits(value);
+  const country = onlyDigits(countryCode) || '55';
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('0') && digits.length === 12) digits = digits.slice(1);
+  if (digits.length === 10 || digits.length === 11) digits = `${country}${digits}`;
+  return digits;
+};
+
 const sandboxProvider = {
   name: 'null',
   isSandbox: true,
@@ -158,7 +171,7 @@ function evolutionProvider({ fetchImpl, secretFn = getSecret, settings = {} } = 
         // não oficial. Mesmo que exista um template cadastrado, envia o corpo
         // renderizado para não chamar por engano a rota Cloud da Evolution.
         data = await call('POST', `/message/sendText/${encodeURIComponent(instance)}`, {
-          number: onlyDigits(to), text: body,
+          number: normalizeWhatsAppNumber(to, cfg.country_code), text: body,
         });
       }
       return {
@@ -212,4 +225,5 @@ function getWhatsAppProvider(settings = {}, deps = {}) {
 
 module.exports = {
   getWhatsAppProvider, sandboxProvider, metaProvider, evolutionProvider,
+  normalizeWhatsAppNumber,
 };
