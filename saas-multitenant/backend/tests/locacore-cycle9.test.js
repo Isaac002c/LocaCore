@@ -12,7 +12,7 @@ const { newDb, DataType } = require('pg-mem');
 const { resolveWeeklyAmount } = require('../services/automation/billingAmount');
 const { zonedParts, weekBoundsInZone, isScheduledNow } = require('../services/automation/timezone');
 const { infinitePayProvider, manualPixProvider } = require('../services/automation/providers/payment');
-const { buildNationalDpsPayload, nationalNfseProvider, validateConfig } = require('../services/automation/providers/fiscal');
+const { nationalNfseProvider, validateConfig } = require('../services/automation/providers/fiscal');
 const { selectForMode } = require('../services/automation/billingCycleService');
 const { evolutionProvider, normalizeWhatsAppNumber } = require('../services/automation/providers/whatsapp');
 const secretStore = require('../services/automation/secretStore');
@@ -140,31 +140,13 @@ test('InfinitePay: pagamento só é confirmado por payment_check e conserva cent
   assert.equal(result.amount, 700.1);
 });
 
-test('NFS-e nacional: payload usa dados parametrizados e NCM do veículo', () => {
-  const settings = { fiscal_environment: 'homologacao', fiscal_config: {
-    cnpj: '12.345.678/0001-90', razao_social: 'Locadora Ltda', inscricao_municipal: '123',
-    regime_tributario: 'simples', municipio: '3550308', uf: 'SP', cep: '01001-000',
-    codigo_tributacao_nacional: '99.04.01', codigo_servico: 'configurado-contador', aliquota: 0,
-    cst_ibs_cbs: '000', classificacao_tributaria: 'configurada', tratamento_iss: 'nao_incide',
-  } };
-  const payload = buildNationalDpsPayload({
-    ref: 'f-1', amount: 700, settings,
-    client: { name: 'Maria', cpf: '123.456.789-09' },
-    vehicle: { ncm: '87032210', plate: 'ABC1D23', fiscal_description: 'Locação semanal de automóvel' },
-    rental: { id: 'r1', rental_number: 'LOC-1', start_date: '2026-08-17', end_date: '2026-08-23' },
-  });
-  assert.equal(payload.tomador.cpf, '12345678909');
-  assert.equal(payload.item.ncm, '87032210');
-  assert.equal(payload.item.codigo_tributacao_nacional, '99.04.01');
-  assert.equal(payload.item.tratamento_iss, 'nao_incide');
-});
-
 test('NFS-e nacional permanece fail-closed sem certificado A1', async () => {
   const settings = { fiscal_provider: 'nfse_nacional', fiscal_document_type: 'nfse', fiscal_config: {
     municipio: '3550308', cnpj: '12345678000190', regime_tributario: 'simples', inscricao_municipal: '123',
     codigo_servico: 'x', aliquota: 0, razao_social: 'Locadora', uf: 'SP', cep: '01001000',
     codigo_tributacao_nacional: '99.04.01', cst_ibs_cbs: '000', classificacao_tributaria: 'x',
     tratamento_iss: 'nao_incide', api_url: 'https://example.test', issue_path: '/nfse',
+    dps_series: '00001',
   } };
   assert.equal(validateConfig(settings).ok, true);
   const result = await nationalNfseProvider({ certificate: null }).issueDocument({ ref: 'f-1', amount: 700, document_type: 'nfse', settings });

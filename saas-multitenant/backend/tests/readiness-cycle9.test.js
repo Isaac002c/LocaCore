@@ -23,6 +23,7 @@ const SETTINGS = {
     codigo_servico: 'x', aliquota: 0, razao_social: 'Locadora', uf: 'SP', cep: '01001000',
     codigo_tributacao_nacional: '99.04.01', cst_ibs_cbs: '000', classificacao_tributaria: 'x',
     tratamento_iss: 'nao_incide', api_url: 'https://fiscal.example', issue_path: '/nfse',
+    dps_series: '00001',
   },
 };
 
@@ -104,7 +105,7 @@ test('readiness global bloqueia pelos dados faltantes e informa contagens exatas
   assert.equal(result.counts.clients_without_document, 1);
   assert.equal(result.counts.vehicles_without_ncm, 1);
   assert.deepEqual(result.activation.blockers.map((item) => item.key).sort(),
-    ['client_document', 'client_phone', 'rental_value', 'vehicle_ncm']);
+    ['client_document', 'client_phone', 'rental_value']);
 });
 
 test('readiness do piloto limita a auditoria à única locação selecionada', async () => {

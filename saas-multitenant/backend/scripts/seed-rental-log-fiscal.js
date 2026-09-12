@@ -15,8 +15,9 @@
 // Regras do contador aplicadas: locação pura → código nacional 99.04.01, ISS não
 // incidente; recibo até a obrigatoriedade da NFS-e (nfse_mandatory_from) e NFS-e
 // a partir dela; multa/juros/caução/manutenção em categorias fiscais separadas.
-// NFS-e fica PREPARADA porém DESLIGADA (nfse_enabled=false) até certificado A1 +
-// validação — nunca emite nota simulada.
+// NFS-e fica PREPARADA porém DESLIGADA (nfse_enabled=false) até a homologação
+// nacional aceitar o código 99.04.01 — nunca emite nota simulada ou com código
+// de outro serviço.
 // =============================================================================
 
 const pool = require('../config/db');
@@ -38,10 +39,11 @@ const RENTAL_LOG = {
     numero: '170',
     bairro: 'Recreio dos Bandeirantes',
     email_fiscal: 'rentallogservice@gmail.com',
-    telefone: '2197511361',
+    telefone: '21975111361',
     // Locação pura (config confirmada pelo contador; ajustável por tenant).
     codigo_tributacao_nacional: '99.04.01',
     tratamento_iss: 'nao_incide',
+    dps_series: '00001',                   // série validada na SEFIN restrita
     // IBS/CBS sem tratamento aplicável hoje (Simples) — deixado vazio de propósito.
     cst_ibs_cbs: null,
     classificacao_tributaria: null,
@@ -50,7 +52,7 @@ const RENTAL_LOG = {
     fiscal_provider: 'nfse_nacional',
     fiscal_document_type: 'nfse',
     fiscal_mode: 'after_payment',            // emite depois do pagamento (§7)
-    nfse_mandatory_from: '2026-12-01',       // recibo até aqui; NFS-e a partir daqui (§6)
+    nfse_mandatory_from: '2026-11-01',       // obrigatoriedade nacional ME/EPP (Res. 189/2026)
     receipts_enabled: true,                  // recibo já funcional (§48)
     nfse_enabled: false,                     // NFS-e preparada, ligada só com certificado (§47)
     billing_timezone: 'America/Sao_Paulo',

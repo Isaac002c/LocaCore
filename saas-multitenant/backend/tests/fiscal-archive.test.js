@@ -59,3 +59,32 @@ test('arquivamento bloqueia URL local/privada', () => {
   assert.throws(() => validateSourceUrl('http://127.0.0.1/nota.pdf'), (err) => err.code === 'PRIVATE_FISCAL_DOCUMENT_URL');
   assert.throws(() => validateSourceUrl('file:///tmp/nota.pdf'), (err) => err.code === 'INVALID_FISCAL_DOCUMENT_URL');
 });
+
+test('integração nacional arquiva bytes mTLS do DANFSe, XML oficial e DPS assinada', async () => {
+  const puts = [];
+  const records = [];
+  const documentModel = {
+    getDocumentByFiscal: async () => null,
+    createDocument: async (input) => ({ id: 'doc-national', ...input }),
+  };
+  const storageProvider = {
+    put: async (input) => { puts.push(input); return { provider: 'local', bucket: null, key: input.key }; },
+    publicUrl: ({ tenantId, key }) => `https://locacore.example/uploads/${tenantId}/${key}`,
+  };
+  const result = await archiveAuthorizedFiscal({
+    tenant_id: 'tenant-1', fiscal: { id: 'fiscal-2', number: '123' },
+    context: { client_id: 'client-1', rental_id: 'rental-1', vehicle: { id: 'vehicle-1' } },
+    artifacts: {
+      pdf: Buffer.from('%PDF-oficial'), xml: Buffer.from('<NFSe/>'),
+      signed_dps: Buffer.from('<DPS><Signature/></DPS>'),
+    },
+  }, {
+    documentModel, storageProvider,
+    storageObjects: { record: async (row) => { records.push(row); return row; } },
+    fetchImpl: async () => { throw new Error('não deve baixar URL sem mTLS'); },
+  });
+  assert.equal(result.document.file_type, 'application/pdf');
+  assert.equal(puts.length, 3, 'salva DANFSe, XML autorizado e DPS assinada');
+  assert.deepEqual(records.map((row) => row.category), ['nota_fiscal', 'nota_fiscal_xml', 'dps_assinada']);
+  assert.equal(result.auxiliary_artifacts.length, 2);
+});

@@ -49,9 +49,9 @@ async function contextFor({ tenant_id, payment_id = null, billing_id = null, ren
     rental_id: rental?.id || resolvedRentalId, client_id: client?.id || resolvedClientId };
 }
 
-async function archiveFiscal(tenant_id, fiscal, context, created_by = null) {
+async function archiveFiscal(tenant_id, fiscal, context, created_by = null, artifacts = null) {
   try {
-    const result = await archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by });
+    const result = await archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by, artifacts });
     await audit.record({
       tenant_id, event_type: 'fiscal_archive', status: result.archived ? 'completed' : 'pending',
       client_id: context.client_id, rental_id: context.rental_id, billing_id: context.billing_id,
@@ -87,7 +87,9 @@ async function executeDocument(tenant_id, doc, context, settings) {
   const validation = provider.validateConfiguration(mappedSettings);
   const missing = [...(validation.missing || [])];
   if (!context.client?.cpf) missing.push('CPF/CNPJ do tomador');
-  if (provider.name === 'nfse_nacional' && !context.vehicle?.ncm) missing.push('NCM do veiculo');
+  // O leiaute DPS 1.01 não possui campo NCM. Só o exigimos se uma futura
+  // configuração fiscal/categoria declarar explicitamente essa necessidade.
+  if (mappedSettings.fiscal_config?.require_vehicle_ncm === true && !context.vehicle?.ncm) missing.push('NCM do veiculo');
   if (missing.length) {
     return M.updateFiscal(doc.id, tenant_id, {
       status: 'pending_configuration', error_code: 'CONFIG_INCOMPLETE',
@@ -95,12 +97,27 @@ async function executeDocument(tenant_id, doc, context, settings) {
       next_attempt_at: null,
     });
   }
+  let dpsIdentity = null;
+  if (provider.name === 'nfse_nacional') {
+    try {
+      dpsIdentity = await M.reserveFiscalDpsIdentity(
+        tenant_id, doc.id, mappedSettings.fiscal_config?.dps_series,
+      );
+    } catch (err) {
+      return M.updateFiscal(doc.id, tenant_id, {
+        status: 'pending_configuration', error_code: 'DPS_NUMBERING_UNAVAILABLE',
+        error_message: `Numeração da DPS indisponível: ${err.message}`,
+        next_attempt_at: null,
+      });
+    }
+  }
   const attempt = Number(doc.retry_count || 0) + 1;
   await M.updateFiscal(doc.id, tenant_id, { status: 'processing', retry_count: attempt, error_code: null, error_message: null });
   const result = await provider.issueDocument({
     tenant_id, ref: doc.id, amount: doc.amount, document_type: doc.document_type,
     client: context.client, rental: context.rental, vehicle: context.vehicle,
     billing: context.billing, payment: context.payment, settings: mappedSettings,
+    dps_number: dpsIdentity?.number, dps_series: dpsIdentity?.series,
   }).catch((err) => ({ status: 'failed', error_code: err.code || 'PROVIDER_ERROR', error_message: err.message }));
 
   let status = result.status || 'processing';
@@ -114,7 +131,11 @@ async function executeDocument(tenant_id, doc, context, settings) {
     verification_code: result.verification_code, pdf_url: result.pdf_url, xml_url: result.xml_url,
     error_code: result.error_code, error_message: result.error_message,
     next_attempt_at: nextAttempt, fiscal_category: 'locacao',
-    provider_payload: { provider_status: result.provider_status || result.status || null },
+    issue_date: result.issue_date,
+    provider_payload: {
+      provider_status: result.provider_status || result.status || null,
+      ...(result.provider_payload || {}),
+    },
   };
   if (status === 'authorized') {
     patch.authorization_date = new Date().toISOString();
@@ -126,7 +147,11 @@ async function executeDocument(tenant_id, doc, context, settings) {
   if (status === 'authorized') {
     // Primeiro persiste a autorização; uma falha de storage jamais desfaz a
     // nota nem o pagamento. O erro fica auditado e pode ser tentado novamente.
-    archived = await archiveFiscal(tenant_id, updated, context, doc.created_by || null);
+    archived = await archiveFiscal(tenant_id, updated, context, doc.created_by || null, {
+      pdf: result.pdf_buffer || null,
+      xml: result.xml_buffer || null,
+      signed_dps: result.signed_dps_buffer || null,
+    });
     // Envia a NFS-e ao cliente (§39), inclusive quando a autorização é ASSÍNCRONA
     // (o pipeline pós-pagamento só envia no caso síncrono). Mesma idempotency_key
     // por pagamento → nunca duplica com o envio do pipeline.

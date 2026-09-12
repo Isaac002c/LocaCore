@@ -65,7 +65,30 @@ async function downloadFiscalDocument(sourceUrl, { fetchImpl = global.fetch } = 
   return { buffer, contentType, extension: contentType === 'application/xml' ? '.xml' : '.pdf' };
 }
 
-async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by = null }, deps = {}) {
+function bufferedArtifact(buffer, contentType, extension) {
+  if (!buffer) return null;
+  const value = Buffer.from(buffer);
+  if (!value.length) return null;
+  if (value.length > MAX_DOCUMENT_SIZE) throw archiveError('Documento fiscal excede 10 MB.', 'FISCAL_DOCUMENT_TOO_LARGE');
+  return { buffer: value, contentType, extension };
+}
+
+async function storeAuxiliaryArtifact({ tenant_id, client_id, created_by, provider, objects,
+  buffer, fileName, contentType, category }) {
+  const artifact = bufferedArtifact(buffer, contentType, contentType === 'application/pdf' ? '.pdf' : '.xml');
+  if (!artifact) return null;
+  const key = safeName(fileName);
+  const stored = await provider.put({ tenantId: tenant_id, key, buffer: artifact.buffer, contentType });
+  await objects.record({
+    tenant_id, provider: stored.provider, bucket: stored.bucket,
+    object_key: `${tenant_id}/${key}`, category, entity_type: 'client', entity_id: client_id,
+    file_name: fileName, content_type: contentType, size: artifact.buffer.length,
+    checksum: crypto.createHash('sha256').update(artifact.buffer).digest('hex'), created_by,
+  }).catch(() => null);
+  return { key, provider: stored.provider, bucket: stored.bucket };
+}
+
+async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by = null, artifacts = null }, deps = {}) {
   const docs = deps.documentModel || documentModel;
   const objects = deps.storageObjects || storageObjects;
   const provider = deps.storageProvider || getProvider();
@@ -75,9 +98,16 @@ async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by 
   const existing = await docs.getDocumentByFiscal(fiscal.id, tenant_id);
   if (existing) return { archived: true, created: false, document: existing };
 
-  const sourceUrl = fiscal.pdf_url || fiscal.xml_url;
-  if (!sourceUrl) return { archived: false, reason: 'provider_document_unavailable' };
-  const downloaded = await downloadFiscalDocument(sourceUrl, { fetchImpl: deps.fetchImpl });
+  // A integração direta nacional já devolve os bytes autenticados. Isso evita
+  // tentar baixar um URL mTLS com fetch anônimo e preserva o XML oficial mesmo
+  // quando o serviço de DANFSe/PDF está temporariamente indisponível.
+  let downloaded = bufferedArtifact(artifacts?.pdf, 'application/pdf', '.pdf')
+    || bufferedArtifact(artifacts?.xml, 'application/xml', '.xml');
+  if (!downloaded) {
+    const sourceUrl = fiscal.pdf_url || fiscal.xml_url;
+    if (!sourceUrl) return { archived: false, reason: 'provider_document_unavailable' };
+    downloaded = await downloadFiscalDocument(sourceUrl, { fetchImpl: deps.fetchImpl });
+  }
   const number = String(fiscal.number || fiscal.external_id || fiscal.id).replace(/[\\/:*?"<>|]/g, '-');
   const displayName = `NFS-e ${number}${downloaded.extension}`;
   const key = safeName(displayName);
@@ -96,6 +126,22 @@ async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by 
     created_by,
   }).catch(() => null);
 
+  const auxiliaries = [];
+  if (artifacts?.pdf && artifacts?.xml) {
+    auxiliaries.push(await storeAuxiliaryArtifact({
+      tenant_id, client_id: context.client_id, created_by, provider, objects,
+      buffer: artifacts.xml, fileName: `NFS-e ${number} - XML.xml`,
+      contentType: 'application/xml', category: 'nota_fiscal_xml',
+    }));
+  }
+  if (artifacts?.signed_dps) {
+    auxiliaries.push(await storeAuxiliaryArtifact({
+      tenant_id, client_id: context.client_id, created_by, provider, objects,
+      buffer: artifacts.signed_dps, fileName: `DPS ${number} - assinada.xml`,
+      contentType: 'application/xml', category: 'dps_assinada',
+    }));
+  }
+
   try {
     const document = await docs.createDocument({
       tenant_id, client_id: context.client_id, rental_id: context.rental_id || null,
@@ -105,7 +151,7 @@ async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by 
       description: `NFS-e ${number} arquivada automaticamente após confirmação do pagamento.`,
       uploaded_by: created_by,
     });
-    return { archived: true, created: true, document };
+    return { archived: true, created: true, document, auxiliary_artifacts: auxiliaries.filter(Boolean) };
   } catch (err) {
     if (err.code === '23505') {
       const raced = await docs.getDocumentByFiscal(fiscal.id, tenant_id);
@@ -116,6 +162,6 @@ async function archiveAuthorizedFiscal({ tenant_id, fiscal, context, created_by 
 }
 
 module.exports = {
-  archiveAuthorizedFiscal, downloadFiscalDocument, validateSourceUrl,
+  archiveAuthorizedFiscal, downloadFiscalDocument, validateSourceUrl, bufferedArtifact,
   MAX_DOCUMENT_SIZE, DOWNLOAD_TIMEOUT_MS,
 };

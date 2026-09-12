@@ -345,6 +345,43 @@ const getFiscalById = async (tenant_id, id, db = pool) => {
   const r = await db.query('SELECT * FROM fiscal_documents WHERE tenant_id=$1 AND id=$2', [tenant_id, id]);
   return r.rows[0];
 };
+// Reserva uma identidade DPS uma única vez. O bloqueio transacional evita que
+// workers concorrentes reutilizem o mesmo número; retentativas preservam a
+// série/número originalmente assinados.
+const reserveFiscalDpsIdentity = async (tenant_id, id, series) => {
+  const normalizedSeries = String(series || '').replace(/\D/g, '');
+  if (!normalizedSeries || normalizedSeries.length > 5) throw new Error('Série DPS inválida.');
+  const db = await pool.connect();
+  try {
+    await db.query('BEGIN');
+    const current = (await db.query(
+      'SELECT dps_number,dps_series FROM fiscal_documents WHERE tenant_id=$1 AND id=$2 FOR UPDATE',
+      [tenant_id, id],
+    )).rows[0];
+    if (!current) throw new Error('Documento fiscal não encontrado.');
+    if (current.dps_number && current.dps_series) {
+      await db.query('COMMIT');
+      return { number: String(current.dps_number), series: String(current.dps_series) };
+    }
+    const next = (await db.query(
+      `UPDATE automation_settings SET last_dps_number=last_dps_number+1,updated_at=NOW()
+        WHERE tenant_id=$1 RETURNING last_dps_number`, [tenant_id],
+    )).rows[0];
+    if (!next) throw new Error('Configurações de automação não encontradas.');
+    const updated = (await db.query(
+      `UPDATE fiscal_documents SET dps_number=$1,dps_series=$2,updated_at=NOW()
+        WHERE tenant_id=$3 AND id=$4 RETURNING dps_number,dps_series`,
+      [next.last_dps_number, normalizedSeries, tenant_id, id],
+    )).rows[0];
+    await db.query('COMMIT');
+    return { number: String(updated.dps_number), series: String(updated.dps_series) };
+  } catch (err) {
+    await db.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    db.release();
+  }
+};
 const insertFiscal = async (data, db = pool) => {
   return _insertIfAbsent(db,
     'SELECT * FROM fiscal_documents WHERE tenant_id=$1 AND idempotency_key=$2', [data.tenant_id, data.idempotency_key],
@@ -355,7 +392,7 @@ const insertFiscal = async (data, db = pool) => {
      data.provider || 'null', data.document_type || null, money2(data.amount), data.status || 'pending', data.idempotency_key, data.created_by || null]);
 };
 const updateFiscal = async (id, tenant_id, fields, db = pool) => {
-  const allowed = ['status', 'external_id', 'number', 'series', 'verification_code', 'issue_date', 'authorization_date', 'cancellation_date', 'pdf_url', 'xml_url', 'error_code', 'error_message', 'retry_count', 'next_attempt_at', 'provider_payload', 'fiscal_category'];
+  const allowed = ['status', 'external_id', 'number', 'series', 'verification_code', 'issue_date', 'authorization_date', 'cancellation_date', 'pdf_url', 'xml_url', 'error_code', 'error_message', 'retry_count', 'next_attempt_at', 'provider_payload', 'fiscal_category', 'dps_number', 'dps_series'];
   const sets = [], params = [];
   for (const k of allowed) if (fields[k] !== undefined) {
     const json = k === 'provider_payload';
@@ -672,7 +709,7 @@ module.exports = {
   insertCharge, setChargeStatus, updateCharge, listCharges, listOpenChargesForDunning,
   getPaymentCustomer, savePaymentCustomer,
   insertOutbox, claimPendingOutbox, updateOutbox, cancelRemindersForCharge, countRemindersForCharge, getLastReminderForCharge, listOutbox, getOutboxByExternal,
-  getFiscalByIdemp, getFiscalById, insertFiscal, updateFiscal, listFiscal,
+  getFiscalByIdemp, getFiscalById, reserveFiscalDpsIdentity, insertFiscal, updateFiscal, listFiscal,
   getFiscalCategoryMapping, upsertFiscalCategoryMapping, listFiscalCategoryMappings, ensureDefaultFiscalCategories,
   startRun, finishRun, listRuns,
   outboxCounters, listDeadLetter, consoleCounters, serviceHeartbeats,
