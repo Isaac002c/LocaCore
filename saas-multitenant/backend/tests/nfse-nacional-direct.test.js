@@ -105,3 +105,15 @@ test('rejeição oficial é preservada e nunca vira autorização simulada', asy
   assert.equal(result.error_code, 'E999');
   assert.match(result.error_message, /Código não disponível/);
 });
+
+test('E0310 do 99.04.01 vira pendência de implantação oficial, sem sugerir código genérico', async () => {
+  const requestImpl = async () => ({
+    httpStatus: 400, headers: { 'content-type': 'application/json' }, raw: Buffer.alloc(0),
+    data: { erros: [{ Codigo: 'E0310', Descricao: 'Código de tributação nacional 99.04.01 não disponível no ambiente' }] },
+  });
+  const result = await issueNationalNfse({ ...input, certificate, requestImpl });
+  assert.equal(result.status, 'pending_configuration');
+  assert.equal(result.error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
+  assert.match(result.error_message, /Não substituir por 99\.01\.01/);
+  assert.equal(result.provider_payload.original_error_code, 'E0310');
+});

@@ -14,9 +14,29 @@ const {
   issueNationalNfse, getNationalNfse, OFFICIAL_BASES, normalizeEnvironment,
 } = require('./nfseNacional');
 
+// A NT 009 criou os novos fatos geradores 99.02/99.03/99.04 e alterou o
+// leiaute da DPS. Em 15/09/2026 o próprio Portal Nacional ainda informa que
+// esse pacote não está implantado em Produção nem em Produção Restrita. Não é
+// seguro trocar 99.04.01 por 99.01.01: são naturezas diferentes. Mantemos um
+// bloqueio explícito até a SEFIN publicar o XSD/cronograma e o adapter ser
+// atualizado e homologado contra esse XSD.
+const PENDING_NT009_CODES = new Set(['990401']);
+
+function nationalTaxCodeBlocker(settings = {}) {
+  if (String(settings.fiscal_provider || '').toLowerCase() !== 'nfse_nacional') return null;
+  const code = String(settings.fiscal_config?.codigo_tributacao_nacional || '').replace(/\D/g, '');
+  if (!PENDING_NT009_CODES.has(code)) return null;
+  return {
+    code: 'NATIONAL_TAX_CODE_PENDING_NT009',
+    field: 'liberacao_oficial_99_04_01',
+    message: 'O código 99.04.01 está correto para locação de bens móveis, mas a NT 009 ainda não foi disponibilizada pela Plataforma Nacional em Produção/Produção Restrita. Não substituir por 99.01.01.',
+  };
+}
+
 // Campos mínimos que o tipo de documento exige (parametrizados; validados pela empresa).
 function validateConfig(settings = {}) {
   const missing = [];
+  const blockers = [];
   if (!settings.fiscal_document_type) missing.push('tipo de documento fiscal');
   if ((settings.fiscal_provider || 'null') === 'null') missing.push('provedor fiscal');
   const cfg = settings.fiscal_config || {};
@@ -28,6 +48,17 @@ function validateConfig(settings = {}) {
       if (!cfg.codigo_tributacao_nacional) missing.push('codigo_tributacao_nacional');
       if (!cfg.tratamento_iss) missing.push('tratamento_iss');
       if (!/^0000[1-9]$/.test(String(cfg.dps_series || ''))) missing.push('dps_series (00001 a 00009)');
+      const nationalCode = String(cfg.codigo_tributacao_nacional || '').replace(/\D/g, '');
+      if (nationalCode === '990401') {
+        if (String(cfg.codigo_atividade_simples_nacional || '') !== '11') {
+          missing.push('codigo_atividade_simples_nacional (11)');
+        }
+        if (!/^\d{9}$/.test(String(cfg.codigo_nbs || '').replace(/\D/g, ''))) {
+          missing.push('codigo_nbs (9 digitos)');
+        }
+      }
+      const platformBlocker = nationalTaxCodeBlocker(settings);
+      if (platformBlocker) blockers.push(platformBlocker);
     } else {
       // Provedores municipais/intermediários precisam do código local e da
       // alíquota definidos pelo contador. Na SEFIN Nacional esses campos são
@@ -36,7 +67,7 @@ function validateConfig(settings = {}) {
       if (cfg.aliquota === undefined || cfg.aliquota === null || cfg.aliquota === '') missing.push('aliquota');
     }
   }
-  return { ok: missing.length === 0, missing };
+  return { ok: missing.length === 0 && blockers.length === 0, missing, blockers };
 }
 
 const nullProvider = {
@@ -265,5 +296,5 @@ function getFiscalProvider(settings = {}, deps = {}) {
 
 module.exports = {
   getFiscalProvider, nullProvider, focusNfeProvider, nationalNfseProvider,
-  validateConfig,
+  validateConfig, nationalTaxCodeBlocker,
 };

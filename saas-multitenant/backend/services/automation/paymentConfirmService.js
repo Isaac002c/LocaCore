@@ -141,9 +141,13 @@ async function handleWebhook(providerName, body, {
 
     // Pipeline único de pós-pagamento: recibo (antes da obrigatoriedade) ou
     // NFS-e (a partir dela) + envio do documento ao cliente (§7/§8/§9/§25).
+    let pipelineError = null;
     const pipeline = await postPaymentPipeline.runForPayment(tenant_id, {
       payment_id: payment.id, charge, settings, now,
-    }).catch(() => null);
+    }).catch((err) => {
+      pipelineError = { code: err.code || 'DOCUMENT_PIPELINE_ERROR', message: err.message };
+      return null;
+    });
     const fiscal = pipeline?.fiscal || null;
 
     await audit.record({ tenant_id, event_type: 'payment_reconciled', status: 'paid',
@@ -154,7 +158,12 @@ async function handleWebhook(providerName, body, {
     await M.markWebhookProcessed(provider.name, eventId);
     activityLog.logGeneric(tenant_id, null, 'payment', 'charge',
       `Pagamento confirmado - ${charge.public_id || charge.id}`, { charge_id: charge.id, payment_id: payment.id }).catch(() => {});
-    return { ok: true, confirmed: true, payment_id: payment.id, fiscal_status: fiscal?.status || null };
+    return {
+      ok: true, confirmed: true, payment_id: payment.id,
+      fiscal_status: fiscal?.status || null,
+      fiscal_error_code: fiscal?.error_code || pipelineError?.code || null,
+      fiscal_error_message: fiscal?.error_message || pipelineError?.message || null,
+    };
   } catch (err) {
     await M.markWebhookProcessed(provider.name, eventId, { status: 'failed', error_message: err.message }).catch(() => {});
     throw err;
@@ -219,15 +228,26 @@ async function confirmManual(tenant_id, charge_id, {
     details: { public_id: charge.public_id, payment_method, notes: notes ? String(notes).slice(0, 200) : null },
   }).catch(() => {});
 
+  let pipelineError = null;
   const pipeline = await postPaymentPipeline.runForPayment(tenant_id, {
     payment_id: payment.id, charge, settings, now, created_by, created_by_name,
-  }).catch(() => null);
+  }).catch((err) => {
+    pipelineError = { code: err.code || 'DOCUMENT_PIPELINE_ERROR', message: err.message };
+    return null;
+  });
 
   activityLog.logGeneric(tenant_id, created_by, 'payment', 'charge',
     `Pagamento confirmado manualmente - ${charge.public_id || charge.id}`,
     { charge_id: charge.id, payment_id: payment.id }).catch(() => {});
 
-  return { ok: true, payment_id: payment.id, charge_id: charge.id, document: pipeline?.document || null, fiscal_status: pipeline?.fiscal?.status || null, kind: pipeline?.kind || 'none' };
+  return {
+    ok: true, payment_id: payment.id, charge_id: charge.id,
+    document: pipeline?.document || null,
+    fiscal_status: pipeline?.fiscal?.status || null,
+    fiscal_error_code: pipeline?.fiscal?.error_code || pipelineError?.code || null,
+    fiscal_error_message: pipeline?.fiscal?.error_message || pipelineError?.message || null,
+    kind: pipeline?.kind || 'none',
+  };
 }
 
 module.exports = { handleWebhook, resolveCharge, confirmManual, cents };

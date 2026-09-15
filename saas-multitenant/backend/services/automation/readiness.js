@@ -115,6 +115,11 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
   const certExpiring = !!certificate?.valid_until
     && new Date(certificate.valid_until).getTime() - Date.now() < 30 * 86400000 && !certExpired;
   const fiscalValidation = validateConfig(settings);
+  const fiscalRequested = !!settings.fiscal_enabled || !!settings.nfse_enabled;
+  const fiscalDetails = [
+    ...(fiscalValidation.missing || []),
+    ...(fiscalValidation.blockers || []).map((blocker) => blocker.message),
+  ].join(', ') || null;
 
   const checks = [
     item('pilot_selection', 'Modo piloto com exatamente uma locacao', mode !== 'pilot' || rentalIds.length === 1,
@@ -158,11 +163,12 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
         detail: publicBase ? `${publicBase}/webhooks/whatsapp/${waProvider}${waProvider === 'meta' ? `/${tenant_id}` : ''}` : 'BASE_URL ausente' }),
     item('whatsapp_templates', 'Templates aprovados vinculados', !settings.whatsapp_enabled || templatesReady, null,
       { critical: !!settings.whatsapp_enabled }),
-    item('fiscal_enabled', 'Emissao fiscal habilitada', !!settings.fiscal_enabled, null, { critical: true }),
-    item('fiscal_config', 'Configuracao fiscal completa', !!settings.fiscal_enabled && fiscalValidation.ok, null,
-      { critical: true, detail: fiscalValidation.missing?.join(', ') || null }),
-    item('fiscal_credentials', 'Credencial/certificado fiscal', !!settings.fiscal_enabled && !!fiscalCredential && !certExpired, null,
-      { critical: true }),
+    item('fiscal_enabled', 'Emissao fiscal habilitada', !fiscalRequested || !!settings.fiscal_enabled, null,
+      { critical: fiscalRequested, detail: fiscalRequested ? null : 'Opcional enquanto a NFS-e estiver desativada.' }),
+    item('fiscal_config', 'Configuracao fiscal completa', !fiscalRequested || fiscalValidation.ok, null,
+      { critical: fiscalRequested, detail: fiscalDetails }),
+    item('fiscal_credentials', 'Credencial/certificado fiscal', !fiscalRequested || (!!settings.fiscal_enabled && !!fiscalCredential && !certExpired), null,
+      { critical: fiscalRequested }),
     item('scheduler', 'Scheduler ativo', !!heartbeats.scheduler?.ativo, null, { critical: true }),
   ];
   const critical = checks.filter((x) => x.critical);

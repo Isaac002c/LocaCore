@@ -33,6 +33,7 @@ function reset() {
   state.settings = { receipts_enabled: true, whatsapp_enabled: true };
   state.existingReceipt = null;
   state.existingConfirmed = [];
+  state.fiscalResult = { id: 'fdoc1', status: 'authorized', number: 'NFSE-846', pdf_url: 'https://fiscal.example/nfse/846.pdf' };
   state.charge = {
     id: 'chg1', tenant_id: 't1', billing_id: 'b1', rental_id: 'r1', client_id: 'c1',
     public_id: 'COB-2026-000001', amount: '700.00', status: 'waiting_payment',
@@ -76,7 +77,7 @@ before(() => {
   });
   stub('../services/finance/financeRepo', { createDbRepo: () => ({}) });
   stub('../services/automation/fiscalService', {
-    issueForPayment: async (_t, pid, opts) => { state.fiscalCalls.push({ pid, opts }); return { id: 'fdoc1', status: 'authorized', number: 'NFSE-846', pdf_url: 'https://fiscal.example/nfse/846.pdf' }; },
+    issueForPayment: async (_t, pid, opts) => { state.fiscalCalls.push({ pid, opts }); return state.fiscalResult; },
   });
   stub('../services/automation/auditService', { record: async (a) => { state.audits.push(a); } });
   stub('../services/automation/secretStore', { getSecrets: async () => ({}), resolver: () => () => null });
@@ -186,6 +187,27 @@ test('confirmação manual: confirma o pagamento, dá baixa na cobrança e roda 
   assert.deepEqual(state.remindersCancelled, ['chg1'], 'cancela lembretes futuros');
   assert.equal(state.receipts.length, 1, 'gerou recibo pelo pipeline');
   assert.equal(out.kind, 'receipt');
+});
+
+test('confirmação manual preserva o pagamento e devolve o bloqueio fiscal exato', async () => {
+  state.settings = {
+    receipts_enabled: false, nfse_enabled: true, fiscal_enabled: true,
+    fiscal_mode: 'after_payment', nfse_mandatory_from: '2026-01-01',
+    whatsapp_enabled: false, billing_timezone: 'America/Sao_Paulo',
+  };
+  state.fiscalResult = {
+    id: 'fdoc1', status: 'pending_configuration',
+    error_code: 'NATIONAL_TAX_CODE_PENDING_NT009',
+    error_message: 'Código 99.04.01 ainda indisponível na Plataforma Nacional.',
+  };
+  const out = await paymentConfirm.confirmManual('t1', 'chg1', {
+    amount: '700.00', payment_date: '2026-08-20', payment_method: 'pix', created_by: 'user1',
+  });
+  assert.ok(state.chargePatches.some((p) => p.status === 'paid'));
+  assert.equal(out.kind, 'nfse');
+  assert.equal(out.fiscal_status, 'pending_configuration');
+  assert.equal(out.fiscal_error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
+  assert.match(out.fiscal_error_message, /99\.04\.01/);
 });
 
 test('piloto pode enviar somente cobrança e não manda confirmação/documento após recebido', async () => {

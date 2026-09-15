@@ -315,14 +315,19 @@ function elementText(xml, localName) {
 function providerError(result) {
   const data = result?.data || {};
   const errors = Array.isArray(data.erros) ? data.erros : [];
+  const firstCode = errors[0]?.codigo || errors[0]?.Codigo || data.codigo || data.Codigo || `HTTP_${result?.httpStatus || 0}`;
   const message = errors.map((item) => [item.codigo || item.Codigo, item.descricao || item.Descricao,
     item.complemento || item.Complemento].filter(Boolean).join(' - ')).join('; ')
     || data.mensagem || data.message || `API nacional retornou HTTP ${result?.httpStatus || 0}.`;
+  const taxCodePending = String(firstCode).toUpperCase() === 'E0310' && /99\.?04\.?01|990401/i.test(message);
   return {
-    status: result?.httpStatus >= 400 && result?.httpStatus < 500 ? 'rejected' : 'failed',
-    error_code: errors[0]?.codigo || errors[0]?.Codigo || data.codigo || data.Codigo || `HTTP_${result?.httpStatus || 0}`,
-    error_message: message,
-    provider_payload: { http_status: result?.httpStatus || null, errors },
+    status: taxCodePending ? 'pending_configuration'
+      : (result?.httpStatus >= 400 && result?.httpStatus < 500 ? 'rejected' : 'failed'),
+    error_code: taxCodePending ? 'NATIONAL_TAX_CODE_PENDING_NT009' : firstCode,
+    error_message: taxCodePending
+      ? `O código 99.04.01 está correto para locação de bens móveis, mas ainda não foi disponibilizado pela Plataforma Nacional (retorno E0310). Não substituir por 99.01.01. Resposta original: ${message}`
+      : message,
+    provider_payload: { http_status: result?.httpStatus || null, errors, original_error_code: taxCodePending ? firstCode : null },
   };
 }
 

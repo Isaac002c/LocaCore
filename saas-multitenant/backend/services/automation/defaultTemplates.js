@@ -10,7 +10,7 @@ module.exports = [
     language: 'pt_BR',
     body:
       'Olá, {{nome_cliente}}. A cobrança referente à locação {{numero_locacao}}, veículo {{veiculo}}, está disponível.\n\n' +
-      'Valor: {{valor}}\nVencimento: {{vencimento}}\n\nPIX: {{codigo_pix}}\n\n' +
+      'Valor: {{valor}}\nVencimento: {{vencimento}}\n\nFavorecido: {{favorecido_pix}}\nPIX: {{codigo_pix}}\n\n' +
       'Em caso de dúvida, entre em contato.',
   },
   {
@@ -19,7 +19,7 @@ module.exports = [
     language: 'pt_BR',
     body:
       'Olá, {{nome_cliente}}. Ainda não identificamos o pagamento da cobrança referente à locação {{numero_locacao}}.\n\n' +
-      'Valor pendente: {{valor}}\nVencimento: {{vencimento}}\n\nPIX: {{codigo_pix}}\n\n' +
+      'Valor pendente: {{valor}}\nVencimento: {{vencimento}}\n\nFavorecido: {{favorecido_pix}}\nPIX: {{codigo_pix}}\n\n' +
       'Caso o pagamento já tenha sido realizado, desconsidere esta mensagem.',
   },
   {

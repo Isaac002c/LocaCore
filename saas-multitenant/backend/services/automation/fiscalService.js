@@ -86,14 +86,20 @@ async function executeDocument(tenant_id, doc, context, settings) {
   } : settings;
   const validation = provider.validateConfiguration(mappedSettings);
   const missing = [...(validation.missing || [])];
+  const externalBlockers = [...(validation.blockers || [])];
   if (!context.client?.cpf) missing.push('CPF/CNPJ do tomador');
   // O leiaute DPS 1.01 não possui campo NCM. Só o exigimos se uma futura
   // configuração fiscal/categoria declarar explicitamente essa necessidade.
   if (mappedSettings.fiscal_config?.require_vehicle_ncm === true && !context.vehicle?.ncm) missing.push('NCM do veiculo');
-  if (missing.length) {
+  if (missing.length || externalBlockers.length) {
+    const blocker = externalBlockers[0];
+    const detail = [
+      missing.length ? `Campos pendentes: ${[...new Set(missing)].join(', ')}.` : null,
+      ...externalBlockers.map((item) => item.message),
+    ].filter(Boolean).join(' ');
     return M.updateFiscal(doc.id, tenant_id, {
-      status: 'pending_configuration', error_code: 'CONFIG_INCOMPLETE',
-      error_message: `Configuração fiscal incompleta: ${[...new Set(missing)].join(', ')}.`,
+      status: 'pending_configuration', error_code: blocker?.code || 'CONFIG_INCOMPLETE',
+      error_message: `Configuração fiscal incompleta ou bloqueada. ${detail}`,
       next_attempt_at: null,
     });
   }

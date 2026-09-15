@@ -176,6 +176,24 @@ export default function Automacoes() {
     catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
+  const executeBilling = async () => {
+    try {
+      setBusy(true); setError(null); setNotice(null);
+      const result = await runBilling();
+      if (result.skipped === 'already_ran') {
+        setNotice(`Cobrança desta semana já executada (${result.period_start} a ${result.period_end}); nenhuma mensagem foi duplicada.`);
+      } else if (result.skipped) {
+        setError(`Cobrança não executada: ${result.skipped}. Revise a prontidão da automação.`);
+      } else {
+        const failed = Number(result.failed || 0) + Number(result.blocked || 0);
+        const summary = `${result.charges_created || 0} cobrança(s) criada(s) e ${result.messages_enqueued || 0} mensagem(ns) colocada(s) na fila`;
+        if (failed) setError(`${summary}. ${failed} cliente(s) exigem revisão; consulte os detalhes da execução.`);
+        else setNotice(`${summary}. O worker enviará pelo WhatsApp dentro da janela configurada.`);
+      }
+      await loadPanel();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
   const saveSettings = async (patch) => {
     try {
       setBusy(true);
@@ -253,7 +271,9 @@ export default function Automacoes() {
       });
       setConfirmModal(null);
       setNotice(r.kind === 'receipt' ? `Pagamento confirmado. Recibo ${r.document?.numero || ''} gerado.`
-        : r.kind === 'nfse' ? `Pagamento confirmado. NFS-e ${r.fiscal_status === 'authorized' ? 'emitida' : 'em processamento'}.`
+        : r.kind === 'nfse' && r.fiscal_status === 'authorized' ? `Pagamento confirmado. NFS-e ${r.document?.numero || ''} emitida e arquivada.`
+        : r.kind === 'nfse' && r.fiscal_error_message ? `Pagamento confirmado, mas a NFS-e ficou pendente: ${r.fiscal_error_message}`
+        : r.kind === 'nfse' ? `Pagamento confirmado. NFS-e em processamento (status: ${r.fiscal_status || 'pendente'}).`
         : 'Pagamento confirmado. Ative recibo/NFS-e nas Configurações para gerar o documento.');
       await loadCharges();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
@@ -356,7 +376,7 @@ export default function Automacoes() {
           </div>
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0' }}>
-            <button className="btn-primary" disabled={busy} onClick={() => doRun(runBilling, 'Cobrança semanal')}>Executar cobrança semanal</button>
+            <button className="btn-primary" disabled={busy} onClick={executeBilling}>Cobrar clientes selecionados</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runOutbox, 'Processar fila')}>Processar mensagens</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runDunning, 'Régua')}>Rodar inadimplência</button>
             <button className="btn-secondary" disabled={busy} onClick={() => doRun(runFiscalBatch, 'Lote fiscal')}>Lote fiscal</button>
@@ -662,15 +682,13 @@ export default function Automacoes() {
             <div className="form-row">
               <div className="form-group"><label>Código municipal</label><input value={settings.fiscal_config?.codigo_servico || ''} onChange={setNestedField('fiscal_config', 'codigo_servico')} /></div>
               <div className="form-group"><label>Alíquota</label><input type="number" step="0.0001" value={settings.fiscal_config?.aliquota ?? ''} onChange={setNestedField('fiscal_config', 'aliquota')} /></div>
+              <div className="form-group"><label>Código NBS</label><input value={settings.fiscal_config?.codigo_nbs || ''} onChange={setNestedField('fiscal_config', 'codigo_nbs')} placeholder="Ex.: 1.1101.11.00" /></div>
+              <div className="form-group"><label>Atividade Simples Nacional</label><input value={settings.fiscal_config?.codigo_atividade_simples_nacional || ''} onChange={setNestedField('fiscal_config', 'codigo_atividade_simples_nacional')} placeholder="11 para locação sem ISS" /></div>
               <div className="form-group"><label>CST IBS/CBS</label><input value={settings.fiscal_config?.cst_ibs_cbs || ''} onChange={setNestedField('fiscal_config', 'cst_ibs_cbs')} /></div>
               <div className="form-group"><label>Classificação tributária</label><input value={settings.fiscal_config?.classificacao_tributaria || ''} onChange={setNestedField('fiscal_config', 'classificacao_tributaria')} /></div>
               <div className="form-group"><label>Tratamento ISS</label><input value={settings.fiscal_config?.tratamento_iss || ''} onChange={setNestedField('fiscal_config', 'tratamento_iss')} /></div>
             </div>
-            {settings.fiscal_provider === 'nfse_nacional' && <div className="form-row">
-              <div className="form-group"><label>API URL nacional</label><input type="url" value={settings.fiscal_config?.api_url || ''} onChange={setNestedField('fiscal_config', 'api_url')} /></div>
-              <div className="form-group"><label>Caminho de emissão</label><input value={settings.fiscal_config?.issue_path || ''} onChange={setNestedField('fiscal_config', 'issue_path')} placeholder="Definido pela API homologada" /></div>
-              <div className="form-group"><label>Caminho de consulta</label><input value={settings.fiscal_config?.status_path || ''} onChange={setNestedField('fiscal_config', 'status_path')} /></div>
-            </div>}
+            {settings.fiscal_provider === 'nfse_nacional' && <p className="nx-cfg-hint">A conexão usa somente os endpoints oficiais da SEFIN Nacional, com mTLS e o certificado A1 deste tenant. URLs personalizadas não são aceitas.</p>}
             {settings.fiscal_provider === 'focusnfe' && <div className="form-row"><div className="form-group"><label>Token Focus NFe</label><input type="password" autoComplete="new-password" value={secretDraft['fiscal:TOKEN'] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, 'fiscal:TOKEN': e.target.value }))} /></div><button className="btn-secondary" type="button" disabled={busy} onClick={() => saveSecrets('fiscal', ['TOKEN'])}>Salvar token</button></div>}
             <div className="form-row" style={{ alignItems: 'flex-end' }}>
               <div className="form-group"><label>Certificado A1 (.pfx/.p12)</label><input type="file" accept=".pfx,.p12,application/x-pkcs12" onChange={(e) => setCertificateFile(e.target.files?.[0] || null)} /></div>
@@ -681,7 +699,8 @@ export default function Automacoes() {
             <button className="btn-secondary" type="button" disabled={busy || settings.fiscal_provider === 'null'} onClick={() => testProvider('fiscal')}>Validar configuração fiscal</button>
             {validation && !validation.ok && (
               <div style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 38%, transparent)', color: 'var(--warning)', borderRadius: 8, padding: '10px 12px', fontSize: 13 }}>
-                Emissão fiscal pendente de configuração. Faltando: {validation.missing.join(', ')}. Definir com o contador; sem provedor/credenciais válidos, nenhuma nota produtiva é emitida.
+                Emissão fiscal bloqueada. {validation.missing?.length ? `Faltando: ${validation.missing.join(', ')}. ` : ''}
+                {(validation.blockers || []).map((blocker) => blocker.message).join(' ')} Sem provedor, certificado e validação oficiais, nenhuma nota produtiva é emitida.
               </div>
             )}
           </div>

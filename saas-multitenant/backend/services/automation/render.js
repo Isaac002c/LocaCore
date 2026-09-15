@@ -38,6 +38,7 @@ function buildVars({ rental, charge, payment, document } = {}) {
     valor: fmtMoney((charge && charge.amount) || (rental && rental.total_amount) || 0),
     vencimento: fmtDate(charge && charge.due_date),
     codigo_pix: (charge && charge.pix_code) || '',
+    favorecido_pix: (charge && charge.provider_metadata && charge.provider_metadata.receiver_name) || '',
     payment_link: (charge && charge.payment_link) || '',
     data_pagamento: fmtDate((payment && payment.payment_date) || new Date()),
     document_link: (document && (document.link || document.document_link)) || '',
