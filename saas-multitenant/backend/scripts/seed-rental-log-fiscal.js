@@ -42,9 +42,12 @@ const RENTAL_LOG = {
     telefone: '21975111361',
     // Locação pura (config confirmada pelo contador; ajustável por tenant).
     codigo_tributacao_nacional: '99.04.01',
+    codigo_nbs: '1.1101.11.00',             // locacao de automoveis sem operador
+    codigo_atividade_simples_nacional: '11', // exigido para 99.04.01 pela NT 009
     tratamento_iss: 'nao_incide',
     dps_series: '00001',                   // série validada na SEFIN restrita
-    // IBS/CBS sem tratamento aplicável hoje (Simples) — deixado vazio de propósito.
+    // IBS/CBS do Simples produz efeitos a partir de 01/01/2027. Não inventar
+    // CST/classificação antes da confirmação contábil e do leiaute oficial.
     cst_ibs_cbs: null,
     classificacao_tributaria: null,
   },
@@ -54,7 +57,7 @@ const RENTAL_LOG = {
     fiscal_mode: 'after_payment',            // emite depois do pagamento (§7)
     nfse_mandatory_from: '2026-11-01',       // obrigatoriedade nacional ME/EPP (Res. 189/2026)
     receipts_enabled: true,                  // recibo já funcional (§48)
-    nfse_enabled: false,                     // NFS-e preparada, ligada só com certificado (§47)
+    nfse_enabled: false,                     // ligar só após autorização em homologação (§47)
     billing_timezone: 'America/Sao_Paulo',
   },
 };
@@ -133,7 +136,7 @@ async function main() {
   if (Object.keys(settingsPatch).length || cfgMerge.changes.length) {
     await M.updateSettings(tenant.id, { ...settingsPatch, fiscal_config: cfgMerge.out });
   }
-  console.log('\nAplicado. Recibos já podem operar; NFS-e permanece desligada até o certificado A1 (fiscal:configure).');
+  console.log('\nAplicado. Recibos já podem operar; NFS-e permanece desligada até uma autorização real em homologação.');
   await pool.end?.();
 }
 
