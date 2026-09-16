@@ -87,6 +87,17 @@ function normalizeNationalTaxCode(value) {
   return digits;
 }
 
+function normalizeNbs(value) {
+  if (value === undefined || value === null || value === '') return '';
+  const digits = onlyDigits(value);
+  if (!/^\d{9}$/.test(digits)) {
+    const err = new Error('Código NBS deve conter 9 dígitos.');
+    err.code = 'INVALID_NBS_CODE';
+    throw err;
+  }
+  return digits;
+}
+
 function normalizeSeries(value) {
   const digits = onlyDigits(value);
   // O XSD 1.01 publicado contém uma expressão incompatível com séries como
@@ -169,6 +180,7 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
   }
   const regime = simpleNationalRegime(cfg.regime_tributario);
   const nationalCode = normalizeNationalTaxCode(cfg.codigo_tributacao_nacional);
+  const nbsCode = normalizeNbs(cfg.codigo_nbs);
   const municipalCode = onlyDigits(cfg.codigo_servico);
   const treatment = String(cfg.tratamento_iss || '').toLowerCase();
   const tribISSQN = treatment === 'nao_incide' || treatment === 'nao_incidente' ? '4'
@@ -213,7 +225,8 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
     '<toma>', tag(clientDocumentTag, clientDocument), tag('xNome', client?.name),
     clientPhone ? tag('fone', clientPhone) : '', client?.email ? tag('email', client.email) : '', '</toma>',
     '<serv><locPrest>', tag('cLocPrestacao', municipality), '</locPrest><cServ>',
-    tag('cTribNac', nationalCode), municipalTag, tag('xDescServ', description), '</cServ></serv>',
+    tag('cTribNac', nationalCode), municipalTag, tag('xDescServ', description), tag('cNBS', nbsCode),
+    '</cServ></serv>',
     '<valores><vServPrest>', tag('vServ', amountValue.toFixed(2)), '</vServPrest><trib><tribMun>',
     tag('tribISSQN', tribISSQN), tag('tpRetISSQN', '1'), tribISSQN === '1' ? aliquota : '',
     '</tribMun><totTrib>', tag('indTotTrib', '0'), '</totTrib></trib></valores>',
@@ -312,14 +325,19 @@ function elementText(xml, localName) {
   return nodes?.[0]?.textContent || doc.getElementsByTagName(localName)?.[0]?.textContent || null;
 }
 
-function providerError(result) {
+function providerError(result, { nationalCode } = {}) {
   const data = result?.data || {};
   const errors = Array.isArray(data.erros) ? data.erros : [];
   const firstCode = errors[0]?.codigo || errors[0]?.Codigo || data.codigo || data.Codigo || `HTTP_${result?.httpStatus || 0}`;
   const message = errors.map((item) => [item.codigo || item.Codigo, item.descricao || item.Descricao,
     item.complemento || item.Complemento].filter(Boolean).join(' - ')).join('; ')
     || data.mensagem || data.message || `API nacional retornou HTTP ${result?.httpStatus || 0}.`;
-  const taxCodePending = String(firstCode).toUpperCase() === 'E0310' && /99\.?04\.?01|990401/i.test(message);
+  // A resposta real da SEFIN não repete necessariamente o código rejeitado
+  // na mensagem. O código vem da DPS que acabamos de montar e é a fonte
+  // confiável para distinguir a pendência da NT 009 de outro E0310.
+  const submittedNationalCode = onlyDigits(nationalCode);
+  const taxCodePending = String(firstCode).toUpperCase() === 'E0310'
+    && (submittedNationalCode === '990401' || /99\.?04\.?01|990401/i.test(message));
   return {
     status: taxCodePending ? 'pending_configuration'
       : (result?.httpStatus >= 400 && result?.httpStatus < 500 ? 'rejected' : 'failed'),
@@ -327,7 +345,11 @@ function providerError(result) {
     error_message: taxCodePending
       ? `O código 99.04.01 está correto para locação de bens móveis, mas ainda não foi disponibilizado pela Plataforma Nacional (retorno E0310). Não substituir por 99.01.01. Resposta original: ${message}`
       : message,
-    provider_payload: { http_status: result?.httpStatus || null, errors, original_error_code: taxCodePending ? firstCode : null },
+    provider_payload: {
+      http_status: result?.httpStatus || null, errors,
+      original_error_code: taxCodePending ? firstCode : null,
+      national_tax_code: submittedNationalCode || null,
+    },
   };
 }
 
@@ -359,7 +381,9 @@ async function issueNationalNfse({ amount, client, rental, vehicle, billing, set
     url: `${base}/nfse`, method: 'POST', certificate,
     body: { dpsXmlGZipB64 }, headers: { Accept: 'application/json' },
   });
-  if (response.httpStatus !== 201) return { ...providerError(response), signed_dps_buffer: Buffer.from(signedXml) };
+  if (response.httpStatus !== 201) {
+    return { ...providerError(response, { nationalCode: built.nationalCode }), signed_dps_buffer: Buffer.from(signedXml) };
+  }
 
   const data = response.data || {};
   const xmlBuffer = decodeGzipBase64(data.nfseXmlGZipB64);
@@ -410,7 +434,7 @@ async function getNationalNfse({ accessKey, environment, certificate, requestImp
 module.exports = {
   XMLNS_NFSE, XMLNS_DSIG, LAYOUT_VERSION, APPLICATION_VERSION, OFFICIAL_BASES,
   buildDpsXml, signDpsXml, certificatePem, dpsId, formatDateTimeInZone,
-  normalizeNationalTaxCode, normalizeEnvironment, mtlsRequest,
+  normalizeNationalTaxCode, normalizeNbs, normalizeEnvironment, mtlsRequest,
   issueNationalNfse, getNationalNfse, downloadDanfse, decodeGzipBase64, elementText,
   validCpf, validCnpj,
 };

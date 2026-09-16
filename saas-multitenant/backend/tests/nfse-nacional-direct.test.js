@@ -33,6 +33,7 @@ const settings = {
     cnpj: '45.427.279/0001-22', razao_social: 'RENTAL LOG SERVICE LTDA',
     inscricao_municipal: '13761116', regime_tributario: 'SIMPLES NACIONAL',
     municipio: '3304557', codigo_tributacao_nacional: '99.04.01',
+    codigo_nbs: '1.1101.11.00',
     tratamento_iss: 'nao_incide', dps_series: '00001',
   },
 };
@@ -54,6 +55,7 @@ test('monta o Id fixo e a DPS 1.01 com não incidência de ISS', () => {
   assert.match(built.xml, /<tpAmb>2<\/tpAmb>/);
   assert.match(built.xml, /<dhEmi>2026-09-12T12:30:00-03:00<\/dhEmi>/);
   assert.match(built.xml, /<cTribNac>990401<\/cTribNac>/);
+  assert.match(built.xml, /<xDescServ>.*<\/xDescServ><cNBS>111011100<\/cNBS>/);
   assert.match(built.xml, /<tribISSQN>4<\/tribISSQN><tpRetISSQN>1<\/tpRetISSQN>/);
   assert.doesNotMatch(built.xml, /<pAliq>/, 'não inventa alíquota em operação sem incidência');
   assert.match(built.xml, /<CPF>17528951773<\/CPF><xNome>Arthur Teste Magno<\/xNome>/);
@@ -116,4 +118,16 @@ test('E0310 do 99.04.01 vira pendência de implantação oficial, sem sugerir c�
   assert.equal(result.error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
   assert.match(result.error_message, /Não substituir por 99\.01\.01/);
   assert.equal(result.provider_payload.original_error_code, 'E0310');
+});
+
+test('E0310 real da SEFIN sem repetir 99.04.01 também vira pendência da NT 009', async () => {
+  const requestImpl = async () => ({
+    httpStatus: 400, headers: { 'content-type': 'application/json' }, raw: Buffer.alloc(0),
+    data: { erros: [{ Codigo: 'E0310', Descricao: 'O código de tributação nacional informado não existe conforme a lista de serviços nacional do Sistema Nacional NFS-e.' }] },
+  });
+  const result = await issueNationalNfse({ ...input, certificate, requestImpl });
+  assert.equal(result.status, 'pending_configuration');
+  assert.equal(result.error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
+  assert.equal(result.provider_payload.original_error_code, 'E0310');
+  assert.equal(result.provider_payload.national_tax_code, '990401');
 });

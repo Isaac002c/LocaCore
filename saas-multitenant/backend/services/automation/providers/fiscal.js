@@ -15,8 +15,9 @@ const {
 } = require('./nfseNacional');
 
 // A NT 009 criou os novos fatos geradores 99.02/99.03/99.04 e alterou o
-// leiaute da DPS. Em 15/09/2026 o próprio Portal Nacional ainda informa que
-// esse pacote não está implantado em Produção nem em Produção Restrita. Não é
+// leiaute da DPS. Em 16/09/2026 o Portal Nacional ainda informa que esse pacote
+// não está implantado em Produção nem em Produção Restrita, e uma chamada
+// mTLS real à SEFIN de Produção Restrita confirmou a rejeição E0310. Não é
 // seguro trocar 99.04.01 por 99.01.01: são naturezas diferentes. Mantemos um
 // bloqueio explícito até a SEFIN publicar o XSD/cronograma e o adapter ser
 // atualizado e homologado contra esse XSD.
@@ -175,7 +176,7 @@ function nationalNfseProvider({ certificate = null, requestImpl } = {}) {
       } catch (err) {
         const configurationErrors = new Set([
           'INSECURE_ENDPOINT', 'INVALID_CERTIFICATE', 'INVALID_ISSUER_CNPJ',
-          'INVALID_CUSTOMER_DOCUMENT', 'INVALID_NATIONAL_TAX_CODE', 'INVALID_DPS_SERIES',
+          'INVALID_CUSTOMER_DOCUMENT', 'INVALID_NATIONAL_TAX_CODE', 'INVALID_NBS_CODE', 'INVALID_DPS_SERIES',
           'INVALID_DPS_NUMBER', 'INVALID_MUNICIPALITY', 'INVALID_FISCAL_AMOUNT',
         ]);
         return { status: configurationErrors.has(err.code) ? 'pending_configuration' : 'failed',
