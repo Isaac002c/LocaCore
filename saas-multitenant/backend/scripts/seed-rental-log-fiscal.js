@@ -12,12 +12,10 @@
 //   node scripts/seed-rental-log-fiscal.js --tenant <slug-ou-id> --commit   # aplica campos ausentes
 //   node scripts/seed-rental-log-fiscal.js --tenant <slug-ou-id> --commit --force  # sobrescreve
 //
-// Regras do contador aplicadas: locação pura → código nacional 99.04.01, ISS não
-// incidente; recibo até a obrigatoriedade da NFS-e (nfse_mandatory_from) e NFS-e
-// a partir dela; multa/juros/caução/manutenção em categorias fiscais separadas.
-// NFS-e fica PREPARADA porém DESLIGADA (nfse_enabled=false) até a homologação
-// nacional aceitar o código 99.04.01 — nunca emite nota simulada ou com código
-// de outro serviço.
+// Regras fiscais aplicadas: locação pura, ISS não incidente e NBS de locação de
+// automóveis sem operador. A FAQ oficial da NFS-e v1.00 (08/09/2026) orienta
+// usar temporariamente 99.01.01 até os códigos específicos da NT 009 entrarem
+// em operação. A ativação só deve ocorrer após autorização real em homologação.
 // =============================================================================
 
 const pool = require('../config/db');
@@ -31,6 +29,8 @@ const RENTAL_LOG = {
     inscricao_municipal: '13761116',
     inscricao_estadual: '12841728',
     regime_tributario: 'simples',            // Simples Nacional (optante ME/EPP)
+    percentual_total_tributos_simples: 6.00, // confirmado no XML da NFS-e 846
+    cst_pis_cofins: '00',                    // confirmado no XML da NFS-e 846
     municipio: '3304557',                    // código IBGE - Rio de Janeiro/RJ
     nome_municipio: 'Rio de Janeiro',
     uf: 'RJ',
@@ -40,8 +40,11 @@ const RENTAL_LOG = {
     bairro: 'Recreio dos Bandeirantes',
     email_fiscal: 'rentallogservice@gmail.com',
     telefone: '21975111361',
-    // Locação pura (config confirmada pelo contador; ajustável por tenant).
-    codigo_tributacao_nacional: '99.04.01',
+    // Locação pura: código transitório oficial; migrar para 99.04.01 quando a
+    // Plataforma Nacional publicar e aceitar o leiaute definitivo da NT 009.
+    codigo_tributacao_nacional: '99.01.01',
+    codigo_tributacao_nacional_alvo: '99.04.01',
+    enquadramento_transitorio_locacao: true,
     codigo_nbs: '1.1101.11.00',             // locacao de automoveis sem operador
     codigo_atividade_simples_nacional: '11', // exigido para 99.04.01 pela NT 009
     tratamento_iss: 'nao_incide',
@@ -55,7 +58,7 @@ const RENTAL_LOG = {
     fiscal_provider: 'nfse_nacional',
     fiscal_document_type: 'nfse',
     fiscal_mode: 'after_payment',            // emite depois do pagamento (§7)
-    nfse_mandatory_from: '2026-11-01',       // obrigatoriedade nacional ME/EPP (Res. 189/2026)
+    nfse_mandatory_from: '2026-09-17',       // tenant optou por começar a emitir agora
     receipts_enabled: true,                  // recibo já funcional (§48)
     nfse_enabled: false,                     // ligar só após autorização em homologação (§47)
     billing_timezone: 'America/Sao_Paulo',

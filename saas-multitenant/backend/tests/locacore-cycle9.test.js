@@ -145,6 +145,7 @@ test('NFS-e nacional permanece fail-closed sem certificado A1', async () => {
     municipio: '3550308', cnpj: '12345678000190', regime_tributario: 'simples', inscricao_municipal: '123',
     codigo_servico: 'x', aliquota: 0, razao_social: 'Locadora', uf: 'SP', cep: '01001000',
     codigo_tributacao_nacional: '01.01.01', cst_ibs_cbs: '000', classificacao_tributaria: 'x',
+    codigo_nbs: '1.1101.11.00', percentual_total_tributos_simples: 6,
     tratamento_iss: 'nao_incide', api_url: 'https://example.test', issue_path: '/nfse',
     dps_series: '00001',
   } };
@@ -159,13 +160,14 @@ test('NFS-e nacional bloqueia 99.04.01 até a implantação oficial da NT 009', 
     municipio: '3304557', cnpj: '45427279000122', regime_tributario: 'simples', inscricao_municipal: '13761116',
     razao_social: 'Rental Log Service Ltda', codigo_tributacao_nacional: '99.04.01',
     codigo_atividade_simples_nacional: '11', codigo_nbs: '1.1101.11.00',
+    percentual_total_tributos_simples: 6,
     tratamento_iss: 'nao_incide', dps_series: '00001',
   } };
   const validation = validateConfig(settings);
   assert.equal(validation.ok, false);
   assert.equal(validation.missing.length, 0);
   assert.equal(validation.blockers[0].code, 'NATIONAL_TAX_CODE_PENDING_NT009');
-  assert.match(validation.blockers[0].message, /Não substituir por 99\.01\.01/);
+  assert.match(validation.blockers[0].message, /Use temporariamente 99\.01\.01/);
 });
 
 test('segredos: AES-256-GCM cifra, decifra e detecta adulteração', () => {

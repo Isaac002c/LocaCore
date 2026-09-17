@@ -32,7 +32,8 @@ const settings = {
   fiscal_config: {
     cnpj: '45.427.279/0001-22', razao_social: 'RENTAL LOG SERVICE LTDA',
     inscricao_municipal: '13761116', regime_tributario: 'SIMPLES NACIONAL',
-    municipio: '3304557', codigo_tributacao_nacional: '99.04.01',
+    percentual_total_tributos_simples: 6, cst_pis_cofins: '00',
+    municipio: '3304557', codigo_tributacao_nacional: '99.01.01',
     codigo_nbs: '1.1101.11.00',
     tratamento_iss: 'nao_incide', dps_series: '00001',
   },
@@ -42,7 +43,7 @@ const input = {
   amount: 100,
   client: { name: 'Arthur Teste Magno', cpf: '17528951773', phone: '21988841509' },
   rental: { rental_number: 'LOC-TESTE', start_date: '2026-09-07', end_date: '2026-09-13' },
-  vehicle: { plate: 'ABC1D23' },
+  vehicle: { brand: 'FIAT', model: 'ARGO', plate: 'ABC1D23', ncm: '87032210' },
   settings, dps_number: '1', dps_series: '00001',
   issuedAt: new Date('2026-09-12T15:30:00Z'),
 };
@@ -54,10 +55,18 @@ test('monta o Id fixo e a DPS 1.01 com não incidência de ISS', () => {
   assert.equal(built.id.length, 45);
   assert.match(built.xml, /<tpAmb>2<\/tpAmb>/);
   assert.match(built.xml, /<dhEmi>2026-09-12T12:30:00-03:00<\/dhEmi>/);
-  assert.match(built.xml, /<cTribNac>990401<\/cTribNac>/);
+  assert.match(built.xml, /<cTribNac>990101<\/cTribNac>/);
+  assert.doesNotMatch(built.xml, /<IM>/, 'item 99 não informa inscrição municipal (evita E0120)');
+  assert.doesNotMatch(built.xml.match(/<prest>(.*?)<\/prest>/)[1], /<xNome>/,
+    'prestador próprio não informa razão social redundante (evita E0121)');
   assert.match(built.xml, /<xDescServ>.*<\/xDescServ><cNBS>111011100<\/cNBS>/);
+  assert.match(built.xml, /<infoCompl><docRef>LOC-TESTE<\/docRef><xInfComp>.*NCM 87032210.*sem incidencia de ISSQN<\/xInfComp><\/infoCompl>/);
   assert.match(built.xml, /<tribISSQN>4<\/tribISSQN><tpRetISSQN>1<\/tpRetISSQN>/);
   assert.doesNotMatch(built.xml, /<pAliq>/, 'não inventa alíquota em operação sem incidência');
+  assert.match(built.xml, /<tribFed><piscofins><CST>00<\/CST><\/piscofins><\/tribFed>/);
+  assert.match(built.xml, /<totTrib><pTotTribSN>6\.00<\/pTotTribSN><\/totTrib>/,
+    'ME/EPP usa o percentual parametrizado no tenant (evita E0712)');
+  assert.doesNotMatch(built.xml, /<indTotTrib>/, 'ME/EPP não informa o indicador genérico');
   assert.match(built.xml, /<CPF>17528951773<\/CPF><xNome>Arthur Teste Magno<\/xNome>/);
 });
 
@@ -97,6 +106,24 @@ test('emite na SEFIN, descompacta o XML e baixa o DANFSe oficial', async () => {
   assert.match(sentDps, /<Signature xmlns="http:\/\/www\.w3\.org\/2000\/09\/xmldsig#">/);
 });
 
+test('repete o download do DANFSe enquanto o ADN ainda processa o PDF', async () => {
+  const { downloadDanfse } = require('../services/automation/providers/nfseNacional');
+  let calls = 0;
+  const result = await downloadDanfse({
+    accessKey: 'chave', environment: 'homologacao', certificate,
+    attempts: 3, retryDelayMs: 1,
+    requestImpl: async () => {
+      calls += 1;
+      return calls < 3
+        ? { httpStatus: 404, headers: {}, raw: Buffer.alloc(0) }
+        : { httpStatus: 200, headers: { 'content-type': 'application/pdf' }, raw: Buffer.from('%PDF-pronto') };
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.status, 200);
+  assert.equal(result.buffer.toString(), '%PDF-pronto');
+});
+
 test('rejeição oficial é preservada e nunca vira autorização simulada', async () => {
   const requestImpl = async () => ({
     httpStatus: 400, headers: { 'content-type': 'application/json' }, raw: Buffer.alloc(0),
@@ -108,15 +135,18 @@ test('rejeição oficial é preservada e nunca vira autorização simulada', asy
   assert.match(result.error_message, /Código não disponível/);
 });
 
-test('E0310 do 99.04.01 vira pendência de implantação oficial, sem sugerir código genérico', async () => {
+test('E0310 do futuro 99.04.01 orienta o código transitório oficial', async () => {
   const requestImpl = async () => ({
     httpStatus: 400, headers: { 'content-type': 'application/json' }, raw: Buffer.alloc(0),
     data: { erros: [{ Codigo: 'E0310', Descricao: 'Código de tributação nacional 99.04.01 não disponível no ambiente' }] },
   });
-  const result = await issueNationalNfse({ ...input, certificate, requestImpl });
+  const result = await issueNationalNfse({
+    ...input, settings: { ...settings, fiscal_config: { ...settings.fiscal_config, codigo_tributacao_nacional: '99.04.01' } },
+    certificate, requestImpl,
+  });
   assert.equal(result.status, 'pending_configuration');
   assert.equal(result.error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
-  assert.match(result.error_message, /Não substituir por 99\.01\.01/);
+  assert.match(result.error_message, /Use temporariamente 99\.01\.01/);
   assert.equal(result.provider_payload.original_error_code, 'E0310');
 });
 
@@ -125,7 +155,10 @@ test('E0310 real da SEFIN sem repetir 99.04.01 também vira pendência da NT 009
     httpStatus: 400, headers: { 'content-type': 'application/json' }, raw: Buffer.alloc(0),
     data: { erros: [{ Codigo: 'E0310', Descricao: 'O código de tributação nacional informado não existe conforme a lista de serviços nacional do Sistema Nacional NFS-e.' }] },
   });
-  const result = await issueNationalNfse({ ...input, certificate, requestImpl });
+  const result = await issueNationalNfse({
+    ...input, settings: { ...settings, fiscal_config: { ...settings.fiscal_config, codigo_tributacao_nacional: '99.04.01' } },
+    certificate, requestImpl,
+  });
   assert.equal(result.status, 'pending_configuration');
   assert.equal(result.error_code, 'NATIONAL_TAX_CODE_PENDING_NT009');
   assert.equal(result.provider_payload.original_error_code, 'E0310');

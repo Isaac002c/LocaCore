@@ -14,13 +14,10 @@ const {
   issueNationalNfse, getNationalNfse, OFFICIAL_BASES, normalizeEnvironment,
 } = require('./nfseNacional');
 
-// A NT 009 criou os novos fatos geradores 99.02/99.03/99.04 e alterou o
-// leiaute da DPS. Em 16/09/2026 o Portal Nacional ainda informa que esse pacote
-// não está implantado em Produção nem em Produção Restrita, e uma chamada
-// mTLS real à SEFIN de Produção Restrita confirmou a rejeição E0310. Não é
-// seguro trocar 99.04.01 por 99.01.01: são naturezas diferentes. Mantemos um
-// bloqueio explícito até a SEFIN publicar o XSD/cronograma e o adapter ser
-// atualizado e homologado contra esse XSD.
+// A NT 009 criou os novos fatos geradores 99.02/99.03/99.04, ainda indisponíveis
+// no leiaute 1.01. A FAQ oficial da NFS-e v1.00, de 08/09/2026, orienta usar
+// temporariamente 99.01.01 para locação. Mantemos o bloqueio somente para o
+// futuro 99.04.01 até sua implantação efetiva.
 const PENDING_NT009_CODES = new Set(['990401']);
 
 function nationalTaxCodeBlocker(settings = {}) {
@@ -30,7 +27,7 @@ function nationalTaxCodeBlocker(settings = {}) {
   return {
     code: 'NATIONAL_TAX_CODE_PENDING_NT009',
     field: 'liberacao_oficial_99_04_01',
-    message: 'O código 99.04.01 está correto para locação de bens móveis, mas a NT 009 ainda não foi disponibilizada pela Plataforma Nacional em Produção/Produção Restrita. Não substituir por 99.01.01.',
+    message: 'O código 99.04.01 ainda não foi disponibilizado pela Plataforma Nacional. Use temporariamente 99.01.01 para locação, conforme a FAQ oficial da NFS-e v1.00 de 08/09/2026.',
   };
 }
 
@@ -43,20 +40,28 @@ function validateConfig(settings = {}) {
   const cfg = settings.fiscal_config || {};
   ['municipio', 'cnpj', 'regime_tributario'].forEach((k) => { if (!cfg[k]) missing.push(k); });
   if (settings.fiscal_document_type === 'nfse') {
-    if (!cfg.inscricao_municipal) missing.push('inscricao_municipal');
     if ((settings.fiscal_provider || '').toLowerCase() === 'nfse_nacional') {
-      if (!cfg.razao_social) missing.push('razao_social');
       if (!cfg.codigo_tributacao_nacional) missing.push('codigo_tributacao_nacional');
       if (!cfg.tratamento_iss) missing.push('tratamento_iss');
       if (!/^0000[1-9]$/.test(String(cfg.dps_series || ''))) missing.push('dps_series (00001 a 00009)');
       const nationalCode = String(cfg.codigo_tributacao_nacional || '').replace(/\D/g, '');
+      if (!nationalCode.startsWith('99') && !cfg.inscricao_municipal) missing.push('inscricao_municipal');
       if (nationalCode === '990401') {
         if (String(cfg.codigo_atividade_simples_nacional || '') !== '11') {
           missing.push('codigo_atividade_simples_nacional (11)');
         }
-        if (!/^\d{9}$/.test(String(cfg.codigo_nbs || '').replace(/\D/g, ''))) {
-          missing.push('codigo_nbs (9 digitos)');
-        }
+      }
+      // A NBS é obrigatória no leiaute nacional inclusive para 99.01.01 e
+      // operações sem incidência de ISSQN (FAQ 27.3).
+      if (!/^\d{9}$/.test(String(cfg.codigo_nbs || '').replace(/\D/g, ''))) {
+        missing.push('codigo_nbs (9 digitos)');
+      }
+      const regime = String(cfg.regime_tributario || '').toLowerCase();
+      if (regime.includes('simples') && !regime.includes('mei')
+        && (cfg.percentual_total_tributos_simples === undefined
+          || cfg.percentual_total_tributos_simples === null
+          || cfg.percentual_total_tributos_simples === '')) {
+        missing.push('percentual_total_tributos_simples');
       }
       const platformBlocker = nationalTaxCodeBlocker(settings);
       if (platformBlocker) blockers.push(platformBlocker);
@@ -64,6 +69,7 @@ function validateConfig(settings = {}) {
       // Provedores municipais/intermediários precisam do código local e da
       // alíquota definidos pelo contador. Na SEFIN Nacional esses campos são
       // condicionais; para locação com não incidência não devem ser inventados.
+      if (!cfg.inscricao_municipal) missing.push('inscricao_municipal');
       if (!cfg.codigo_servico) missing.push('codigo_servico');
       if (cfg.aliquota === undefined || cfg.aliquota === null || cfg.aliquota === '') missing.push('aliquota');
     }

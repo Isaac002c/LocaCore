@@ -1,7 +1,7 @@
 'use strict';
 
 // §12/§51: cada natureza de cobrança tem tratamento fiscal próprio. Só a locação
-// pura recebe 99.04.01 + ISS não incidente; serviço/multa/juros/caução NÃO herdam
+// pura recebe o código transitório 99.01.01 + ISS não incidente; serviço/multa/juros/caução NÃO herdam
 // a tributação da locação. Seed idempotente que não sobrescreve edição do admin.
 
 process.env.DATABASE_URL = 'postgres://u:p@localhost:5432/db?sslmode=disable';
@@ -34,11 +34,11 @@ before(() => {
   M = require('../models/automationModels');
 });
 
-test('seed cria a locação com 99.04.01 e ISS não incidente, e naturezas separadas', async () => {
+test('seed cria a locação com 99.01.01 e ISS não incidente, e naturezas separadas', async () => {
   const rows = await M.ensureDefaultFiscalCategories('t1');
   const byKey = Object.fromEntries(rows.map((r) => [r.category_key, r]));
   assert.equal(rows.length, 8);
-  assert.equal(byKey.locacao.national_tax_code, '99.04.01');
+  assert.equal(byKey.locacao.national_tax_code, '99.01.01');
   assert.equal(byKey.locacao.iss_treatment, 'nao_incide');
   // Serviço/multa/juros NÃO herdam o código nacional da locação.
   assert.equal(byKey.multa.national_tax_code, null);

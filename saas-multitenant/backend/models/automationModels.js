@@ -470,11 +470,12 @@ const listFiscalCategoryMappings = async (tenant_id, db = pool) => {
 
 // Defaults REUTILIZÁVEIS por locadora (§12): cada natureza de cobrança tem
 // tratamento fiscal próprio e NÃO herda o da locação. Só a locação pura recebe o
-// código nacional 99.04.01 e ISS não incidente (config inicial confirmada pelo
-// contador da Rental — ajustável por tenant). Semeadas apenas se ausentes:
-// NUNCA sobrescreve edição do administrador. Não invento CST/cClassTrib (Simples).
+// código nacional transitório 99.01.01 e ISS não incidente. O 99.04.01 será o
+// código definitivo quando a NT 009 for implantada; até lá a FAQ oficial da
+// NFS-e v1.00 manda usar 99.01.01. Semeadas apenas se ausentes: NUNCA
+// sobrescreve edição do administrador. Não invento CST/cClassTrib (Simples).
 const DEFAULT_FISCAL_CATEGORIES = [
-  { category_key: 'locacao', label: 'Locação de veículo', national_tax_code: '99.04.01', iss_treatment: 'nao_incide' },
+  { category_key: 'locacao', label: 'Locação de veículo', national_tax_code: '99.01.01', iss_treatment: 'nao_incide' },
   { category_key: 'multa', label: 'Multa contratual', iss_treatment: 'configuravel' },
   { category_key: 'juros', label: 'Juros', iss_treatment: 'configuravel' },
   { category_key: 'caucao', label: 'Caução', iss_treatment: 'nao_tributavel' },

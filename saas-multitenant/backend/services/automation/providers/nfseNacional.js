@@ -156,12 +156,37 @@ function simpleNationalRegime(value) {
 
 function serviceDescription({ cfg, rental, vehicle, amount }) {
   if (cfg.discriminacao) return String(cfg.discriminacao).slice(0, 2000);
-  const parts = ['Locacao de veiculo'];
+  const parts = ['Locacao pura de veiculo sem condutor'];
+  const vehicleName = [vehicle?.brand, vehicle?.model].filter(Boolean).join(' ');
+  if (vehicleName) parts.push(vehicleName);
   if (vehicle?.plate) parts.push(`placa ${String(vehicle.plate).toUpperCase()}`);
   if (rental?.rental_number) parts.push(`contrato ${rental.rental_number}`);
   if (rental?.start_date && rental?.end_date) parts.push(`periodo de ${String(rental.start_date).slice(0, 10)} a ${String(rental.end_date).slice(0, 10)}`);
   parts.push(`valor R$ ${Number(amount || 0).toFixed(2).replace('.', ',')}`);
   return parts.join(', ').slice(0, 2000);
+}
+
+// Enquanto os campos próprios de bens móveis da NT 009 não estão disponíveis,
+// a orientação oficial é identificar com clareza a operação no leiaute vigente,
+// usando docRef e xInfComp. Esses elementos já existem no XSD DPS 1.01.
+function serviceAdditionalInfo({ cfg, rental, vehicle, billing }) {
+  const documentRef = String(cfg.documento_referencia || rental?.rental_number
+    || billing?.billing_number || '').trim().slice(0, 255);
+  const vehicleName = [vehicle?.brand, vehicle?.model].filter(Boolean).join(' ');
+  const details = ['Locacao pura de bem movel sem condutor'];
+  if (vehicleName) details.push(`veiculo ${vehicleName}`);
+  if (vehicle?.plate) details.push(`placa ${String(vehicle.plate).toUpperCase()}`);
+  if (vehicle?.ncm) details.push(`NCM ${onlyDigits(vehicle.ncm)}`);
+  if (rental?.rental_number) details.push(`contrato ${rental.rental_number}`);
+  const periodStart = billing?.period_start || rental?.period_start || rental?.start_date;
+  const periodEnd = billing?.period_end || rental?.period_end || rental?.end_date;
+  if (periodStart && periodEnd) {
+    details.push(`periodo ${String(periodStart).slice(0, 10)} a ${String(periodEnd).slice(0, 10)}`);
+  }
+  details.push('operacao sem incidencia de ISSQN');
+  const complementary = String(cfg.informacoes_complementares || details.join(', ')).slice(0, 2000);
+  if (!documentRef && !complementary) return '';
+  return `<infoCompl>${tag('docRef', documentRef)}${tag('xInfComp', complementary)}</infoCompl>`;
 }
 
 function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_number, dps_series, issuedAt = new Date() }) {
@@ -181,6 +206,9 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
   const regime = simpleNationalRegime(cfg.regime_tributario);
   const nationalCode = normalizeNationalTaxCode(cfg.codigo_tributacao_nacional);
   const nbsCode = normalizeNbs(cfg.codigo_nbs);
+  // O item 99 é autorizado exclusivamente pela SEFIN Nacional e independe do
+  // cadastro municipal. A própria API rejeita a IM nesses casos (E0120).
+  const providerMunicipalRegistration = nationalCode.startsWith('99') ? '' : cfg.inscricao_municipal;
   const municipalCode = onlyDigits(cfg.codigo_servico);
   const treatment = String(cfg.tratamento_iss || '').toLowerCase();
   const tribISSQN = treatment === 'nao_incide' || treatment === 'nao_incidente' ? '4'
@@ -197,9 +225,26 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
   const providerPhone = onlyDigits(cfg.telefone);
   const clientPhone = onlyDigits(client?.phone);
   const description = serviceDescription({ cfg, rental, vehicle, amount: amountValue });
+  const additionalInfo = serviceAdditionalInfo({ cfg, rental, vehicle, billing });
   const municipalTag = municipalCode.length === 3 ? tag('cTribMun', municipalCode) : '';
   const aliquota = cfg.aliquota === undefined || cfg.aliquota === null || cfg.aliquota === ''
     ? '' : tag('pAliq', Number(cfg.aliquota).toFixed(2));
+  const pisCofinsCst = onlyDigits(cfg.cst_pis_cofins);
+  const federalTaxTag = pisCofinsCst
+    ? `<tribFed><piscofins>${tag('CST', pisCofinsCst.padStart(2, '0'))}</piscofins></tribFed>` : '';
+  // Para ME/EPP a SEFIN rejeita indTotTrib (E0712) e exige pTotTribSN. O
+  // percentual é parametrizado por tenant, pois depende da apuração contábil.
+  const simpleTaxPercent = cfg.percentual_total_tributos_simples;
+  const simpleTaxNumber = Number(simpleTaxPercent);
+  if (regime.opSimpNac === '3'
+    && (!Number.isFinite(simpleTaxNumber) || simpleTaxNumber < 0 || simpleTaxNumber > 100)) {
+    throw Object.assign(new Error('Percentual total de tributos do Simples Nacional é inválido.'), {
+      code: 'INVALID_SIMPLE_TAX_PERCENT',
+    });
+  }
+  const totalTaxTag = regime.opSimpNac === '3'
+    ? `<totTrib>${tag('pTotTribSN', simpleTaxNumber.toFixed(2))}</totTrib>`
+    : `<totTrib>${tag('indTotTrib', '0')}</totTrib>`;
 
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -215,8 +260,7 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
     tag('cLocEmi', municipality),
     '<prest>',
     tag('CNPJ', cnpj),
-    tag('IM', cfg.inscricao_municipal),
-    tag('xNome', cfg.razao_social),
+    tag('IM', providerMunicipalRegistration),
     providerPhone ? tag('fone', providerPhone) : '',
     cfg.email_fiscal ? tag('email', cfg.email_fiscal) : '',
     '<regTrib>', tag('opSimpNac', regime.opSimpNac), tag('regApTribSN', regime.regApTribSN),
@@ -226,10 +270,10 @@ function buildDpsXml({ amount, client, rental, vehicle, billing, settings, dps_n
     clientPhone ? tag('fone', clientPhone) : '', client?.email ? tag('email', client.email) : '', '</toma>',
     '<serv><locPrest>', tag('cLocPrestacao', municipality), '</locPrest><cServ>',
     tag('cTribNac', nationalCode), municipalTag, tag('xDescServ', description), tag('cNBS', nbsCode),
-    '</cServ></serv>',
+    '</cServ>', additionalInfo, '</serv>',
     '<valores><vServPrest>', tag('vServ', amountValue.toFixed(2)), '</vServPrest><trib><tribMun>',
     tag('tribISSQN', tribISSQN), tag('tpRetISSQN', '1'), tribISSQN === '1' ? aliquota : '',
-    '</tribMun><totTrib>', tag('indTotTrib', '0'), '</totTrib></trib></valores>',
+    '</tribMun>', federalTaxTag, totalTaxTag, '</trib></valores>',
     '</infDPS></DPS>',
   ].join('');
   return { xml, id, series, number, environment, nationalCode, issueDateTime, competence };
@@ -343,7 +387,7 @@ function providerError(result, { nationalCode } = {}) {
       : (result?.httpStatus >= 400 && result?.httpStatus < 500 ? 'rejected' : 'failed'),
     error_code: taxCodePending ? 'NATIONAL_TAX_CODE_PENDING_NT009' : firstCode,
     error_message: taxCodePending
-      ? `O código 99.04.01 está correto para locação de bens móveis, mas ainda não foi disponibilizado pela Plataforma Nacional (retorno E0310). Não substituir por 99.01.01. Resposta original: ${message}`
+      ? `O código futuro 99.04.01 ainda não foi disponibilizado pela Plataforma Nacional (retorno E0310). Use temporariamente 99.01.01 para locação, conforme a FAQ oficial da NFS-e v1.00. Resposta original: ${message}`
       : message,
     provider_payload: {
       http_status: result?.httpStatus || null, errors,
@@ -353,18 +397,26 @@ function providerError(result, { nationalCode } = {}) {
   };
 }
 
-async function downloadDanfse({ accessKey, environment, certificate, requestImpl = mtlsRequest }) {
+async function downloadDanfse({
+  accessKey, environment, certificate, requestImpl = mtlsRequest, attempts = 4, retryDelayMs = 500,
+}) {
   if (!accessKey) return { buffer: null, status: null };
   const base = OFFICIAL_BASES[normalizeEnvironment(environment)].adn;
-  const result = await requestImpl({
-    url: `${base}/danfse/${encodeURIComponent(accessKey)}`, method: 'GET', certificate,
-    headers: { Accept: 'application/pdf' },
-  });
-  const type = String(result.headers?.['content-type'] || '').toLowerCase();
-  if (result.httpStatus === 200 && (type.includes('pdf') || result.raw?.subarray(0, 4).toString() === '%PDF')) {
-    return { buffer: result.raw, status: 200 };
+  let result = null;
+  const maxAttempts = Math.max(1, Math.min(10, Number(attempts) || 1));
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    result = await requestImpl({
+      url: `${base}/danfse/${encodeURIComponent(accessKey)}`, method: 'GET', certificate,
+      headers: { Accept: 'application/pdf' },
+    });
+    const type = String(result.headers?.['content-type'] || '').toLowerCase();
+    if (result.httpStatus === 200 && (type.includes('pdf') || result.raw?.subarray(0, 4).toString() === '%PDF')) {
+      return { buffer: result.raw, status: 200 };
+    }
+    if (![202, 404].includes(result.httpStatus) || attempt === maxAttempts) break;
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
   }
-  return { buffer: null, status: result.httpStatus || null };
+  return { buffer: null, status: result?.httpStatus || null };
 }
 
 async function issueNationalNfse({ amount, client, rental, vehicle, billing, settings, dps_number, dps_series, certificate,

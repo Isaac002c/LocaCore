@@ -22,6 +22,7 @@ const SETTINGS = {
     municipio: '3550308', cnpj: '12345678000190', regime_tributario: 'simples', inscricao_municipal: '123',
     codigo_servico: 'x', aliquota: 0, razao_social: 'Locadora', uf: 'SP', cep: '01001000',
     codigo_tributacao_nacional: '01.01.01', cst_ibs_cbs: '000', classificacao_tributaria: 'x',
+    codigo_nbs: '1.1101.11.00', percentual_total_tributos_simples: 6,
     tratamento_iss: 'nao_incide', api_url: 'https://fiscal.example', issue_path: '/nfse',
     dps_series: '00001',
   },
