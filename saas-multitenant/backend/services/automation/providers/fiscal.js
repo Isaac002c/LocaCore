@@ -183,7 +183,7 @@ function nationalNfseProvider({ certificate = null, requestImpl } = {}) {
         const configurationErrors = new Set([
           'INSECURE_ENDPOINT', 'INVALID_CERTIFICATE', 'INVALID_ISSUER_CNPJ',
           'INVALID_CUSTOMER_DOCUMENT', 'INVALID_NATIONAL_TAX_CODE', 'INVALID_NBS_CODE', 'INVALID_DPS_SERIES',
-          'INVALID_DPS_NUMBER', 'INVALID_MUNICIPALITY', 'INVALID_FISCAL_AMOUNT',
+          'INVALID_DPS_NUMBER', 'INVALID_MUNICIPALITY', 'INVALID_FISCAL_AMOUNT', 'INVALID_SIMPLE_TAX_PERCENT',
         ]);
         return { status: configurationErrors.has(err.code) ? 'pending_configuration' : 'failed',
           error_code: err.code || 'PROVIDER_ERROR', error_message: err.message };
