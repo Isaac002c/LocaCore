@@ -28,13 +28,14 @@ const audit = require('./auditService');
 const publicLinks = require('./publicLinks');
 const { render, buildVars } = require('./render');
 const { zonedParts } = require('./timezone');
+const { toISODate } = require('../../utils/date');
 
 // Decide o documento devido para um pagamento confirmado, na data do tenant.
 function resolveDocumentKind(settings = {}, { now = new Date() } = {}) {
   const tz = settings.billing_timezone || 'America/Sao_Paulo';
   const today = zonedParts(now, tz).ymd; // YYYY-MM-DD no fuso do tenant
   const mandatoryFrom = settings.nfse_mandatory_from
-    ? String(settings.nfse_mandatory_from).slice(0, 10)
+    ? toISODate(settings.nfse_mandatory_from)
     : null;
   const nfseDateReached = !mandatoryFrom || today >= mandatoryFrom;
   const nfseConfigured = settings.nfse_enabled && settings.fiscal_enabled && nfseDateReached;

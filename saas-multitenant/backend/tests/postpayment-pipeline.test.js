@@ -118,6 +118,15 @@ test('a virada de data respeita o fuso do tenant (23:30 em SP ainda é o dia ant
   assert.equal(pipeline.resolveDocumentKind(s, { now: new Date('2026-12-01T13:00:00Z') }), 'nfse');
 });
 
+test('nfse_mandatory_from vindo do PostgreSQL como Date continua ativando a NFS-e', () => {
+  const s = {
+    nfse_enabled: true, fiscal_enabled: true, receipts_enabled: true,
+    fiscal_mode: 'after_payment', nfse_mandatory_from: new Date('2026-09-17T00:00:00.000Z'),
+    billing_timezone: 'America/Sao_Paulo',
+  };
+  assert.equal(pipeline.resolveDocumentKind(s, { now: new Date('2026-09-17T16:00:00Z') }), 'nfse');
+});
+
 // ── publicLinks — capability URL assinada ────────────────────────────────────
 test('link público de recibo é assinado e à prova de adulteração', () => {
   const link = publicLinks.receiptLink('t1', 'rec1');
