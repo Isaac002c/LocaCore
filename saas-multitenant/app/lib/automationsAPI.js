@@ -51,6 +51,7 @@ export const saveFiscalCategory = async (key, body) => (await apiRequest(`${BASE
 export const getIntegrationSecrets = async (kind) => (await apiRequest(`${BASE}/integrations/${kind}/secrets`)).data;
 export const saveIntegrationSecrets = async (kind, values) => (await apiRequest(`${BASE}/integrations/${kind}/secrets`, { method: 'PUT', body: values })).data;
 export const testIntegration = async (kind) => (await apiRequest(`${BASE}/integrations/${kind}/test`, { method: 'POST' })).data;
+export const getWhatsappQr = async () => (await apiRequest(`${BASE}/integrations/whatsapp/qr`, { method: 'POST' })).data;
 export const getFiscalCertificate = async () => (await apiRequest(`${BASE}/fiscal/certificate`)).data;
 export const getAutomationAudit = async ({ limit = 100, charge_id = '' } = {}) => {
   const qs = new URLSearchParams({ limit: String(limit) });

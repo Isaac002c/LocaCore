@@ -192,6 +192,41 @@ router.post('/integrations/:kind/test', checkPermission('automations:manage'), a
   }
 });
 
+// QR da Evolution para conexão manual pelo próprio usuário. A credencial da
+// Evolution é resolvida no servidor e nunca acompanha a resposta.
+router.post('/integrations/whatsapp/qr', checkPermission('whatsapp:configure'), async (req, res) => {
+  try {
+    const cfg = await integrationScope(req.tenantId, 'whatsapp');
+    if (!cfg || cfg.provider !== 'evolution') {
+      return res.status(400).json({ success: false, error: 'Selecione a Evolution API para conectar por QR Code.' });
+    }
+    if (String(cfg.settings.whatsapp_config?.provider_mode || 'cloud').toLowerCase() !== 'baileys') {
+      return res.status(409).json({ success: false, error: 'O QR Code está disponível somente no modo WhatsApp Web.' });
+    }
+    const [values, tenant] = await Promise.all([
+      secretStore.getSecrets(req.tenantId, cfg.scope),
+      tenantModel.getTenantById(req.tenantId).catch(() => null),
+    ]);
+    const provider = getWhatsAppProvider(cfg.settings, {
+      secretFn: secretStore.resolver(values, tenant?.slug),
+    });
+    const result = await provider.getConnectionQr();
+    res.set('Cache-Control', 'no-store, private');
+    await audit.record({
+      tenant_id: req.tenantId,
+      event_type: 'whatsapp_qr_requested',
+      status: result.connected ? 'completed' : 'pending',
+      provider: cfg.provider,
+      details: { state: result.state, connected: result.connected },
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(422).set('Cache-Control', 'no-store, private').json({
+      success: false, error: String(err.message).slice(0, 300),
+    });
+  }
+});
+
 router.get('/fiscal/certificate', checkPermission('fiscal:read'), async (req, res) => {
   try { res.json({ success: true, data: await certificateService.getCertificateMetadata(req.tenantId) }); }
   catch (err) { wrap(res, err, 'automations/fiscal/certificate GET:'); }

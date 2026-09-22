@@ -145,6 +145,24 @@ function evolutionProvider({ fetchImpl, secretFn = getSecret, settings = {} } = 
     return data;
   };
 
+  const readConnectionState = async () => {
+    const data = await call('GET', `/instance/connectionState/${encodeURIComponent(instance)}`);
+    return String(data.instance?.state || data.state || data.status || 'unknown').toLowerCase();
+  };
+
+  // A Evolution devolve o QR como data URL ou como base64 puro, dependendo da
+  // versão. Só aceitamos bytes de imagem embutidos: URL remota nunca é
+  // encaminhada ao navegador e a API key permanece exclusivamente no backend.
+  const normalizeQrCode = (data = {}) => {
+    const raw = data.base64 || data.qrcode?.base64 || data.qr?.base64 || null;
+    if (!raw || typeof raw !== 'string' || raw.length > 3_000_000) return null;
+    const value = raw.trim();
+    const dataUrl = value.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=\r\n]+)$/i);
+    if (dataUrl) return `data:image/${dataUrl[1].toLowerCase()};base64,${dataUrl[2].replace(/\s/g, '')}`;
+    if (!/^[A-Za-z0-9+/=\r\n]+$/.test(value)) return null;
+    return `data:image/png;base64,${value.replace(/\s/g, '')}`;
+  };
+
   return {
     name: 'evolution',
     isSandbox: false,
@@ -201,9 +219,27 @@ function evolutionProvider({ fetchImpl, secretFn = getSecret, settings = {} } = 
     },
     estimateMessageCost(s) { return Number(s?.cost_per_message || 0); },
     async testConnection() {
-      const data = await call('GET', `/instance/connectionState/${encodeURIComponent(instance)}`);
-      const state = data.instance?.state || data.state || data.status || 'unknown';
-      return { ok: ['open', 'connected'].includes(String(state).toLowerCase()), state };
+      const state = await readConnectionState();
+      return { ok: ['open', 'connected'].includes(state), state };
+    },
+    async getConnectionQr() {
+      const state = await readConnectionState();
+      if (['open', 'connected'].includes(state)) {
+        return { ok: true, connected: true, state, qr_code: null, pairing_code: null };
+      }
+      const data = await call('GET', `/instance/connect/${encodeURIComponent(instance)}`);
+      const qrCode = normalizeQrCode(data);
+      const pairingCode = data.pairingCode || data.pairing_code || null;
+      if (!qrCode && !pairingCode) {
+        const e = new Error('A Evolution nao retornou um QR Code. Confirme se a instancia existe e tente novamente.');
+        e.code = 'EVOLUTION_QR_UNAVAILABLE';
+        throw e;
+      }
+      return {
+        ok: true, connected: false, state,
+        qr_code: qrCode,
+        pairing_code: pairingCode ? String(pairingCode).slice(0, 80) : null,
+      };
     },
   };
 }

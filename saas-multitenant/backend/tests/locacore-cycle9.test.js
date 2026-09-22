@@ -95,6 +95,46 @@ test('WhatsApp normaliza telefone brasileiro para o formato internacional sem du
   assert.equal(normalizeWhatsAppNumber('021988841509'), '5521988841509');
 });
 
+test('Evolution entrega QR pelo backend e não consulta conexão quando já está aberta', async () => {
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB';
+  const calls = [];
+  const disconnected = evolutionProvider({
+    settings: { whatsapp_config: { api_url: 'https://evolution.example', instance: 'rental-log', provider_mode: 'baileys' } },
+    secretFn: (_scope, name) => name === 'API_KEY' ? 'test-key' : null,
+    fetchImpl: async (url) => {
+      calls.push(url);
+      if (url.includes('/connectionState/')) return { ok: true, status: 200, json: async () => ({ instance: { state: 'close' } }) };
+      return { ok: true, status: 200, json: async () => ({ base64: png }) };
+    },
+  });
+  const qr = await disconnected.getConnectionQr();
+  assert.equal(qr.connected, false);
+  assert.equal(qr.qr_code, `data:image/png;base64,${png}`);
+  assert.equal(calls[1], 'https://evolution.example/instance/connect/rental-log');
+
+  let count = 0;
+  const connected = evolutionProvider({
+    settings: { whatsapp_config: { api_url: 'https://evolution.example', instance: 'rental-log', provider_mode: 'baileys' } },
+    secretFn: () => 'test-key',
+    fetchImpl: async () => { count += 1; return { ok: true, status: 200, json: async () => ({ instance: { state: 'open' } }) }; },
+  });
+  const state = await connected.getConnectionQr();
+  assert.equal(state.connected, true);
+  assert.equal(state.qr_code, null);
+  assert.equal(count, 1);
+});
+
+test('Evolution não encaminha URL remota como QR Code', async () => {
+  const provider = evolutionProvider({
+    settings: { whatsapp_config: { api_url: 'https://evolution.example', instance: 'rental-log', provider_mode: 'baileys' } },
+    secretFn: () => 'test-key',
+    fetchImpl: async (url) => url.includes('/connectionState/')
+      ? { ok: true, status: 200, json: async () => ({ state: 'close' }) }
+      : { ok: true, status: 200, json: async () => ({ base64: 'https://attacker.example/qr.png' }) },
+  });
+  await assert.rejects(() => provider.getConnectionQr(), /nao retornou um QR Code/);
+});
+
 test('identificador da cobrança é único também entre tenants', () => {
   const a = automationModels.formatChargePublicId('11111111-1111-4111-8111-111111111111', 2026, 1);
   const b = automationModels.formatChargePublicId('22222222-2222-4222-8222-222222222222', 2026, 1);

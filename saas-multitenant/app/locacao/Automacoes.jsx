@@ -8,6 +8,7 @@ import {
   getConsole, getDeadLetter, cancelDeadLetter, manualDeadLetter,
   getReadiness, runDryRun, getCharges, retryCharge, getAutomationAudit,
   saveIntegrationSecrets, testIntegration, getFiscalCertificate, uploadFiscalCertificate,
+  getWhatsappQr,
   getTemplates, saveTemplate, confirmChargeManually, getChargeTimeline,
 } from '../lib/automationsAPI';
 import { getRentals } from '../lib/rentalsAPI';
@@ -112,8 +113,20 @@ export default function Automacoes() {
   const [templates, setTemplates] = useState([]);
   const [confirmModal, setConfirmModal] = useState(null); // { charge, amount, payment_date, payment_method, notes }
   const [timeline, setTimeline] = useState(null); // { charge, rows }
+  const [whatsappConnection, setWhatsappConnection] = useState(null);
+  const [whatsappQrLoading, setWhatsappQrLoading] = useState(false);
 
   useEffect(() => { loadPanel(); }, []);
+
+  const qrPending = !!whatsappConnection?.qr_code && !whatsappConnection?.connected;
+  useEffect(() => {
+    if (tab !== 'config' || settings?.whatsapp_provider !== 'evolution'
+      || settings?.whatsapp_config?.provider_mode !== 'baileys' || !qrPending) return undefined;
+    const timer = setInterval(() => {
+      getWhatsappQr().then((result) => setWhatsappConnection(result)).catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [tab, settings?.whatsapp_provider, settings?.whatsapp_config?.provider_mode, qrPending]);
 
   const loadPanel = async () => {
     try {
@@ -254,6 +267,13 @@ export default function Automacoes() {
         });
         setSettings({ ...saved.settings, automation_mode: targetMode });
       }
+      if (kind === 'whatsapp' && settings.whatsapp_provider === 'evolution') {
+        const targetMode = settings.automation_mode;
+        const saved = await updateSettings({
+          whatsapp_provider: 'evolution', whatsapp_config: settings.whatsapp_config, automation_mode: 'off',
+        });
+        setSettings({ ...saved.settings, automation_mode: targetMode });
+      }
       names.forEach((name) => { const value = secretDraft[`${kind}:${name}`]; if (value) values[name] = value; });
       await saveIntegrationSecrets(kind, values);
       setSecretDraft((prev) => { const next = { ...prev }; names.forEach((name) => delete next[`${kind}:${name}`]); return next; });
@@ -276,6 +296,15 @@ export default function Automacoes() {
   const testProvider = async (kind) => {
     try { setBusy(true); const result = await testIntegration(kind); setNotice(`${kind}: conexão validada (${JSON.stringify(result)}).`); }
     catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  const connectWhatsapp = async () => {
+    try {
+      setWhatsappQrLoading(true); setError(null); setNotice(null);
+      const result = await getWhatsappQr();
+      setWhatsappConnection(result);
+      if (result.connected) setNotice('WhatsApp conectado. A instância está pronta para enviar mensagens.');
+    } catch (err) { setError(err.message); } finally { setWhatsappQrLoading(false); }
   };
 
   const uploadCertificate = async () => {
@@ -647,6 +676,17 @@ export default function Automacoes() {
             {settings.whatsapp_provider === 'evolution' && <div className="form-row">
               <div className="form-group"><label>Modo da Evolution</label><select value={settings.whatsapp_config?.provider_mode || 'cloud'} onChange={setNestedField('whatsapp_config', 'provider_mode')}><option value="cloud">Cloud API / templates oficiais</option><option value="baileys">WhatsApp Web / texto livre</option></select></div>
               {settings.whatsapp_config?.provider_mode === 'baileys' && <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={settings.whatsapp_config?.unofficial_acknowledged === true} onChange={setNestedField('whatsapp_config', 'unofficial_acknowledged')} /> Estou ciente de que este modo não é a API oficial da Meta.</label>}
+            </div>}
+            {settings.whatsapp_provider === 'evolution' && settings.whatsapp_config?.provider_mode === 'baileys' && <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Conectar WhatsApp pelo celular</div>
+              <p className="nx-cfg-hint" style={{ marginTop: 0 }}>Salve a URL, a instância e a API key. Depois gere o QR e, no WhatsApp, abra <strong>Aparelhos conectados → Conectar um aparelho</strong>.</p>
+              <button className="btn-secondary" type="button" disabled={busy || whatsappQrLoading} onClick={connectWhatsapp}>{whatsappQrLoading ? 'Gerando QR…' : whatsappConnection?.connected ? 'Verificar conexão' : 'Gerar QR Code'}</button>
+              {whatsappConnection && <div style={{ marginTop: 10, fontSize: 13 }}><strong>Estado:</strong> {whatsappConnection.connected ? 'conectado' : whatsappConnection.state || 'aguardando leitura'}</div>}
+              {whatsappConnection?.qr_code && !whatsappConnection.connected && <div style={{ marginTop: 12 }}>
+                <img src={whatsappConnection.qr_code} alt="QR Code para conectar o WhatsApp" width="260" height="260" style={{ display: 'block', maxWidth: '100%', background: '#fff', padding: 8, borderRadius: 8 }} />
+                <p className="nx-cfg-hint">A tela verifica a conexão a cada 5 segundos. Se o QR expirar, clique novamente em “Gerar QR Code”.</p>
+              </div>}
+              {!whatsappConnection?.qr_code && whatsappConnection?.pairing_code && !whatsappConnection.connected && <p style={{ marginTop: 10 }}>Código de pareamento: <strong>{whatsappConnection.pairing_code}</strong></p>}
             </div>}
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={settings.whatsapp_config?.send_payment_confirmation !== false} onChange={setNestedField('whatsapp_config', 'send_payment_confirmation')} /> Enviar mensagem de pagamento confirmado</label>
             <div className="form-row">
