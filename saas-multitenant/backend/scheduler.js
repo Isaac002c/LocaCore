@@ -12,6 +12,7 @@
 //   - outbox    : processa a fila (a cada ~5 min; o worker também processa)
 //   - dunning   : régua de inadimplência (diária/por janela)
 //   - billing   : cobrança semanal (checagem horária; roda no dia/hora do tenant)
+//   - payment-reconciliation: confirma PIX Inter mesmo se o webhook falhar
 //   - fiscal    : lote fiscal (semanal, quando habilitado)
 // =============================================================================
 
@@ -32,6 +33,7 @@ const JOBS = [
   { name: 'dunning', every: env('SCHED_DUNNING_MS', min(60 * 6)), ttl: 300, run: () => runner.runDunningAll({}) },
   { name: 'billing', every: env('SCHED_BILLING_MS', min(60)),  ttl: 600, run: () => runner.runBillingAll({}) },
   { name: 'charge-retry', every: env('SCHED_CHARGE_RETRY_MS', min(15)), ttl: 300, run: () => runner.retryChargesAll({ limit: 20 }) },
+  { name: 'payment-reconciliation', every: env('SCHED_PAYMENT_RECONCILIATION_MS', min(5)), ttl: 240, run: () => runner.reconcilePaymentsAll({ limit: 100 }) },
   { name: 'fiscal',  every: env('SCHED_FISCAL_MS',  min(60 * 12)), ttl: 600, run: () => runner.fiscalBatchAll() },
 ];
 

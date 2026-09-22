@@ -134,6 +134,25 @@ test('readiness aceita PIX direto sem InfiniteTag/webhook financeiro e mantém b
   assert.equal(result.integrations.find((item) => item.key === 'pagamento').nome, 'PIX com confirmacao manual');
 });
 
+test('readiness do Inter exige Client ID/Secret, mTLS, chave PIX e webhook HTTPS', async () => {
+  await pool.query(`INSERT INTO tenant_integration_secrets VALUES
+    ('tenant-leandro','payment:inter','CLIENT_ID'),
+    ('tenant-leandro','payment:inter','CLIENT_SECRET'),
+    ('tenant-leandro','payment:inter','CERTIFICATE'),
+    ('tenant-leandro','payment:inter','PRIVATE_KEY')`);
+  const result = await integrationsReadiness({
+    ...SETTINGS,
+    payment_provider: 'inter', payment_config: { pix_key: '45427279000122' },
+    pilot_rental_ids: ['r1'],
+  }, 'leandro', { tenant_id: 'tenant-leandro', mode: 'pilot', rental_ids: ['r1'] });
+  assert.equal(result.activation.allowed, true);
+  assert.equal(result.checks.find((item) => item.key === 'inter_credentials').ok, true);
+  assert.equal(result.checks.find((item) => item.key === 'inter_mtls').ok, true);
+  assert.equal(result.checks.find((item) => item.key === 'payment_webhook').detail,
+    'https://locacore.example/webhooks/payment/inter');
+  assert.equal(result.integrations.find((item) => item.key === 'pagamento').nome, 'Banco Inter / PIX Cobrança');
+});
+
 test('readiness do piloto bloqueia seleção de zero ou mais de uma locação', async () => {
   const none = await integrationsReadiness(SETTINGS, 'leandro', {
     tenant_id: 'tenant-leandro', mode: 'pilot', rental_ids: [],

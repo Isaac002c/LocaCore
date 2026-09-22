@@ -36,9 +36,22 @@ async function providerForCharge(charge, settings) {
 
 async function handleWebhook(providerName, body, {
   rawBody = Buffer.from(JSON.stringify(body || {})), headers = {}, now = new Date(), repo,
+  _single = false, _verification = null,
 } = {}) {
   const requestedProvider = String(providerName || '').toLowerCase();
   const parser = getPaymentProvider({ payment_provider: requestedProvider });
+  if (!_single && typeof parser.splitWebhook === 'function') {
+    const events = parser.splitWebhook(body || {});
+    if (events.length > 1) {
+      const results = [];
+      for (const event of events) {
+        results.push(await handleWebhook(providerName, event, {
+          rawBody: Buffer.from(JSON.stringify(event)), headers, now, repo, _single: true,
+        }));
+      }
+      return { ok: true, batch: true, processed: results.length, results };
+    }
+  }
   const parsed = parser.parseWebhook(body || {});
   const charge = await resolveCharge(parser.name, parsed);
   if (!charge) return { ok: true, ignored: true, reason: 'charge_not_found' };
@@ -79,7 +92,7 @@ async function handleWebhook(providerName, body, {
     }
 
     // O webhook e apenas uma notificacao. A baixa depende desta consulta ativa.
-    const verification = await provider.verifyPayment({ charge, webhook: parsed });
+    const verification = _verification || await provider.verifyPayment({ charge, webhook: parsed });
     const verifiedAmount = verification.paid_amount ?? verification.amount;
     if (!verification.verified || !verification.paid) {
       await M.updateCharge(charge.id, tenant_id, {
@@ -170,6 +183,49 @@ async function handleWebhook(providerName, body, {
   }
 }
 
+// Rede de segurança do webhook: consulta diretamente no Inter todas as
+// cobranças pendentes. Só cria um evento interno quando o banco já confirmou o
+// pagamento; cobranças ainda abertas permanecem intocadas.
+async function reconcilePendingInter({ now = new Date(), limit = 100 } = {}) {
+  const pool = require('../../config/db');
+  const rows = (await pool.query(
+    `SELECT c.* FROM charges c
+       JOIN automation_settings a ON a.tenant_id=c.tenant_id
+      WHERE c.provider='inter' AND c.status IN ('waiting_payment','overdue')
+        AND a.payment_provider='inter'
+      ORDER BY c.updated_at ASC LIMIT $1`,
+    [Math.max(1, Math.min(Number(limit) || 100, 500))],
+  )).rows;
+  const result = { candidates: rows.length, checked: 0, confirmed: 0, pending: 0, failed: 0 };
+  for (const charge of rows) {
+    try {
+      const settings = await M.getSettings(charge.tenant_id) || {};
+      const provider = await providerForCharge(charge, settings);
+      const verification = await provider.verifyPayment({ charge, webhook: {} });
+      result.checked++;
+      if (!verification.verified || !verification.paid) { result.pending++; continue; }
+      const body = { pix: [{
+        txid: charge.external_id,
+        endToEndId: verification.transaction_nsu || undefined,
+        valor: String(verification.paid_amount ?? verification.amount ?? ''),
+      }] };
+      const processed = await handleWebhook('inter', body, {
+        rawBody: Buffer.from(JSON.stringify(body)), now, _single: true, _verification: verification,
+      });
+      if (processed.confirmed || processed.duplicate) result.confirmed++;
+      else result.failed++;
+    } catch (err) {
+      result.failed++;
+      await audit.record({
+        tenant_id: charge.tenant_id, event_type: 'payment_reconciliation_failed', status: 'failed',
+        charge_id: charge.id, rental_id: charge.rental_id, client_id: charge.client_id,
+        provider: 'inter', error_code: err.code || 'RECONCILIATION_ERROR', error_message: err.message,
+      }).catch(() => {});
+    }
+  }
+  return result;
+}
+
 // ── Confirmação manual (§49) ─────────────────────────────────────────────────
 // Enquanto a InfinitePay não está conectada, um usuário autorizado confirma o
 // pagamento à mão. Dispara EXATAMENTE o mesmo pipeline do webhook (recibo/NFS-e
@@ -250,4 +306,4 @@ async function confirmManual(tenant_id, charge_id, {
   };
 }
 
-module.exports = { handleWebhook, resolveCharge, confirmManual, cents };
+module.exports = { handleWebhook, resolveCharge, confirmManual, reconcilePendingInter, cents };

@@ -276,6 +276,21 @@ Antes de enviar qualquer mensagem real:
 - execute o Dry Run, confira cliente, telefone, placa, valor e período de cada uma das três cobranças;
 - somente depois salve o lote. O pagamento é baixado pelo botão `<cliente> — recebido` e a nota autorizada é arquivada na pasta de documentos do cliente.
 
+### Produção Rental Log: Banco Inter + conciliação automática
+
+1. No Internet Banking PJ do Inter, crie uma integração com as permissões
+   `cob.read`, `cob.write`, `pix.read`, `webhook.read` e `webhook.write`.
+2. Em **Automações → Configurações → Pagamento**, selecione **Banco Inter**,
+   informe a chave PIX e salve Client ID, Client Secret e o certificado mTLS
+   (PFX ou CRT + KEY). Os valores ficam cifrados por tenant.
+3. Clique **Testar configuração**. O teste autentica via mTLS/OAuth e registra
+   `${BASE_URL}/webhooks/payment/inter` para a chave PIX.
+4. Execute o Dry Run e depois uma cobrança piloto real. O webhook é somente um
+   aviso: antes da baixa, o backend consulta `GET /pix/v2/cob/{txid}` no Inter,
+   confere status e valor e só então registra o pagamento.
+5. Mantenha `fiscal_mode=after_payment`; pagamento confirmado aciona o pipeline
+   idempotente de NFS-e e arquiva XML/DANFSe na pasta do cliente.
+
 ---
 
 # PARTE 4 — Operação
@@ -324,6 +339,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod exec proxy
 | Item | Bloqueio |
 | --- | --- |
 | InfinitePay | InfiniteTag, conta validada e webhook público testado |
+| Banco Inter | Conta PJ, integração API ativa, Client ID/Secret, certificado mTLS e chave PIX |
 | Pix direto | Chave e favorecido; não depende de InfinitePay, mas exige confirmação manual por usuário autorizado |
 | WhatsApp (Meta/Evolution) | Credenciais, instância/Phone Number ID e templates aprovados |
 | Emissão fiscal | Provedor + credenciais + **dados do contador** (segue `pending_configuration`) |

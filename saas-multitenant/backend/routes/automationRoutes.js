@@ -24,7 +24,7 @@ const certificateUpload = multer({
 });
 
 const PROVIDERS = {
-  payment: new Set(['null', 'manual_pix', 'asaas', 'infinitepay']),
+  payment: new Set(['null', 'manual_pix', 'asaas', 'infinitepay', 'inter']),
   whatsapp: new Set(['null', 'meta', 'evolution']),
   fiscal: new Set(['null', 'focusnfe', 'nfse_nacional']),
 };
@@ -116,6 +116,10 @@ const SECRET_FIELDS = {
   'payment:manual_pix': new Set([]),
   'payment:asaas': new Set(['KEY', 'WEBHOOK_TOKEN']),
   'payment:infinitepay': new Set([]),
+  'payment:inter': new Set([
+    'CLIENT_ID', 'CLIENT_SECRET', 'CERTIFICATE', 'PRIVATE_KEY',
+    'PFX_BASE64', 'PFX_PASSWORD',
+  ]),
   'whatsapp:meta': new Set(['ACCESS_TOKEN', 'APP_SECRET', 'VERIFY_TOKEN']),
   'whatsapp:evolution': new Set(['API_KEY', 'APP_SECRET', 'VERIFY_TOKEN']),
   'fiscal:focusnfe': new Set(['TOKEN']),
@@ -147,7 +151,8 @@ router.put('/integrations/:kind/secrets', checkPermission('automations:manage'),
     for (const [rawName, value] of Object.entries(req.body || {})) {
       const name = String(rawName).toUpperCase();
       if (!cfg.allowed.has(name)) return res.status(400).json({ success: false, error: `Campo secreto ${name} nao permitido.` });
-      if (typeof value !== 'string' || value.length > 10000) return res.status(400).json({ success: false, error: `Valor invalido para ${name}.` });
+      const maxLength = ['CERTIFICATE', 'PRIVATE_KEY', 'PFX_BASE64'].includes(name) ? 200000 : 10000;
+      if (typeof value !== 'string' || value.length > maxLength) return res.status(400).json({ success: false, error: `Valor invalido para ${name}.` });
       if (value.trim()) values[name] = value;
     }
     const saved = await secretStore.setSecrets(req.tenantId, cfg.scope, values);

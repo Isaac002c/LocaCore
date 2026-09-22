@@ -50,7 +50,7 @@ function planRental(rental, settings, { period_start, period_end, due_date }) {
   if (settings.payment_provider === 'manual_pix' && !String(settings.payment_config?.pix_key || '').trim()) {
     blockers.push({ code: 'MISSING_PIX_KEY', message: 'Chave PIX da cobrança manual ausente.' });
   }
-  if (['infinitepay', 'asaas'].includes(settings.payment_provider) && settings.payments_enabled === false) {
+  if (['infinitepay', 'asaas', 'inter'].includes(settings.payment_provider) && settings.payments_enabled === false) {
     blockers.push({ code: 'EXTERNAL_PAYMENT_DISABLED', message: 'Criação de cobrança no provedor externo está desativada.' });
   }
   return {
@@ -190,7 +190,7 @@ async function runBilling(tenant_id, { now = new Date(), force = false, request_
         throw Object.assign(new Error('Provedor nao devolveu checkout ou Pix valido.'), { code: 'INVALID_PROVIDER_RESPONSE' });
       }
     } catch (err) {
-      const ambiguous = err.code === 'NETWORK_ERROR';
+      const ambiguous = err.code === 'NETWORK_ERROR' && provider.idempotentCreate !== true;
       const status = ambiguous ? 'needs_attention' : 'failed';
       await M.updateCharge(draft.id, tenant_id, {
         status, error_code: err.code || 'PROVIDER_ERROR', error_message: String(err.message).slice(0, 1000),
@@ -297,7 +297,7 @@ async function retryCharge(tenant_id, charge_id, { now = new Date(), request_id 
       throw Object.assign(new Error('Provedor nao devolveu checkout ou Pix valido.'), { code: 'INVALID_PROVIDER_RESPONSE' });
     }
   } catch (err) {
-    const ambiguous = err.code === 'NETWORK_ERROR';
+    const ambiguous = err.code === 'NETWORK_ERROR' && provider.idempotentCreate !== true;
     const status = ambiguous || attempt >= 5 ? 'needs_attention' : 'failed';
     await M.updateCharge(charge.id, tenant_id, {
       status, error_code: err.code || 'PROVIDER_ERROR', error_message: String(err.message).slice(0, 1000),

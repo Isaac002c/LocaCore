@@ -92,7 +92,16 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
   const infiniteHandle = paymentConfig.handle || paymentConfig.infinitepay_handle
     || hasEnv('PAYMENT_INFINITEPAY', 'HANDLE', slug);
   const manualPix = paymentProvider === 'manual_pix';
+  const interPix = paymentProvider === 'inter';
   const manualPixKey = String(paymentConfig.pix_key || '').trim();
+  const interPixKey = String(paymentConfig.pix_key || '').trim()
+    || hasStored(paySecrets, 'PIX_KEY') || hasEnv('PAYMENT_INTER', 'PIX_KEY', slug);
+  const interClientCredentials = (hasStored(paySecrets, 'CLIENT_ID') || hasEnv('PAYMENT_INTER', 'CLIENT_ID', slug))
+    && (hasStored(paySecrets, 'CLIENT_SECRET') || hasEnv('PAYMENT_INTER', 'CLIENT_SECRET', slug));
+  const interMtls = hasStored(paySecrets, 'PFX_BASE64') || hasStored(paySecrets, 'PFX')
+    || hasEnv('PAYMENT_INTER', 'PFX_BASE64', slug) || hasEnv('PAYMENT_INTER', 'PFX', slug)
+    || ((hasStored(paySecrets, 'CERTIFICATE') || hasEnv('PAYMENT_INTER', 'CERTIFICATE', slug))
+      && (hasStored(paySecrets, 'PRIVATE_KEY') || hasEnv('PAYMENT_INTER', 'PRIVATE_KEY', slug)));
   const externalPaymentsEnabled = settings.payments_enabled !== false;
   const waMode = waProvider === 'evolution' ? String(waConfig.provider_mode || 'cloud').toLowerCase() : 'cloud';
   const waKey = waProvider === 'evolution'
@@ -136,17 +145,23 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
     item('vehicle_ncm', 'Veiculos com NCM', !settings.fiscal_enabled || fiscalConfig.require_vehicle_ncm !== true || counts.vehicles_without_ncm === 0,
       counts.vehicles_without_ncm, { critical: !!settings.fiscal_enabled && fiscalConfig.require_vehicle_ncm === true,
         detail: fiscalConfig.require_vehicle_ncm === true ? 'Exigido pela configuração fiscal deste tenant.' : 'O leiaute DPS 1.01 não usa NCM.' }),
-    item('payment_provider', 'InfinitePay ou PIX com confirmacao manual selecionado',
-      ['infinitepay', 'manual_pix'].includes(paymentProvider), null, { critical: true }),
-    item('infinitepay_handle', 'InfiniteTag configurada', manualPix || !!infiniteHandle, null,
-      { critical: !manualPix }),
+    item('payment_provider', 'Inter, InfinitePay ou PIX com confirmacao manual selecionado',
+      ['inter', 'infinitepay', 'manual_pix'].includes(paymentProvider), null, { critical: true }),
+    item('infinitepay_handle', 'InfiniteTag configurada', paymentProvider !== 'infinitepay' || !!infiniteHandle, null,
+      { critical: paymentProvider === 'infinitepay' }),
     item('manual_pix_key', 'Chave PIX da confirmacao manual configurada', !manualPix || !!manualPixKey, null,
       { critical: manualPix }),
+    item('inter_pix_key', 'Chave PIX da conta Inter configurada', !interPix || !!interPixKey, null,
+      { critical: interPix }),
+    item('inter_credentials', 'Client ID e Client Secret do Inter armazenados', !interPix || !!interClientCredentials, null,
+      { critical: interPix }),
+    item('inter_mtls', 'Certificado mTLS do Inter armazenado', !interPix || !!interMtls, null,
+      { critical: interPix, detail: interPix ? 'Aceita PFX ou o par certificado (.crt/.pem) + chave privada (.key/.pem).' : null }),
     item('external_payment_enabled', 'Criacao de cobranca externa habilitada',
       manualPix || externalPaymentsEnabled, null, { critical: !manualPix }),
     item('payment_webhook', 'Webhook publico de pagamento', manualPix || webhookAvailable, null,
       { critical: !manualPix, detail: manualPix ? 'Baixa feita somente pelo botao Recebido.' :
-        (publicBase ? `${publicBase}/webhooks/infinitepay` : 'BASE_URL ausente') }),
+        (publicBase ? `${publicBase}${interPix ? '/webhooks/payment/inter' : '/webhooks/infinitepay'}` : 'BASE_URL ausente') }),
     item('whatsapp_provider', 'WhatsApp Meta ou Evolution configurado', ['meta', 'evolution'].includes(waProvider), null,
       { critical: !!settings.whatsapp_enabled }),
     item('whatsapp_credentials', 'Credencial do WhatsApp armazenada', !settings.whatsapp_enabled ||
@@ -188,10 +203,10 @@ async function integrationsReadiness(settings = {}, slug = null, options = {}) {
     } : { configured: false, expired: false, expiring_soon: false },
     fiscal_validacao: fiscalValidation,
     integrations: [
-      { key: 'pagamento', nome: manualPix ? 'PIX com confirmacao manual' : 'InfinitePay', provider: paymentProvider,
-        status: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'external_payment_enabled', 'payment_webhook'].includes(x.key)).every((x) => x.ok)
+      { key: 'pagamento', nome: manualPix ? 'PIX com confirmacao manual' : interPix ? 'Banco Inter / PIX Cobrança' : 'InfinitePay', provider: paymentProvider,
+        status: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'inter_pix_key', 'inter_credentials', 'inter_mtls', 'external_payment_enabled', 'payment_webhook'].includes(x.key)).every((x) => x.ok)
           ? 'pronto' : 'nao_configurado',
-        itens: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'external_payment_enabled', 'payment_webhook'].includes(x.key)) },
+        itens: checks.filter((x) => ['payment_provider', 'infinitepay_handle', 'manual_pix_key', 'inter_pix_key', 'inter_credentials', 'inter_mtls', 'external_payment_enabled', 'payment_webhook'].includes(x.key)) },
       { key: 'whatsapp', nome: waProvider === 'evolution' ? 'Evolution API / WhatsApp' : 'WhatsApp Cloud API', provider: waProvider,
         status: checks.filter((x) => x.key.startsWith('whatsapp')).every((x) => x.ok) ? 'pronto' : 'nao_configurado',
         itens: checks.filter((x) => x.key.startsWith('whatsapp')) },

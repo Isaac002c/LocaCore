@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const https = require('node:https');
 const { getSecret } = require('../secrets');
 const { safeEqual } = require('../webhookSecurity');
 const { assertSandboxAllowed, sandboxSignatureResult } = require('./guard');
@@ -9,6 +10,11 @@ const { toISODate } = require('../../../utils/date');
 const digits = (value) => String(value || '').replace(/\D/g, '');
 const money = (value) => (Math.round((Number(value) || 0) * 100) / 100).toFixed(2);
 const toCents = (value) => Math.round(Number(value || 0) * 100);
+
+// Tokens do Inter valem 60 minutos. O cache evita gerar um token por cobrança
+// (o próprio Inter limita o endpoint de OAuth) e fica somente em memória.
+const interTokenCache = new Map();
+const interWebhookCache = new Map();
 
 function providerError(message, code, { retryable = false, details = null } = {}) {
   const err = new Error(message);
@@ -318,12 +324,293 @@ function infinitePayProvider({ fetchImpl, secretFn = getSecret, settings = {} } 
   };
 }
 
+function decodePem(value) {
+  if (!value) return null;
+  const raw = String(value).trim().replace(/\\n/g, '\n');
+  if (raw.includes('-----BEGIN ')) return raw;
+  try {
+    const decoded = Buffer.from(raw, 'base64').toString('utf8');
+    return decoded.includes('-----BEGIN ') ? decoded : raw;
+  } catch (_) { return raw; }
+}
+
+function decodePfx(value) {
+  if (!value) return null;
+  if (Buffer.isBuffer(value)) return value;
+  try { return Buffer.from(String(value).trim(), 'base64'); }
+  catch (_) { return null; }
+}
+
+function interTls(secretFn, preferredFormat = null) {
+  const pfx = decodePfx(secretFn('PAYMENT_INTER', 'PFX_BASE64') || secretFn('PAYMENT_INTER', 'PFX'));
+  const cert = decodePem(secretFn('PAYMENT_INTER', 'CERTIFICATE') || secretFn('PAYMENT_INTER', 'CERT'));
+  const key = decodePem(secretFn('PAYMENT_INTER', 'PRIVATE_KEY') || secretFn('PAYMENT_INTER', 'KEY'));
+  if (preferredFormat === 'pem' && cert && key) return { cert, key, rejectUnauthorized: true };
+  if (preferredFormat === 'pfx' && pfx?.length) {
+    return { pfx, passphrase: secretFn('PAYMENT_INTER', 'PFX_PASSWORD') || undefined, rejectUnauthorized: true };
+  }
+  if (cert && key) return { cert, key, rejectUnauthorized: true };
+  if (pfx?.length) return { pfx, passphrase: secretFn('PAYMENT_INTER', 'PFX_PASSWORD') || undefined, rejectUnauthorized: true };
+  throw providerError('Certificado mTLS do Inter ausente. Envie PFX ou certificado e chave privada.', 'MISSING_MTLS_CERTIFICATE');
+}
+
+// Transporte HTTPS pequeno e explícito para suportar mTLS sem desabilitar a
+// validação TLS. O limite de resposta evita consumo de memória por upstream.
+function httpsJsonRequest({ url, method = 'GET', headers = {}, body = null, tls = {}, timeoutMs = 30000 }) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const payload = body == null ? null : (Buffer.isBuffer(body) ? body : Buffer.from(String(body)));
+    const req = https.request({
+      protocol: target.protocol, hostname: target.hostname,
+      port: target.port || 443, path: `${target.pathname}${target.search}`,
+      method, headers: { ...headers, ...(payload ? { 'Content-Length': payload.length } : {}) },
+      timeout: timeoutMs, ...tls,
+    }, (res) => {
+      const chunks = [];
+      let size = 0;
+      res.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > 2 * 1024 * 1024) req.destroy(new Error('Resposta do Inter excedeu 2 MB.'));
+        else chunks.push(chunk);
+      });
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        let data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch (_) { data = { raw: text.slice(0, 2000) }; }
+        }
+        const status = Number(res.statusCode || 0);
+        resolve({ ok: status >= 200 && status < 300, status, data, headers: res.headers });
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Timeout ao acessar o Inter.')));
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function interProvider({ requestImpl, secretFn = getSecret, settings = {}, nowFn = () => Date.now() } = {}) {
+  const transport = requestImpl || httpsJsonRequest;
+  const cfg = settings.payment_config || {};
+  const environment = String(cfg.environment || 'production').toLowerCase();
+  const defaultBase = environment === 'sandbox'
+    ? 'https://cdpj-sandbox.partners.uatinter.co'
+    : 'https://cdpj.partners.bancointer.com.br';
+  // URLs não vêm das configurações editáveis do tenant: isso impediria que um
+  // administrador apontasse o mTLS/Client Secret para um host arbitrário.
+  // Overrides existem somente por variável de ambiente confiável (sandbox/tests).
+  const base = String(secretFn('PAYMENT_INTER', 'BASE') || defaultBase).replace(/\/$/, '');
+  const tokenUrl = String(secretFn('PAYMENT_INTER', 'TOKEN_URL') || `${base}/oauth/v2/token`);
+  const pixKey = () => String(cfg.pix_key || secretFn('PAYMENT_INTER', 'PIX_KEY') || '').trim();
+  const clientId = () => secretFn('PAYMENT_INTER', 'CLIENT_ID');
+  const clientSecret = () => secretFn('PAYMENT_INTER', 'CLIENT_SECRET');
+  const account = () => String(cfg.account_number || secretFn('PAYMENT_INTER', 'ACCOUNT_NUMBER') || '').trim();
+  const webhookUrl = () => String(cfg.webhook_url || (process.env.BASE_URL
+    ? `${String(process.env.BASE_URL).replace(/\/$/, '')}/webhooks/payment/inter` : '')).trim();
+  const scope = String(cfg.scope || 'cob.write cob.read pix.read webhook.read webhook.write');
+
+  const credentials = () => {
+    if (!clientId() || !clientSecret()) {
+      throw providerError('Client ID/Secret do Inter ausentes.', 'NO_CREDENTIALS');
+    }
+    if (!pixKey()) throw providerError('Chave PIX do Inter ausente.', 'MISSING_PIX_KEY');
+    return { tls: interTls(secretFn, cfg.certificate_format) };
+  };
+
+  const send = async (request) => {
+    try {
+      const response = await transport(request);
+      if (response && typeof response.json === 'function') {
+        return { ok: !!response.ok, status: Number(response.status || 0), data: await response.json().catch(() => ({})), headers: response.headers || {} };
+      }
+      return { ok: !!response?.ok, status: Number(response?.status || 0), data: response?.data || {}, headers: response?.headers || {} };
+    } catch (err) {
+      throw providerError(`Inter indisponivel: ${err.message}`, 'NETWORK_ERROR', { retryable: true });
+    }
+  };
+
+  const tokenCacheKey = () => `${base}:${clientId()}`;
+  const token = async ({ force = false } = {}) => {
+    const { tls } = credentials();
+    const cacheKey = tokenCacheKey();
+    const cached = interTokenCache.get(cacheKey);
+    if (!force && cached && cached.expiresAt > nowFn() + 30000) return cached.value;
+    const form = new URLSearchParams({
+      client_id: clientId(), client_secret: clientSecret(),
+      scope, grant_type: 'client_credentials',
+    }).toString();
+    const response = await send({
+      url: tokenUrl, method: 'POST', tls,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: form,
+    });
+    if (!response.ok || !response.data?.access_token) {
+      throw providerError(response.data?.detail || response.data?.title || `Inter OAuth HTTP ${response.status}`,
+        `OAUTH_HTTP_${response.status}`, { retryable: response.status >= 500 || response.status === 429, details: response.data });
+    }
+    const ttl = Math.max(60, Number(response.data.expires_in || 3600));
+    interTokenCache.set(cacheKey, { value: response.data.access_token, expiresAt: nowFn() + ttl * 1000 });
+    return response.data.access_token;
+  };
+
+  const api = async (path, { method = 'GET', payload = null, retryAuth = true } = {}) => {
+    const { tls } = credentials();
+    const accessToken = await token();
+    const headers = { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' };
+    if (payload != null) headers['Content-Type'] = 'application/json';
+    if (account()) headers['x-conta-corrente'] = account();
+    const response = await send({
+      url: `${base}${path}`, method, tls, headers,
+      body: payload == null ? null : JSON.stringify(payload),
+    });
+    if (response.status === 401 && retryAuth) {
+      interTokenCache.delete(tokenCacheKey());
+      await token({ force: true });
+      return api(path, { method, payload, retryAuth: false });
+    }
+    if (!response.ok) {
+      const message = response.data?.detail || response.data?.title || response.data?.violacoes?.[0]?.razao
+        || `Inter HTTP ${response.status}`;
+      throw providerError(message, `HTTP_${response.status}`, {
+        retryable: response.status >= 500 || response.status === 429, details: response.data,
+      });
+    }
+    return response.data || {};
+  };
+
+  const ensureWebhook = async () => {
+    const url = webhookUrl();
+    if (!url || !/^https:\/\//i.test(url)) {
+      throw providerError('URL HTTPS publica do webhook Inter nao configurada.', 'MISSING_WEBHOOK_URL');
+    }
+    const cacheKey = `${base}:${pixKey()}:${url}`;
+    const readyUntil = interWebhookCache.get(cacheKey);
+    if (readyUntil && readyUntil > nowFn()) return url;
+    await api(`/pix/v2/webhook/${encodeURIComponent(pixKey())}`, {
+      method: 'PUT', payload: { webhookUrl: url },
+    });
+    interWebhookCache.set(cacheKey, nowFn() + 10 * 60 * 1000);
+    return url;
+  };
+
+  const txidFor = (publicId) => crypto.createHash('sha256').update(`locacore:${publicId}`).digest('hex').slice(0, 32).toUpperCase();
+  const expirationFor = (dueDate) => {
+    const configured = Number(cfg.expiration_seconds || 0);
+    if (configured > 0) return Math.max(60, Math.min(configured, 30 * 86400));
+    const due = dueDate ? new Date(`${toISODate(dueDate)}T23:59:59-03:00`).getTime() : nowFn() + 86400000;
+    // Vencimento financeiro e expiração do QR são independentes. Mantemos o QR
+    // pagável por ao menos sete dias para que os lembretes não levem um código
+    // expirado; a cobrança ainda fica "atrasada" no LocaCore na data correta.
+    return Math.max(7 * 86400, Math.min(Math.ceil((due - nowFn()) / 1000), 30 * 86400));
+  };
+
+  return {
+    name: 'inter',
+    isSandbox: environment === 'sandbox',
+    supportsExternalCustomer: false,
+    idempotentCreate: true,
+    async createCharge({ amount, due_date, description, public_id, client = {} }) {
+      credentials();
+      if (!public_id) throw providerError('Identificador interno da cobranca ausente.', 'MISSING_ORDER_NSU');
+      await ensureWebhook();
+      const txid = txidFor(public_id);
+      const document = digits(client.cpf || client.cpf_cnpj || client.document);
+      const debtor = client.name && [11, 14].includes(document.length)
+        ? { nome: String(client.name).slice(0, 200), ...(document.length === 11 ? { cpf: document } : { cnpj: document }) }
+        : undefined;
+      const payload = {
+        calendario: { expiracao: expirationFor(due_date) },
+        valor: { original: money(amount), modalidadeAlteracao: 0 },
+        chave: pixKey(),
+        solicitacaoPagador: String(description || `Locacao ${public_id}`).slice(0, 140),
+        devedor: debtor,
+        infoAdicionais: [
+          { nome: 'LocaCore', valor: String(public_id).slice(0, 200) },
+        ],
+      };
+      const data = await api(`/pix/v2/cob/${txid}`, { method: 'PUT', payload });
+      if (!data.pixCopiaECola) {
+        throw providerError('Inter nao devolveu o PIX copia e cola.', 'INVALID_PROVIDER_RESPONSE', { details: data });
+      }
+      const createdAt = data.calendario?.criacao ? new Date(data.calendario.criacao).getTime() : nowFn();
+      const expiresIn = Number(data.calendario?.expiracao || payload.calendario.expiracao);
+      return {
+        external_id: data.txid || txid,
+        status: String(data.status || '').toUpperCase() === 'CONCLUIDA' ? 'paid' : 'waiting_payment',
+        pix_code: data.pixCopiaECola,
+        payment_link: data.location || data.loc?.location || null,
+        expires_at: new Date(createdAt + expiresIn * 1000).toISOString(),
+        amount: money(amount),
+        provider_metadata: {
+          txid: data.txid || txid, public_id, location: data.location || data.loc?.location || null,
+          receiver_name: String(cfg.receiver_name || cfg.pix_receiver_name || 'Rental Log Service'),
+          environment, webhook_url: webhookUrl(),
+        },
+      };
+    },
+    // O Inter autentica callbacks por certificado de cliente no transporte.
+    // Como o TLS pode terminar no proxy, tratamos o callback apenas como aviso:
+    // a baixa depende obrigatoriamente do GET mTLS no banco em verifyPayment.
+    verifyWebhookSignature() { return { valid: true, unsigned: true, requiresProviderVerification: true }; },
+    parseWebhook(body = {}) {
+      const pix = Array.isArray(body.pix) ? body.pix[0] || {} : body;
+      const txid = pix.txid || body.txid || null;
+      const e2e = pix.endToEndId || pix.end_to_end_id || body.endToEndId || null;
+      const eventHash = crypto.createHash('sha256').update(JSON.stringify(pix)).digest('hex');
+      return {
+        external_event_id: String(e2e || `${txid || 'unknown'}:${eventHash}`),
+        charge_external_id: txid,
+        charge_public_id: null,
+        transaction_nsu: e2e,
+        status: txid ? 'paid' : 'waiting_payment',
+        amount: pix.valor != null ? Number(pix.valor) : null,
+        raw: body,
+      };
+    },
+    splitWebhook(body = {}) {
+      return Array.isArray(body.pix) && body.pix.length > 1
+        ? body.pix.slice(0, 100).map((pix) => ({ pix: [pix] }))
+        : [body];
+    },
+    async verifyPayment({ charge, webhook }) {
+      const txid = charge.external_id || charge.provider_metadata?.txid || webhook.charge_external_id;
+      if (!txid) throw providerError('Cobranca Inter sem txid.', 'MISSING_TXID');
+      const data = await api(`/pix/v2/cob/${encodeURIComponent(txid)}`);
+      const received = Array.isArray(data.pix) ? data.pix : [];
+      const paidAmount = received.reduce((sum, pix) => sum + Number(pix.valor || 0), 0);
+      const concluded = String(data.status || '').toUpperCase() === 'CONCLUIDA';
+      return {
+        verified: concluded && received.length > 0,
+        paid: concluded && received.length > 0,
+        amount: received.length ? paidAmount : null,
+        paid_amount: received.length ? paidAmount : null,
+        provider_status: data.status || null,
+        transaction_nsu: received[0]?.endToEndId || webhook.transaction_nsu || null,
+        receipt_url: null,
+      };
+    },
+    async testConnection() {
+      credentials();
+      await token({ force: true });
+      const registered = await ensureWebhook();
+      const key = pixKey();
+      return {
+        ok: true, environment, webhook_registered: registered,
+        pix_key_masked: key.length <= 6 ? '***' : `${key.slice(0, 3)}***${key.slice(-3)}`,
+        account_configured: !!account(),
+      };
+    },
+  };
+}
+
 function getPaymentProvider(settings = {}, deps = {}) {
   const p = String(settings.payment_provider || 'null').toLowerCase();
   if (p === 'null' || !p) return sandboxProvider;
   if (p === 'manual_pix') return manualPixProvider({ settings });
   if (p === 'asaas') return asaasProvider(deps);
   if (p === 'infinitepay') return infinitePayProvider({ ...deps, settings });
+  if (p === 'inter') return interProvider({ ...deps, settings });
   return {
     name: p, isSandbox: false, supportsExternalCustomer: false,
     async createCharge() { throw providerError(`Provedor de cobranca "${p}" nao implementado.`, 'NOT_IMPLEMENTED'); },
@@ -336,5 +623,5 @@ function getPaymentProvider(settings = {}, deps = {}) {
 
 module.exports = {
   getPaymentProvider, sandboxProvider, manualPixProvider, asaasProvider, infinitePayProvider,
-  providerError, toCents,
+  interProvider, httpsJsonRequest, providerError, toCents,
 };

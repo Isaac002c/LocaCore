@@ -61,6 +61,12 @@ const shiftYmd = (ymd, days) => {
   const date = new Date(Date.UTC(y, m - 1, d + days));
   return date.toISOString().slice(0, 10);
 };
+const fileAsBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || '').split(',').pop() || '');
+  reader.onerror = () => reject(reader.error || new Error('Não foi possível ler o arquivo.'));
+  reader.readAsDataURL(file);
+});
 const chargeFilters = (preset) => {
   const today = localYmd();
   if (preset === 'today') return { date_from: today, date_to: today };
@@ -238,11 +244,33 @@ export default function Automacoes() {
   const saveSecrets = async (kind, names) => {
     try {
       setBusy(true); const values = {};
+      if (kind === 'payment' && settings.payment_provider === 'inter') {
+        // Persiste primeiro a seleção/configuração não sensível para que o
+        // backend abra o escopo cifrado payment:inter. A automação continua
+        // desligada até o teste e a prontidão serem aprovados.
+        const targetMode = settings.automation_mode;
+        const saved = await updateSettings({
+          payment_provider: 'inter', payment_config: settings.payment_config, automation_mode: 'off',
+        });
+        setSettings({ ...saved.settings, automation_mode: targetMode });
+      }
       names.forEach((name) => { const value = secretDraft[`${kind}:${name}`]; if (value) values[name] = value; });
       await saveIntegrationSecrets(kind, values);
       setSecretDraft((prev) => { const next = { ...prev }; names.forEach((name) => delete next[`${kind}:${name}`]); return next; });
       setNotice(`Credenciais de ${kind} armazenadas com criptografia.`); await loadReadiness();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  const loadInterSecretFile = async (name, file, binary = false) => {
+    if (!file) return;
+    try {
+      const value = binary ? await fileAsBase64(file) : await file.text();
+      setSecretDraft((prev) => ({ ...prev, [`payment:${name}`]: value }));
+      setSettings((prev) => ({ ...prev, payment_config: {
+        ...(prev.payment_config || {}), certificate_format: binary ? 'pfx' : 'pem',
+      } }));
+      setNotice(`${file.name} carregado e pronto para ser armazenado com criptografia.`);
+    } catch (err) { setError(err.message); }
   };
 
   const testProvider = async (kind) => {
@@ -631,13 +659,34 @@ export default function Automacoes() {
           <div className="nx-form-section">
             <div className="nx-form-section-title">Pagamento (cobrança/PIX)</div>
             <div className="form-row">
-              <div className="form-group"><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Nenhum</option><option value="manual_pix">PIX direto — confirmar pelo botão Recebido</option><option value="infinitepay">InfinitePay</option><option value="asaas">Asaas (legado)</option></select></div>
+              <div className="form-group"><label>Provedor</label><select value={settings.payment_provider} onChange={setField('payment_provider')}><option value="null">Nenhum</option><option value="inter">Banco Inter — PIX com conciliação automática</option><option value="manual_pix">PIX direto — confirmar pelo botão Recebido</option><option value="infinitepay">InfinitePay</option><option value="asaas">Asaas (legado)</option></select></div>
               {settings.payment_provider === 'manual_pix' && <><div className="form-group"><label>Chave PIX</label><input type="text" value={settings.payment_config?.pix_key || ''} onChange={setNestedField('payment_config', 'pix_key')} placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória" /></div><div className="form-group"><label>Favorecido</label><input type="text" value={settings.payment_config?.pix_receiver_name || ''} onChange={setNestedField('payment_config', 'pix_receiver_name')} placeholder="Nome exibido na mensagem" /></div></>}
               {settings.payment_provider === 'infinitepay' && <><div className="form-group"><label>InfiniteTag</label><input type="text" value={settings.payment_config?.handle || ''} onChange={setNestedField('payment_config', 'handle')} placeholder="sua-infinite-tag" /></div><div className="form-group"><label>URL de retorno</label><input type="url" value={settings.payment_config?.redirect_url || ''} onChange={setNestedField('payment_config', 'redirect_url')} placeholder="https://..." /></div></>}
+              {settings.payment_provider === 'inter' && <>
+                <div className="form-group"><label>Ambiente Inter</label><select value={settings.payment_config?.environment || 'production'} onChange={setNestedField('payment_config', 'environment')}><option value="sandbox">Sandbox</option><option value="production">Produção</option></select></div>
+                <div className="form-group"><label>Chave PIX</label><input type="text" value={settings.payment_config?.pix_key || ''} onChange={setNestedField('payment_config', 'pix_key')} placeholder="Chave da conta PJ Inter" /></div>
+                <div className="form-group"><label>Favorecido</label><input type="text" value={settings.payment_config?.receiver_name || ''} onChange={setNestedField('payment_config', 'receiver_name')} placeholder="Rental Log Service" /></div>
+                <div className="form-group"><label>Conta corrente (se exigida)</label><input type="text" value={settings.payment_config?.account_number || ''} onChange={setNestedField('payment_config', 'account_number')} /></div>
+              </>}
             </div>
             {settings.payment_provider === 'asaas' && <div className="form-row">{['KEY', 'WEBHOOK_TOKEN'].map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`payment:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`payment:${name}`]: e.target.value }))} /></div>)}</div>}
+            {settings.payment_provider === 'inter' && <>
+              <div className="form-row">
+                {['CLIENT_ID', 'CLIENT_SECRET'].map((name) => <div className="form-group" key={name}><label>{name}</label><input type="password" autoComplete="new-password" value={secretDraft[`payment:${name}`] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, [`payment:${name}`]: e.target.value }))} placeholder="••••••••" /></div>)}
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Certificado Inter (.crt/.pem)</label><input type="file" accept=".crt,.pem,application/x-x509-ca-cert" onChange={(e) => loadInterSecretFile('CERTIFICATE', e.target.files?.[0])} /></div>
+                <div className="form-group"><label>Chave privada Inter (.key/.pem)</label><input type="file" accept=".key,.pem" onChange={(e) => loadInterSecretFile('PRIVATE_KEY', e.target.files?.[0])} /></div>
+              </div>
+              <details style={{ marginBottom: 10 }}><summary>Usar certificado PFX/P12 em vez de CRT + KEY</summary><div className="form-row" style={{ marginTop: 10 }}>
+                <div className="form-group"><label>PFX/P12</label><input type="file" accept=".pfx,.p12,application/x-pkcs12" onChange={(e) => loadInterSecretFile('PFX_BASE64', e.target.files?.[0], true)} /></div>
+                <div className="form-group"><label>Senha do PFX</label><input type="password" autoComplete="new-password" value={secretDraft['payment:PFX_PASSWORD'] || ''} onChange={(e) => setSecretDraft((s) => ({ ...s, 'payment:PFX_PASSWORD': e.target.value }))} /></div>
+              </div></details>
+              <p className="nx-cfg-hint">O teste registra automaticamente o endpoint público <strong>/webhooks/payment/inter</strong> no Inter. O Client Secret e os certificados ficam cifrados e nunca retornam ao navegador.</p>
+            </>}
             <div style={{ display: 'flex', gap: 8 }}>
               {settings.payment_provider === 'asaas' && <button className="btn-secondary" type="button" disabled={busy} onClick={() => saveSecrets('payment', ['KEY', 'WEBHOOK_TOKEN'])}>Salvar credenciais</button>}
+              {settings.payment_provider === 'inter' && <button className="btn-secondary" type="button" disabled={busy} onClick={() => saveSecrets('payment', ['CLIENT_ID', 'CLIENT_SECRET', 'CERTIFICATE', 'PRIVATE_KEY', 'PFX_BASE64', 'PFX_PASSWORD'])}>Salvar credenciais Inter</button>}
               <button className="btn-secondary" type="button" disabled={busy || settings.payment_provider === 'null'} onClick={() => testProvider('payment')}>Testar configuração</button>
             </div>
           </div>
@@ -710,7 +759,7 @@ export default function Automacoes() {
             <p className="nx-cfg-hint">Regra do contador: até a data de obrigatoriedade, o pagamento confirmado gera <strong>recibo</strong>; a partir dela, <strong>NFS-e</strong>. A emissão é sempre depois do pagamento (§7/§8/§9).</p>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.receipts_enabled} onChange={setField('receipts_enabled')} /> Gerar recibo automático após o pagamento <span style={{ color: 'var(--text-muted)' }}>(funciona já, sem InfinitePay/certificado)</span></label>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.nfse_enabled} onChange={setField('nfse_enabled')} /> Emitir NFS-e automática a partir da data <span style={{ color: 'var(--text-muted)' }}>(exige certificado A1 + provedor fiscal)</span></label>
-            {settings.payment_provider !== 'manual_pix' && <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.payments_enabled} onChange={setField('payments_enabled')} /> Criar cobrança no provedor externo (InfinitePay)</label>}
+            {settings.payment_provider !== 'manual_pix' && <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={!!settings.payments_enabled} onChange={setField('payments_enabled')} /> Criar cobrança no provedor externo ({settings.payment_provider === 'inter' ? 'Banco Inter' : 'InfinitePay'})</label>}
             {settings.payment_provider === 'manual_pix' && <p className="nx-cfg-hint">O sistema enviará somente a chave PIX e aguardará um usuário autorizado clicar em “Recebido”. Nenhum webhook poderá dar baixa nesse modo.</p>}
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={settings.document_auto_send !== false} onChange={setField('document_auto_send')} /> Enviar o recibo/NFS-e ao cliente pelo WhatsApp</label>
             <div className="form-row">

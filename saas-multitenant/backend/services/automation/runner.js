@@ -8,6 +8,7 @@ const billing = require('./billingCycleService');
 const dunning = require('./dunningService');
 const outbox = require('./outboxService');
 const fiscal = require('./fiscalService');
+const paymentConfirm = require('./paymentConfirmService');
 const rentalModel = require('../../models/rentalModels');
 const { isScheduledNow } = require('./timezone');
 
@@ -90,6 +91,10 @@ async function retryChargesAll({ now = new Date(), limit = 20 } = {}) {
   return res;
 }
 
+async function reconcilePaymentsAll({ now = new Date(), limit = 100 } = {}) {
+  return paymentConfirm.reconcilePendingInter({ now, limit });
+}
+
 async function flagOverdueAll() {
   const tenants = await rentalTenants();
   let flagged = 0;
@@ -104,4 +109,5 @@ async function fiscalBatchAll() {
   return res;
 }
 
-module.exports = { heartbeat, processOutboxAll, runBillingAll, runDunningAll, retryChargesAll, flagOverdueAll, fiscalBatchAll, tenantsWith };
+module.exports = { heartbeat, processOutboxAll, runBillingAll, runDunningAll, retryChargesAll,
+  reconcilePaymentsAll, flagOverdueAll, fiscalBatchAll, tenantsWith };
