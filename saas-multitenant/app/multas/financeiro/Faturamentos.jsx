@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { urlDetalheCliente } from '../../lib/voltar';
 import {
   getBillings, getBillingStats, getBilling, createBilling, updateBilling, cancelBilling,
   registerPayment, cancelPayment, issueReceipt, receiptPdfUrl,
@@ -220,7 +221,7 @@ export default function Faturamentos() {
         footer={detail && detail.financial_status !== 'cancelado' && (
           <>
             {detail.client_id && (
-              <button className="btn-secondary" onClick={() => router.push(`/multas/clients/${detail.client_id}`)}>Abrir cliente</button>
+              <button className="btn-secondary" onClick={() => router.push(urlDetalheCliente(detail.client_id))}>Abrir cliente</button>
             )}
             {Number(detail.paid_amount) === 0 && (
               <>

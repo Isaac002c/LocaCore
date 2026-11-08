@@ -10,6 +10,7 @@ import {
   resolveModule, resolveTab, getDefaultTab, getVisibleItems,
   getPageInfo, tabExists, canAccessTab,
 } from '../app/lib/navigation';
+import { urlDetalheCliente, urlRetornoInterno } from '../app/lib/voltar';
 
 describe('resolução de módulo', () => {
   it('usa "multas" quando não há parâmetro', () => {
@@ -122,5 +123,23 @@ describe('títulos da topbar', () => {
   it('o mesmo `tab` em módulos diferentes tem título próprio', () => {
     expect(getPageInfo('locacao', 'painel').title).toBe('Painel');
     expect(getPageInfo('multas', 'dashboard').title).toBe('Dashboard');
+  });
+});
+
+
+describe('retorno da ficha de cliente', () => {
+  it('preserva a rota do módulo Rental como origem', () => {
+    window.history.replaceState({}, '', '/dashboard?module=locacao&tab=clients');
+    const detailUrl = new URL(urlDetalheCliente('cliente 123'), window.location.origin);
+    expect(detailUrl.pathname).toBe('/multas/clients/cliente%20123');
+    expect(detailUrl.searchParams.get('returnTo')).toBe('/dashboard?module=locacao&tab=clients');
+  });
+
+  it('aceita caminhos internos completos, mas recusa URLs externas e protocol-relative', () => {
+    expect(urlRetornoInterno('/dashboard?module=locacao&tab=clients#lista'))
+      .toBe('/dashboard?module=locacao&tab=clients#lista');
+    expect(urlRetornoInterno('//evil.example/path')).toBeNull();
+    expect(urlRetornoInterno('/\\evil.example/path')).toBeNull();
+    expect(urlRetornoInterno('https://evil.example/path')).toBeNull();
   });
 });

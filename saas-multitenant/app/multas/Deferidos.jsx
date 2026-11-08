@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { urlDetalheCliente } from '../lib/voltar';
 import { getDeferred } from '../lib/contractsAPI';
 
 const GREEN = '#15803d';
@@ -41,7 +42,7 @@ export default function Deferidos() {
   // Admin pode abrir o detalhe editável; consultor NÃO é redirecionado.
   const openEditable = (it) => {
     if (!isAdmin) return;
-    if (it.client_id)       router.push(`/multas/clients/${it.client_id}`);
+    if (it.client_id)       router.push(urlDetalheCliente(it.client_id));
     else if (it.company_id) router.push(`/multas/companies/${it.company_id}`);
   };
 

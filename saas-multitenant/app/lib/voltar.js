@@ -27,6 +27,28 @@ const lerJson = (chave) => {
 export const tenantAtual = () => lerJson('tenant');
 export const usuarioAtual = () => lerJson('user');
 
+/** Gera a URL da ficha de cliente preservando a página de origem atual. */
+export function urlDetalheCliente(clientId) {
+  const returnTo = typeof window === 'undefined'
+    ? urlDeVolta('clients')
+    : `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const params = new URLSearchParams({ returnTo });
+  return `/multas/clients/${encodeURIComponent(clientId)}?${params.toString()}`;
+}
+
+/** Aceita somente destinos internos do próprio aplicativo. */
+export function urlRetornoInterno(value) {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null;
+  try {
+    const origin = 'https://locacore.invalid';
+    const target = new URL(value, origin);
+    if (target.origin !== origin) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * URL do dashboard para uma tela compartilhada, na área correta do tenant.
  * @param {string} tab       tela de destino (ex.: 'clients')

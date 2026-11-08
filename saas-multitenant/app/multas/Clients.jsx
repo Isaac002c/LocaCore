@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getClients, createClient, updateClient, deleteClient, searchClients } from '../lib/clientsAPI';
+import { urlDetalheCliente } from '../lib/voltar';
 
 const toInputDate = (value) => (!value ? '' : value.substring(0, 10));
 
@@ -51,6 +52,8 @@ const STATUS_LABELS = {
   fechado:    'Fechado',
 };
 
+const CLIENT_LIST_RETURN_STATE_KEY = 'locacore:clients:return-state';
+
 const EMPTY_FORM = {
   name: '', birth_date: '', cpf: '', cnh: '',
   first_cnh: '', phone: '', email: '', address: '',
@@ -88,20 +91,60 @@ export default function MultasClients() {
   const [saving, setSaving]           = useState(false);
   const [formError, setFormError]     = useState(null);
   const searchDebounce                = useRef(null);
+  const pendingScrollRestore          = useRef(null);
 
-  useEffect(() => { loadClients(); }, []);
+  useEffect(() => {
+    let saved = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (window.location.pathname === '/dashboard' && params.get('tab') === 'clients') {
+        saved = JSON.parse(sessionStorage.getItem(CLIENT_LIST_RETURN_STATE_KEY) || 'null');
+      }
+      if (saved) {
+        setSearchTerm(typeof saved.searchTerm === 'string' ? saved.searchTerm : '');
+        setFilterStatus(typeof saved.filterStatus === 'string' ? saved.filterStatus : '');
+        pendingScrollRestore.current = Number.isFinite(Number(saved.scrollTop)) ? Number(saved.scrollTop) : 0;
+      }
+      sessionStorage.removeItem(CLIENT_LIST_RETURN_STATE_KEY);
+    } catch {}
+    loadClients(typeof saved?.searchTerm === 'string' ? saved.searchTerm : '');
+  }, []);
 
-  const loadClients = async () => {
+  useEffect(() => {
+    if (loading || pendingScrollRestore.current === null) return;
+    const top = pendingScrollRestore.current;
+    pendingScrollRestore.current = null;
+    requestAnimationFrame(() => {
+      const scrollContainer = document.querySelector('.shell-content');
+      if (scrollContainer) scrollContainer.scrollTop = top;
+      else window.scrollTo(0, top);
+    });
+  }, [loading]);
+
+  const loadClients = async (searchQuery = '') => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getClients();
+      const query = String(searchQuery || '').trim();
+      const data = query.length >= 2 ? await searchClients(query) : await getClients();
       setClients(data || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const openClient = (clientId) => {
+    try {
+      const scrollContainer = document.querySelector('.shell-content');
+      sessionStorage.setItem(CLIENT_LIST_RETURN_STATE_KEY, JSON.stringify({
+        searchTerm,
+        filterStatus,
+        scrollTop: scrollContainer?.scrollTop ?? window.scrollY,
+      }));
+    } catch {}
+    router.push(urlDetalheCliente(clientId));
   };
 
   const handleSearch = (e) => {
@@ -312,7 +355,7 @@ export default function MultasClients() {
             ) : displayed.map((client) => (
               <tr
                 key={client.id}
-                onClick={() => router.push(`/multas/clients/${client.id}`)}
+                onClick={() => openClient(client.id)}
                 className="clickable-row"
               >
                 <td>

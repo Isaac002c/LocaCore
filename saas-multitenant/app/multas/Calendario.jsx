@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDeadlines } from '../lib/contractsAPI';
+import { urlDetalheCliente } from '../lib/voltar';
 
 // ─── Datas (date-only, sem shift de fuso) ───────────────────────────────────────
 
@@ -142,7 +143,7 @@ export default function MultasAgenda() {
   };
 
   const openClient = (it) => {
-    if (it?.client_id) router.push(`/multas/clients/${it.client_id}`);
+    if (it?.client_id) router.push(urlDetalheCliente(it.client_id));
   };
 
   const total = overdue.length + upcoming.length;

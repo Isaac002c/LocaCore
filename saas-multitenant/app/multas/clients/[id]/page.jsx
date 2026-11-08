@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { getClientById, updateClient } from '../../../lib/clientsAPI';
 import { getServicesByClient, deleteService, getServiceTypes } from '../../../lib/servicesAPI';
 import { getContractsByService, createContract, updateContract, deleteContract, patchContractProtocol } from '../../../lib/contractsAPI';
@@ -11,7 +11,7 @@ import { uploadFile } from '../../../lib/uploadsAPI';
 import { listByFine, createProtocol, updateProtocol, deleteProtocol, sendProtocolEmail } from '../../../lib/fineProtocolsAPI';
 import { requestDeletion } from '../../../lib/approvalsAPI';
 import ClientFinanceSection from '../../financeiro/ClientFinanceSection';
-import { urlDeVolta, origemDaUrl } from '../../../lib/voltar';
+import { urlDeVolta, origemDaUrl, urlRetornoInterno } from '../../../lib/voltar';
 
 // ─── Constantes de negócio ────────────────────────────
 
@@ -220,7 +220,10 @@ const PROTOCOL_STATUS_OPTIONS = [
 export default function ClientDetail() {
   const router   = useRouter();
   const params   = useParams();
+  const searchParams = useSearchParams();
   const clientId = params?.id;
+  const clientReturnPath = urlRetornoInterno(searchParams.get('returnTo')) || urlDeVolta('clients', origemDaUrl());
+  const returnToPreviousPage = () => router.replace(clientReturnPath);
 
   const currentUser = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('user') || '{}') : {};
@@ -562,7 +565,7 @@ export default function ClientDetail() {
   if (!client) return (
     <div style={{ textAlign: 'center', padding: 60 }}>
       <p style={{ color: '#ef4444', marginBottom: 16 }}>Cliente não encontrado.</p>
-      <button onClick={() => router.back()} className="btn-secondary">← Voltar</button>
+      <button onClick={returnToPreviousPage} className="btn-secondary">← Voltar à página anterior</button>
     </div>
   );
 
@@ -573,11 +576,11 @@ export default function ClientDetail() {
 
       {/* Breadcrumb */}
       <div className="cd-breadcrumb">
-        <button onClick={() => router.push(urlDeVolta('clients', origemDaUrl()))} className="cd-back-btn">
+        <button onClick={returnToPreviousPage} className="cd-back-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Clientes
+          Voltar à página anterior
         </button>
         <span className="cd-breadcrumb-sep">/</span>
         <span className="cd-breadcrumb-current">{client.name}</span>

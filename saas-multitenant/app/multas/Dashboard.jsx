@@ -6,6 +6,7 @@ import { getContractDashboard, getStageClients, getDeferred } from '../lib/contr
 import { getClients } from '../lib/clientsAPI';
 import { getUpcomingEvents, getEventsRange } from '../lib/calendarAPI';
 import { getKanbanLeads } from '../lib/multasLeadsAPI';
+import { urlDetalheCliente } from '../lib/voltar';
 import UserHome from './UserHome';
 import DashboardFinanceCards from './financeiro/DashboardFinanceCards';
 
@@ -163,7 +164,7 @@ function StagePanel({ groupKey, info, stageData, onClose }) {
                     <div
                       key={`${c.fine_id}`}
                       className="md-stage-client-card"
-                      onClick={() => router.push(`/multas/clients/${c.client_id}`)}
+                      onClick={() => router.push(urlDetalheCliente(c.client_id))}
                       role="button"
                       tabIndex={0}
                     >
@@ -198,7 +199,7 @@ function DeferidosPanel({ items, onClose }) {
   const router = useRouter();
   const color = '#15803d';
   const open = (it) => {
-    if (it.client_id)       router.push(`/multas/clients/${it.client_id}`);
+    if (it.client_id)       router.push(urlDetalheCliente(it.client_id));
     else if (it.company_id) router.push(`/multas/companies/${it.company_id}`);
   };
   return (
